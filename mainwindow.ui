@@ -433,6 +433,16 @@ QCalendarWidget QAbstractItemView:enabled {
     selection-color: #FFFFFF;
 }
 
+QCalendarWidget QAbstractItemView::item:hover {
+    background-color: #E8F3FF;
+    color: #0A66C2;
+}
+
+QCalendarWidget QAbstractItemView::item:selected:hover {
+    background-color: #0071E3;
+    color: #FFFFFF;
+}
+
 QCalendarWidget QSpinBox {
     background-color: #FFFFFF;
     border: 1px solid #BAB9B8;

@@ -19,20 +19,14 @@ MainWindow::MainWindow(QWidget *parent)
     });
     ui->tableTickets->setModel(ticketModel);
     ui->tableTickets->setEditTriggers(QAbstractItemView::NoEditTriggers);
-    ui->tableTickets->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
+
+    ui->tableTickets->horizontalHeader()
+        ->setSectionResizeMode(QHeaderView::Stretch);
+
     ui->tableTickets->verticalHeader()->setVisible(false);
 
-    ui->comboDepartureStation->setAttribute(Qt::WA_InputMethodEnabled, false);
-    ui->comboArrivalStation->setAttribute(Qt::WA_InputMethodEnabled, false);
     ui->dateTravel->setFocusPolicy(Qt::NoFocus);
-    ui->dateTravel->setAttribute(Qt::WA_InputMethodEnabled, false);
-    if (auto *dateEditor = ui->dateTravel->findChild<QLineEdit *>()) {
-        dateEditor->deselect();
-    }
-    ui->comboTrainType->setAttribute(Qt::WA_InputMethodEnabled, false);
-    ui->comboSeatType->setAttribute(Qt::WA_InputMethodEnabled, false);
-    ui->comboSort->setAttribute(Qt::WA_InputMethodEnabled, false);
-    ui->tableTickets->setAttribute(Qt::WA_InputMethodEnabled, false);
+
 
     connect(ui->btnQuery, &QToolButton::clicked,this, [this]() {
         ui->stackedWidget->setCurrentWidget(ui->pageQuery);
