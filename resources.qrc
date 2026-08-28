@@ -1,0 +1,7 @@
+<RCC>
+ <qresource prefix="/icons">
+  <file alias="chevron-down.svg">icons/qt-sync-chevron-down.svg</file>
+  <file alias="chevron-left.svg">icons/qt-sync-chevron-left.svg</file>
+  <file alias="chevron-right.svg">icons/qt-sync-chevron-right.svg</file>
+ </qresource>
+</RCC>
