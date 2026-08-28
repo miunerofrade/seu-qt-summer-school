@@ -424,6 +424,10 @@ QCalendarWidget QToolButton#qt_calendar_prevmonth {
     padding: 4px;
 }
 
+QLineEdit#editPassengerSearch {
+    min-width: 180px;
+}
+
 QCalendarWidget QToolButton#qt_calendar_nextmonth {
     image: url(:/icons/chevron-right.svg);
     qproperty-iconSize: 0px 0px;
@@ -801,37 +805,67 @@ QPushButton#btnAddPassenger {
         </item>
         <item>
          <widget class="QWidget" name="passengerToolbar" native="true">
-          <layout class="QHBoxLayout" name="horizontalLayoutPassengerToolbar">
+             <layout class="QVBoxLayout" name="verticalLayoutPassengerToolbar">
            <property name="leftMargin"><number>16</number></property>
            <property name="topMargin"><number>12</number></property>
            <property name="rightMargin"><number>16</number></property>
            <property name="bottomMargin"><number>12</number></property>
            <item>
-            <widget class="QLabel" name="labelPassengerHint">
-             <property name="text"><string>管理常用乘车人信息</string></property>
-            </widget>
+                <widget class="QWidget" name="passengerActionRow" native="true">
+                 <layout class="QHBoxLayout" name="horizontalLayoutPassengerActions">
+                  <property name="leftMargin"><number>0</number></property>
+                  <property name="topMargin"><number>0</number></property>
+                  <property name="rightMargin"><number>0</number></property>
+                  <property name="bottomMargin"><number>0</number></property>
+                  <item>
+                    <widget class="QLabel" name="labelPassengerHint">
+                     <property name="text"><string>管理常用乘车人信息</string></property>
+                    </widget>
+                  </item>
+                  <item>
+                    <spacer name="horizontalSpacerPassengerToolbar">
+                     <property name="orientation"><enum>Qt::Orientation::Horizontal</enum></property>
+                     <property name="sizeHint" stdset="0"><size><width>40</width><height>20</height></size></property>
+                    </spacer>
+                  </item>
+                  <item>
+                    <widget class="QPushButton" name="btnAddPassenger">
+                     <property name="text"><string>新增</string></property>
+                    </widget>
+                  </item>
+                  <item>
+                    <widget class="QPushButton" name="btnEditPassenger">
+                     <property name="text"><string>编辑</string></property>
+                    </widget>
+                  </item>
+                  <item>
+                    <widget class="QPushButton" name="btnDeletePassenger">
+                     <property name="text"><string>删除</string></property>
+                    </widget>
+                  </item>
+                 </layout>
+                </widget>
            </item>
-           <item>
-            <spacer name="horizontalSpacerPassengerToolbar">
-             <property name="orientation"><enum>Qt::Orientation::Horizontal</enum></property>
-             <property name="sizeHint" stdset="0"><size><width>40</width><height>20</height></size></property>
-            </spacer>
-           </item>
-           <item>
-            <widget class="QPushButton" name="btnAddPassenger">
-             <property name="text"><string>新增</string></property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QPushButton" name="btnEditPassenger">
-             <property name="text"><string>编辑</string></property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QPushButton" name="btnDeletePassenger">
-             <property name="text"><string>删除</string></property>
-            </widget>
-           </item>
+             <item>
+                 <widget class="QWidget" name="passengerSearchRow" native="true">
+                  <layout class="QHBoxLayout" name="horizontalLayoutPassengerSearch">
+                   <property name="leftMargin"><number>0</number></property>
+                   <property name="topMargin"><number>0</number></property>
+                   <property name="rightMargin"><number>0</number></property>
+                   <property name="bottomMargin"><number>0</number></property>
+                   <item>
+                    <widget class="QLineEdit" name="editPassengerSearch">
+                    <property name="placeholderText"><string>搜索姓名或证件号</string></property>
+                    </widget>
+                   </item>
+                   <item>
+                    <widget class="QPushButton" name="btnSearchPassenger">
+                    <property name="text"><string>搜索</string></property>
+                    </widget>
+                   </item>
+                  </layout>
+                 </widget>
+             </item>
           </layout>
          </widget>
         </item>
@@ -844,7 +878,6 @@ QPushButton#btnAddPassenger {
           <column><property name="text"><string>姓名</string></property></column>
           <column><property name="text"><string>证件类型</string></property></column>
           <column><property name="text"><string>证件号码</string></property></column>
-          <column><property name="text"><string>手机号</string></property></column>
           <column><property name="text"><string>旅客类型</string></property></column>
          </widget>
         </item>
