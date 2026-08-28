@@ -1,7 +1,20 @@
 <RCC>
  <qresource prefix="/icons">
-  <file alias="chevron-down.svg">icons/qt-sync-chevron-down.svg</file>
-  <file alias="chevron-left.svg">icons/qt-sync-chevron-left.svg</file>
-  <file alias="chevron-right.svg">icons/qt-sync-chevron-right.svg</file>
+    <file alias="chevron-down.svg">icons/lucide-chevron-down.svg</file>
+    <file alias="chevron-up.svg">icons/lucide-chevron-up.svg</file>
+    <file alias="chevron-left.svg">icons/lucide-chevron-left.svg</file>
+    <file alias="chevron-right.svg">icons/lucide-chevron-right.svg</file>
+  <file alias="nav-search.svg">icons/nav-search.svg</file>
+  <file alias="nav-search-white.svg">icons/nav-search-white.svg</file>
+  <file alias="nav-users.svg">icons/nav-users.svg</file>
+  <file alias="nav-users-white.svg">icons/nav-users-white.svg</file>
+  <file alias="nav-orders.svg">icons/nav-orders.svg</file>
+  <file alias="nav-orders-white.svg">icons/nav-orders-white.svg</file>
+  <file alias="nav-admin.svg">icons/nav-admin.svg</file>
+  <file alias="nav-admin-white.svg">icons/nav-admin-white.svg</file>
+  <file alias="nav-statistics.svg">icons/nav-statistics.svg</file>
+  <file alias="nav-statistics-white.svg">icons/nav-statistics-white.svg</file>
+  <file alias="nav-settings.svg">icons/nav-settings.svg</file>
+  <file alias="nav-settings-white.svg">icons/nav-settings-white.svg</file>
  </qresource>
 </RCC>

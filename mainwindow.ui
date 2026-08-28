@@ -10,11 +10,6 @@
     <height>600</height>
    </rect>
   </property>
-  <property name="font">
-   <font>
-    <family>.AppleSystemUIFont</family>
-   </font>
-  </property>
   <property name="windowTitle">
    <string>MainWindow</string>
   </property>
@@ -50,8 +45,8 @@
        </size>
       </property>
       <property name="styleSheet">
-       <string notr="true">QWidget#navWidget {
-    background-color: #F7F7F8;
+    <string notr="true">QWidget#navWidget {
+    background-color: #F3F3F3;
     border-right: 1px solid #D8D8DC;
 }
 
@@ -59,9 +54,7 @@ QToolButton {
     background-color: transparent;
     border: none;
     border-radius: 4px;
-
     padding: 4px 12px;
-
     color: #2F3033;
     font-size: 13px;
     text-align: left;
@@ -106,6 +99,9 @@ QToolButton:pressed {
        </property>
        <item>
         <widget class="QToolButton" name="btnQuery">
+                 <property name="icon">
+                    <iconset resource="resources.qrc">:/icons/nav-search.svg</iconset>
+                 </property>
          <property name="sizePolicy">
           <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
            <horstretch>0</horstretch>
@@ -119,7 +115,7 @@ QToolButton:pressed {
           </size>
          </property>
          <property name="text">
-          <string>车票查询</string>
+          <string> 车票查询</string>
          </property>
          <property name="checkable">
           <bool>true</bool>
@@ -137,6 +133,9 @@ QToolButton:pressed {
        </item>
        <item>
         <widget class="QToolButton" name="btnPassenger">
+                 <property name="icon">
+                    <iconset resource="resources.qrc">:/icons/nav-users.svg</iconset>
+                 </property>
          <property name="sizePolicy">
           <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
            <horstretch>0</horstretch>
@@ -150,7 +149,7 @@ QToolButton:pressed {
           </size>
          </property>
          <property name="text">
-          <string>乘车人</string>
+          <string> 乘车人</string>
          </property>
          <property name="checkable">
           <bool>true</bool>
@@ -165,6 +164,9 @@ QToolButton:pressed {
        </item>
        <item>
         <widget class="QToolButton" name="btnOrder">
+                 <property name="icon">
+                    <iconset resource="resources.qrc">:/icons/nav-orders.svg</iconset>
+                 </property>
          <property name="sizePolicy">
           <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
            <horstretch>0</horstretch>
@@ -178,7 +180,7 @@ QToolButton:pressed {
           </size>
          </property>
          <property name="text">
-          <string>订单</string>
+          <string> 订单</string>
          </property>
          <property name="checkable">
           <bool>true</bool>
@@ -193,6 +195,9 @@ QToolButton:pressed {
        </item>
        <item>
         <widget class="QToolButton" name="btnAdmin">
+                 <property name="icon">
+                    <iconset resource="resources.qrc">:/icons/nav-admin.svg</iconset>
+                 </property>
          <property name="sizePolicy">
           <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
            <horstretch>0</horstretch>
@@ -206,7 +211,7 @@ QToolButton:pressed {
           </size>
          </property>
          <property name="text">
-          <string>管理</string>
+          <string> 管理</string>
          </property>
          <property name="checkable">
           <bool>true</bool>
@@ -221,6 +226,9 @@ QToolButton:pressed {
        </item>
        <item>
         <widget class="QToolButton" name="btnStatistics">
+                 <property name="icon">
+                    <iconset resource="resources.qrc">:/icons/nav-statistics.svg</iconset>
+                 </property>
          <property name="sizePolicy">
           <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
            <horstretch>0</horstretch>
@@ -234,7 +242,7 @@ QToolButton:pressed {
           </size>
          </property>
          <property name="text">
-          <string>统计</string>
+          <string> 统计</string>
          </property>
          <property name="checkable">
           <bool>true</bool>
@@ -262,6 +270,9 @@ QToolButton:pressed {
        </item>
        <item>
         <widget class="QToolButton" name="btnSettings">
+                 <property name="icon">
+                    <iconset resource="resources.qrc">:/icons/nav-settings.svg</iconset>
+                 </property>
          <property name="sizePolicy">
           <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
            <horstretch>0</horstretch>
@@ -275,7 +286,7 @@ QToolButton:pressed {
           </size>
          </property>
          <property name="text">
-          <string>设置</string>
+          <string> 设置</string>
          </property>
          <property name="checkable">
           <bool>true</bool>
@@ -284,18 +295,15 @@ QToolButton:pressed {
           <bool>true</bool>
          </property>
          <property name="toolButtonStyle">
-          <enum>Qt::ToolButtonStyle::ToolButtonTextBesideIcon</enum>
-         </property>
-        </widget>
-       </item>
-      </layout>
-     </widget>
-    </item>
-    <item>
-     <widget class="QStackedWidget" name="stackedWidget">
-      <property name="enabled">
-       <bool>true</bool>
-      </property>
+            <enum>Qt::ToolButtonStyle::ToolButtonTextBesideIcon</enum>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </widget>
+      </item>
+      <item>
+       <widget class="QStackedWidget" name="stackedWidget">
       <property name="minimumSize">
        <size>
         <width>0</width>
@@ -314,7 +322,7 @@ QToolButton:pressed {
       <widget class="QWidget" name="pageQuery">
        <property name="styleSheet">
         <string notr="true">QWidget#pageQuery {
-    background-color: #F6F7F9;
+    background-color: #F3F3F3;
 }
 
 QLabel#labelQueryTitle {
@@ -339,20 +347,11 @@ QWidget#queryCard QComboBox {
     color: #2F3033;
 }
 
-QWidget#queryCard QCheckBox {
-    color: #6E6E73;
-}
-
-QPushButton#btnSearch {
-    background-color: #0A84FF;
-    border: none;
-    border-radius: 6px;
-    color: #FFFFFF;
-    padding: 6px 18px;
-}
-
-QPushButton#btnSearch:hover {
-    background-color: #0071E3;
+QWidget#queryConditionsWidget QComboBox,
+QWidget#queryConditionsWidget QDateEdit,
+QWidget#queryConditionsWidget QPushButton {
+    min-height: 28px;
+    max-height: 28px;
 }
 
 QTableView#tableTickets {
@@ -371,6 +370,24 @@ QTableView#tableTickets QHeaderView::section {
     padding: 8px;
 }
 
+QTableView#tableTickets QHeaderView::down-arrow {
+    image: url(:/icons/chevron-down.svg);
+    width: 10px;
+    height: 10px;
+    subcontrol-origin: padding;
+    subcontrol-position: right center;
+    right: 6px;
+}
+
+QTableView#tableTickets QHeaderView::up-arrow {
+    image: url(:/icons/chevron-up.svg);
+    width: 10px;
+    height: 10px;
+    subcontrol-origin: padding;
+    subcontrol-position: right center;
+    right: 6px;
+}
+
 QCalendarWidget {
     background-color: #FFFFFF;
 }
@@ -382,7 +399,7 @@ QCalendarWidget QWidget {
 
 QCalendarWidget QToolButton {
     background-color: transparent;
-    border: 1px solid #BAB9B8;
+    border: 1px solid #E5E7EB;
     border-radius: 4px;
     margin: 3px;
     padding: 4px 16px 4px 6px;
@@ -450,6 +467,15 @@ QCalendarWidget QSpinBox {
     min-width: 56px;
     padding: 2px 6px;
     color: #31363B;
+}
+
+QLabel#labelDepartureStation,
+QLabel#labelArrivalStation,
+QLabel#labelTravelDate,
+QLabel#labelSort {
+    color: #6E6E73;
+    font-size: 12px;
+    font-weight: 500;
 }</string>
        </property>
        <layout class="QVBoxLayout" name="verticalLayoutQuery" stretch="0,0,1">
@@ -495,7 +521,7 @@ QCalendarWidget QSpinBox {
            </property>
            <item>
             <widget class="QWidget" name="queryConditionsWidget" native="true">
-             <layout class="QHBoxLayout" name="horizontalLayoutQueryConditions" stretch="1,0,1,0,0">
+              <layout class="QHBoxLayout" name="horizontalLayoutQueryConditions" stretch="1,0,1,1,0">
               <property name="spacing">
                <number>12</number>
               </property>
@@ -512,63 +538,95 @@ QCalendarWidget QSpinBox {
                <number>0</number>
               </property>
               <item>
-               <widget class="QComboBox" name="comboDepartureStation">
-                <property name="minimumSize">
-                 <size>
-                  <width>140</width>
-                  <height>0</height>
-                 </size>
-                </property>
-                <item>
-                 <property name="text">
-                  <string>南京南</string>
-                 </property>
-                </item>
+               <widget class="QWidget" name="departureField" native="true">
+                <layout class="QVBoxLayout" name="verticalLayoutDepartureField">
+                 <property name="spacing"><number>4</number></property>
+                 <property name="leftMargin"><number>0</number></property>
+                 <property name="topMargin"><number>0</number></property>
+                 <property name="rightMargin"><number>0</number></property>
+                 <property name="bottomMargin"><number>0</number></property>
+                 <item>
+                  <widget class="QLabel" name="labelDepartureStation">
+                   <property name="text"><string>起点</string></property>
+                  </widget>
+                 </item>
+                 <item>
+                  <widget class="QComboBox" name="comboDepartureStation">
+                   <property name="minimumSize"><size><width>140</width><height>0</height></size></property>
+                   <item><property name="text"><string>南京南</string></property></item>
+                  </widget>
+                 </item>
+                </layout>
                </widget>
               </item>
               <item>
                <widget class="QLabel" name="labelRouteArrow">
+                     <property name="minimumSize">
+                      <size>
+                        <width>24</width>
+                        <height>0</height>
+                      </size>
+                     </property>
+                     <property name="maximumSize">
+                      <size>
+                        <width>24</width>
+                        <height>16777215</height>
+                      </size>
+                     </property>
                 <property name="text">
                  <string>→</string>
                 </property>
                 <property name="alignment">
-                 <set>Qt::AlignmentFlag::AlignCenter</set>
+                        <set>Qt::AlignmentFlag::AlignHCenter|Qt::AlignmentFlag::AlignVCenter</set>
                 </property>
                </widget>
               </item>
               <item>
-               <widget class="QComboBox" name="comboArrivalStation">
-                <property name="minimumSize">
-                 <size>
-                  <width>140</width>
-                  <height>0</height>
-                 </size>
-                </property>
-                <item>
-                 <property name="text">
-                  <string>上海虹桥</string>
-                 </property>
-                </item>
+               <widget class="QWidget" name="arrivalField" native="true">
+                <layout class="QVBoxLayout" name="verticalLayoutArrivalField">
+                 <property name="spacing"><number>4</number></property>
+                 <property name="leftMargin"><number>0</number></property>
+                 <property name="topMargin"><number>0</number></property>
+                 <property name="rightMargin"><number>0</number></property>
+                 <property name="bottomMargin"><number>0</number></property>
+                 <item>
+                  <widget class="QLabel" name="labelArrivalStation">
+                   <property name="text"><string>终点</string></property>
+                  </widget>
+                 </item>
+                 <item>
+                  <widget class="QComboBox" name="comboArrivalStation">
+                   <property name="minimumSize"><size><width>140</width><height>0</height></size></property>
+                   <item><property name="text"><string>上海虹桥</string></property></item>
+                  </widget>
+                 </item>
+                </layout>
                </widget>
               </item>
               <item>
-               <widget class="QDateEdit" name="dateTravel">
-                <property name="displayFormat">
-                 <string>yyyy-MM-dd</string>
-                </property>
-                <property name="calendarPopup">
-                 <bool>true</bool>
-                </property>
-                <property name="date">
-                 <date>
-                  <year>2026</year>
-                  <month>8</month>
-                  <day>28</day>
-                 </date>
-                </property>
+               <widget class="QWidget" name="dateField" native="true">
+                <layout class="QVBoxLayout" name="verticalLayoutDateField">
+                 <property name="spacing"><number>4</number></property>
+                 <property name="leftMargin"><number>0</number></property>
+                 <property name="topMargin"><number>0</number></property>
+                 <property name="rightMargin"><number>0</number></property>
+                 <property name="bottomMargin"><number>0</number></property>
+                 <item>
+                  <widget class="QLabel" name="labelTravelDate">
+                   <property name="text"><string>出发日期</string></property>
+                  </widget>
+                 </item>
+                 <item>
+                  <widget class="QDateEdit" name="dateTravel">
+                   <property name="displayFormat"><string>MM-dd</string></property>
+                   <property name="calendarPopup"><bool>true</bool></property>
+                   <property name="date"><date><year>2026</year><month>8</month><day>28</day></date></property>
+                  </widget>
+                 </item>
+                </layout>
                </widget>
               </item>
-              <item>
+              <item alignment="Qt::AlignmentFlag::AlignBottom">
                <widget class="QPushButton" name="btnSearch">
                 <property name="minimumSize">
                  <size>
@@ -625,6 +683,9 @@ QCalendarWidget QSpinBox {
                 <property name="text">
                  <string>仅看有票</string>
                 </property>
+                                <property name="tristate">
+                                 <bool>false</bool>
+                                </property>
                </widget>
               </item>
               <item>
@@ -639,6 +700,13 @@ QCalendarWidget QSpinBox {
                  </size>
                 </property>
                </spacer>
+              </item>
+              <item>
+               <widget class="QLabel" name="labelSort">
+                <property name="text">
+                 <string>排序方式</string>
+                </property>
+               </widget>
               </item>
               <item>
                <widget class="QComboBox" name="comboSort">
@@ -679,7 +747,109 @@ QCalendarWidget QSpinBox {
         </item>
        </layout>
       </widget>
-      <widget class="QWidget" name="pagePassenger"/>
+      <widget class="QWidget" name="pagePassenger">
+       <property name="styleSheet">
+        <string notr="true">QWidget#pagePassenger {
+    background-color: #F3F3F3;
+}
+
+QLabel#labelPassengerTitle {
+    color: #1D1D1F;
+    font-size: 22px;
+    font-weight: 600;
+}
+
+QWidget#passengerToolbar {
+    background-color: #FFFFFF;
+    border: 1px solid #E5E7EB;
+    border-radius: 10px;
+}
+
+QTableWidget#tablePassengers {
+    background-color: #FFFFFF;
+    border: 1px solid #E5E7EB;
+    border-radius: 10px;
+    color: #2F3033;
+    gridline-color: #ECEDEF;
+}
+
+QTableWidget#tablePassengers QHeaderView::section {
+    background-color: #FFFFFF;
+    border: none;
+    border-bottom: 1px solid #E5E7EB;
+    color: #6E6E73;
+    padding: 8px;
+}
+
+QPushButton#btnAddPassenger {
+    background-color: #0A84FF;
+    color: #FFFFFF;
+}
+
+</string>
+       </property>
+       <layout class="QVBoxLayout" name="verticalLayoutPassenger">
+        <property name="spacing"><number>16</number></property>
+        <property name="leftMargin"><number>24</number></property>
+        <property name="topMargin"><number>24</number></property>
+        <property name="rightMargin"><number>24</number></property>
+        <property name="bottomMargin"><number>24</number></property>
+        <item>
+         <widget class="QLabel" name="labelPassengerTitle">
+          <property name="text"><string>乘车人</string></property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QWidget" name="passengerToolbar" native="true">
+          <layout class="QHBoxLayout" name="horizontalLayoutPassengerToolbar">
+           <property name="leftMargin"><number>16</number></property>
+           <property name="topMargin"><number>12</number></property>
+           <property name="rightMargin"><number>16</number></property>
+           <property name="bottomMargin"><number>12</number></property>
+           <item>
+            <widget class="QLabel" name="labelPassengerHint">
+             <property name="text"><string>管理常用乘车人信息</string></property>
+            </widget>
+           </item>
+           <item>
+            <spacer name="horizontalSpacerPassengerToolbar">
+             <property name="orientation"><enum>Qt::Orientation::Horizontal</enum></property>
+             <property name="sizeHint" stdset="0"><size><width>40</width><height>20</height></size></property>
+            </spacer>
+           </item>
+           <item>
+            <widget class="QPushButton" name="btnAddPassenger">
+             <property name="text"><string>新增</string></property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QPushButton" name="btnEditPassenger">
+             <property name="text"><string>编辑</string></property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QPushButton" name="btnDeletePassenger">
+             <property name="text"><string>删除</string></property>
+            </widget>
+           </item>
+          </layout>
+         </widget>
+        </item>
+        <item>
+         <widget class="QTableWidget" name="tablePassengers">
+          <property name="alternatingRowColors"><bool>true</bool></property>
+          <property name="selectionBehavior"><enum>QAbstractItemView::SelectionBehavior::SelectRows</enum></property>
+          <property name="selectionMode"><enum>QAbstractItemView::SelectionMode::SingleSelection</enum></property>
+          <property name="editTriggers"><enum>QAbstractItemView::EditTrigger::NoEditTriggers</enum></property>
+          <column><property name="text"><string>姓名</string></property></column>
+          <column><property name="text"><string>证件类型</string></property></column>
+          <column><property name="text"><string>证件号码</string></property></column>
+          <column><property name="text"><string>手机号</string></property></column>
+          <column><property name="text"><string>旅客类型</string></property></column>
+         </widget>
+        </item>
+       </layout>
+      </widget>
       <widget class="QWidget" name="pageOrder"/>
       <widget class="QWidget" name="pageAdmin"/>
       <widget class="QWidget" name="pageStatistics"/>

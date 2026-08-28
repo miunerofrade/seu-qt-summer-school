@@ -1,12 +1,18 @@
 #include "mainwindow.h"
 
 #include <QApplication>
+#include <QFont>
 #include <QLocale>
 #include <QTranslator>
 
 int main(int argc, char *argv[])
 {
     QApplication a(argc, argv);
+
+    QFont applicationFont;
+    applicationFont.setStyleHint(QFont::SansSerif);
+    applicationFont.setHintingPreference(QFont::PreferNoHinting);
+    a.setFont(applicationFont);
 
     QTranslator translator;
     const QStringList uiLanguages = QLocale::system().uiLanguages();
