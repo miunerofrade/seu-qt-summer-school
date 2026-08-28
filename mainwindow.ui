@@ -48,7 +48,8 @@
       </property>
       <property name="styleSheet">
        <string notr="true">QWidget#navWidget {
-    background-color: #F5F5F7;
+    background-color: #F7F7F8;
+    border-right: 1px solid #D8D8DC;
 }
 
 QToolButton {
@@ -56,16 +57,16 @@ QToolButton {
     border: none;
     border-radius: 4px;
 
-    padding: 8px 12px;
+    padding: 4px 12px;
 
-    color: #3A3A3C;
+    color: #2F3033;
     font-size: 13px;
     text-align: left;
 }
 
 QToolButton:hover {
-    background-color: #E8E8ED;
-    color: #3A3A3C;
+    background-color: #E2E3E6;
+    color: #2F3033;
 }
 
 QToolButton:checked {
