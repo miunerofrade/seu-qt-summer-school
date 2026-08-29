@@ -76,6 +76,17 @@ MainWindow::MainWindow(QWidget *parent)
 
     ui->tableTickets->verticalHeader()->setVisible(false);
 
+    // 最近维护记录暂时只建立表头，不填充业务数据；后续接入数据源时直接替换模型内容。
+    auto *adminRecentModel = new QStandardItemModel(0, 5, this);
+    adminRecentModel->setHorizontalHeaderLabels({
+        tr("模块"), tr("内容"), tr("操作人"), tr("时间"), tr("状态")
+    });
+    ui->tableAdminRecent->setModel(adminRecentModel);
+    ui->tableAdminRecent->setEditTriggers(QAbstractItemView::NoEditTriggers);
+    ui->tableAdminRecent->setSelectionBehavior(QAbstractItemView::SelectRows);
+    ui->tableAdminRecent->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
+    ui->tableAdminRecent->verticalHeader()->setVisible(false);
+
     const auto setNavigationIcon = [](QToolButton *button,
                                       const QString &normalPath,
                                       const QString &checkedPath) {

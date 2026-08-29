@@ -59,8 +59,8 @@
 QToolButton {
     background-color: transparent;
     border: none;
-    border-radius: 4px;
-    padding: 4px 12px;
+    border-radius: 8px;
+    padding: 6px 12px;
     color: #2F3033;
     font-size: 13px;
     text-align: left;
@@ -89,7 +89,7 @@ QToolButton:pressed {
       </property>
       <layout class="QVBoxLayout" name="verticalLayout">
        <property name="spacing">
-        <number>4</number>
+        <number>8</number>
        </property>
        <property name="leftMargin">
         <number>6</number>
@@ -1103,7 +1103,239 @@ QPushButton#btnSearchOrders:hover {
         </item>
        </layout>
       </widget>
-      <widget class="QWidget" name="pageAdmin"/>
+      <widget class="QWidget" name="pageAdmin">
+       <property name="styleSheet">
+        <string notr="true">QWidget#pageAdmin {
+    background-color: #F3F3F3;
+}
+
+QLabel#labelAdminTitle {
+    color: #1D1D1F;
+    font-size: 22px;
+    font-weight: 600;
+}
+
+QLabel#labelAdminSubtitle {
+    color: #6E6E73;
+    font-size: 13px;
+}
+
+QFrame#cardStationAdmin,
+QFrame#cardTrainAdmin,
+QFrame#cardScheduleAdmin,
+QFrame#cardSeatAdmin {
+    background-color: #FFFFFF;
+    border: 1px solid #E5E7EB;
+    border-radius: 10px;
+}
+
+QWidget#adminToolbar,
+QWidget#adminRecentCard {
+    background-color: #FFFFFF;
+    border: 1px solid #E5E7EB;
+    border-radius: 10px;
+}
+
+QTableView#tableAdminRecent {
+    background-color: #FFFFFF;
+    border: 1px solid #E5E7EB;
+    border-radius: 0px;
+    color: #2F3033;
+    gridline-color: #ECEDEF;
+}
+
+QTableView#tableAdminRecent QHeaderView::section {
+    background-color: #FFFFFF;
+    border: none;
+    border-bottom: 1px solid #E5E7EB;
+    color: #6E6E73;
+    padding: 8px;
+}
+
+QLabel#labelRecentAdminTitle {
+    color: #1D1D1F;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+QPushButton#btnRecentAdmin,
+QPushButton#btnManageStations,
+QPushButton#btnManageTrains,
+QPushButton#btnManageSchedules,
+QPushButton#btnManageSeats {
+    background-color: #FFFFFF;
+    border: 1px solid #D8DDE6;
+    border-radius: 6px;
+    color: #0A84FF;
+    padding: 6px 14px;
+}
+
+QPushButton#btnAddAdminData {
+    background-color: #0A84FF;
+    border: none;
+    border-radius: 6px;
+    color: #FFFFFF;
+    padding: 6px 14px;
+}
+
+QLabel#labelStationAdminTitle,
+QLabel#labelTrainAdminTitle,
+QLabel#labelScheduleAdminTitle,
+QLabel#labelSeatAdminTitle {
+    color: #1D1D1F;
+    font-size: 16px;
+    font-weight: 600;
+}
+
+QLabel#labelStationAdminDescription,
+QLabel#labelTrainAdminDescription,
+QLabel#labelScheduleAdminDescription,
+QLabel#labelSeatAdminDescription {
+    color: #6E6E73;
+    font-size: 13px;
+}
+
+QPushButton#btnAddAdminData:hover {
+    background-color: #0071E3;
+}</string>
+       </property>
+       <layout class="QVBoxLayout" name="verticalLayoutAdmin">
+        <property name="spacing"><number>16</number></property>
+        <property name="leftMargin"><number>24</number></property>
+        <property name="topMargin"><number>24</number></property>
+        <property name="rightMargin"><number>24</number></property>
+        <property name="bottomMargin"><number>24</number></property>
+        <item>
+         <widget class="QLabel" name="labelAdminTitle">
+          <property name="text"><string>管理</string></property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QLabel" name="labelAdminSubtitle">
+          <property name="text"><string>维护基础数据与列车运行信息</string></property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QWidget" name="adminToolbar" native="true">
+          <layout class="QHBoxLayout" name="horizontalLayoutAdminToolbar">
+           <property name="leftMargin"><number>16</number></property>
+           <property name="topMargin"><number>12</number></property>
+           <property name="rightMargin"><number>16</number></property>
+           <property name="bottomMargin"><number>12</number></property>
+           <item>
+            <widget class="QLineEdit" name="editAdminSearch">
+             <property name="minimumSize"><size><width>280</width><height>32</height></size></property>
+             <property name="placeholderText"><string>搜索模块或关键词</string></property>
+            </widget>
+           </item>
+           <item>
+            <spacer name="horizontalSpacerAdminToolbar">
+             <property name="orientation"><enum>Qt::Orientation::Horizontal</enum></property>
+             <property name="sizeHint" stdset="0"><size><width>40</width><height>20</height></size></property>
+            </spacer>
+           </item>
+           <item>
+            <widget class="QPushButton" name="btnRecentAdmin">
+             <property name="text"><string>最近记录</string></property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QPushButton" name="btnAddAdminData">
+             <property name="text"><string>新增数据</string></property>
+            </widget>
+           </item>
+          </layout>
+         </widget>
+        </item>
+        <item>
+         <layout class="QGridLayout" name="gridLayoutAdminEntries">
+          <property name="horizontalSpacing"><number>16</number></property>
+          <property name="verticalSpacing"><number>16</number></property>
+          <item row="0" column="0">
+           <widget class="QFrame" name="cardStationAdmin">
+            <property name="frameShape"><enum>QFrame::Shape::StyledPanel</enum></property>
+            <property name="class">adminCard</property>
+            <layout class="QVBoxLayout" name="verticalLayoutStationAdmin">
+             <property name="leftMargin"><number>16</number></property>
+             <property name="topMargin"><number>16</number></property>
+             <property name="rightMargin"><number>16</number></property>
+             <property name="bottomMargin"><number>16</number></property>
+             <item><widget class="QLabel" name="labelStationAdminTitle"><property name="text"><string>车站管理</string></property><property name="class">adminCardTitle</property></widget></item>
+             <item><widget class="QLabel" name="labelStationAdminDescription"><property name="text"><string>维护车站名称、城市和站点状态</string></property><property name="class">adminCardDescription</property></widget></item>
+             <item><spacer name="verticalSpacerStationAdmin"><property name="orientation"><enum>Qt::Orientation::Vertical</enum></property><property name="sizeHint" stdset="0"><size><width>20</width><height>20</height></size></property></spacer></item>
+             <item><widget class="QWidget" name="stationAdminMetaRow" native="true"><layout class="QHBoxLayout" name="horizontalLayoutStationAdminMeta"><property name="leftMargin"><number>0</number></property><property name="topMargin"><number>0</number></property><property name="rightMargin"><number>0</number></property><property name="bottomMargin"><number>0</number></property><item><widget class="QLabel" name="labelStationAdminData"><property name="text"><string>暂无数据</string></property><property name="class">adminCardDescription</property></widget></item><item><spacer name="horizontalSpacerStationAdminMeta"><property name="orientation"><enum>Qt::Orientation::Horizontal</enum></property><property name="sizeHint" stdset="0"><size><width>20</width><height>20</height></size></property></spacer></item><item><widget class="QPushButton" name="btnManageStations"><property name="text"><string>管理车站</string></property><property name="class">adminEntryButton</property></widget></item></layout></widget></item>
+            </layout>
+           </widget>
+          </item>
+          <item row="0" column="1">
+           <widget class="QFrame" name="cardTrainAdmin">
+            <property name="frameShape"><enum>QFrame::Shape::StyledPanel</enum></property>
+            <property name="class">adminCard</property>
+            <layout class="QVBoxLayout" name="verticalLayoutTrainAdmin">
+             <property name="leftMargin"><number>16</number></property><property name="topMargin"><number>16</number></property><property name="rightMargin"><number>16</number></property><property name="bottomMargin"><number>16</number></property>
+             <item><widget class="QLabel" name="labelTrainAdminTitle"><property name="text"><string>车次管理</string></property><property name="class">adminCardTitle</property></widget></item>
+             <item><widget class="QLabel" name="labelTrainAdminDescription"><property name="text"><string>维护车次编号、起终点和运行状态</string></property><property name="class">adminCardDescription</property></widget></item>
+             <item><spacer name="verticalSpacerTrainAdmin"><property name="orientation"><enum>Qt::Orientation::Vertical</enum></property><property name="sizeHint" stdset="0"><size><width>20</width><height>20</height></size></property></spacer></item>
+             <item><widget class="QWidget" name="trainAdminMetaRow" native="true"><layout class="QHBoxLayout" name="horizontalLayoutTrainAdminMeta"><property name="leftMargin"><number>0</number></property><property name="topMargin"><number>0</number></property><property name="rightMargin"><number>0</number></property><property name="bottomMargin"><number>0</number></property><item><widget class="QLabel" name="labelTrainAdminData"><property name="text"><string>暂无数据</string></property><property name="class">adminCardDescription</property></widget></item><item><spacer name="horizontalSpacerTrainAdminMeta"><property name="orientation"><enum>Qt::Orientation::Horizontal</enum></property><property name="sizeHint" stdset="0"><size><width>20</width><height>20</height></size></property></spacer></item><item><widget class="QPushButton" name="btnManageTrains"><property name="text"><string>管理车次</string></property><property name="class">adminEntryButton</property></widget></item></layout></widget></item>
+            </layout>
+           </widget>
+          </item>
+          <item row="1" column="0">
+           <widget class="QFrame" name="cardScheduleAdmin">
+            <property name="frameShape"><enum>QFrame::Shape::StyledPanel</enum></property>
+            <property name="class">adminCard</property>
+            <layout class="QVBoxLayout" name="verticalLayoutScheduleAdmin">
+             <property name="leftMargin"><number>16</number></property><property name="topMargin"><number>16</number></property><property name="rightMargin"><number>16</number></property><property name="bottomMargin"><number>16</number></property>
+             <item><widget class="QLabel" name="labelScheduleAdminTitle"><property name="text"><string>时刻 / 经停站</string></property><property name="class">adminCardTitle</property></widget></item>
+             <item><widget class="QLabel" name="labelScheduleAdminDescription"><property name="text"><string>维护发车时刻、到站时刻和经停站</string></property><property name="class">adminCardDescription</property></widget></item>
+             <item><spacer name="verticalSpacerScheduleAdmin"><property name="orientation"><enum>Qt::Orientation::Vertical</enum></property><property name="sizeHint" stdset="0"><size><width>20</width><height>20</height></size></property></spacer></item>
+             <item><widget class="QWidget" name="scheduleAdminMetaRow" native="true"><layout class="QHBoxLayout" name="horizontalLayoutScheduleAdminMeta"><property name="leftMargin"><number>0</number></property><property name="topMargin"><number>0</number></property><property name="rightMargin"><number>0</number></property><property name="bottomMargin"><number>0</number></property><item><widget class="QLabel" name="labelScheduleAdminData"><property name="text"><string>暂无数据</string></property><property name="class">adminCardDescription</property></widget></item><item><spacer name="horizontalSpacerScheduleAdminMeta"><property name="orientation"><enum>Qt::Orientation::Horizontal</enum></property><property name="sizeHint" stdset="0"><size><width>20</width><height>20</height></size></property></spacer></item><item><widget class="QPushButton" name="btnManageSchedules"><property name="text"><string>管理时刻与经停站</string></property><property name="class">adminEntryButton</property></widget></item></layout></widget></item>
+            </layout>
+           </widget>
+          </item>
+          <item row="1" column="1">
+           <widget class="QFrame" name="cardSeatAdmin">
+            <property name="frameShape"><enum>QFrame::Shape::StyledPanel</enum></property>
+            <property name="class">adminCard</property>
+            <layout class="QVBoxLayout" name="verticalLayoutSeatAdmin">
+             <property name="leftMargin"><number>16</number></property><property name="topMargin"><number>16</number></property><property name="rightMargin"><number>16</number></property><property name="bottomMargin"><number>16</number></property>
+             <item><widget class="QLabel" name="labelSeatAdminTitle"><property name="text"><string>席别 / 票价 / 余票</string></property><property name="class">adminCardTitle</property></widget></item>
+             <item><widget class="QLabel" name="labelSeatAdminDescription"><property name="text"><string>维护席别配置、票价规则和余票数量</string></property><property name="class">adminCardDescription</property></widget></item>
+             <item><spacer name="verticalSpacerSeatAdmin"><property name="orientation"><enum>Qt::Orientation::Vertical</enum></property><property name="sizeHint" stdset="0"><size><width>20</width><height>20</height></size></property></spacer></item>
+             <item><widget class="QWidget" name="seatAdminMetaRow" native="true"><layout class="QHBoxLayout" name="horizontalLayoutSeatAdminMeta"><property name="leftMargin"><number>0</number></property><property name="topMargin"><number>0</number></property><property name="rightMargin"><number>0</number></property><property name="bottomMargin"><number>0</number></property><item><widget class="QLabel" name="labelSeatAdminData"><property name="text"><string>暂无数据</string></property><property name="class">adminCardDescription</property></widget></item><item><spacer name="horizontalSpacerSeatAdminMeta"><property name="orientation"><enum>Qt::Orientation::Horizontal</enum></property><property name="sizeHint" stdset="0"><size><width>20</width><height>20</height></size></property></spacer></item><item><widget class="QPushButton" name="btnManageSeats"><property name="text"><string>管理席别与票价</string></property><property name="class">adminEntryButton</property></widget></item></layout></widget></item>
+            </layout>
+           </widget>
+          </item>
+         </layout>
+        </item>
+        <item>
+         <widget class="QWidget" name="adminRecentCard" native="true">
+          <layout class="QVBoxLayout" name="verticalLayoutAdminRecent">
+           <property name="leftMargin"><number>16</number></property>
+           <property name="topMargin"><number>16</number></property>
+           <property name="rightMargin"><number>16</number></property>
+           <property name="bottomMargin"><number>16</number></property>
+           <item>
+            <widget class="QLabel" name="labelRecentAdminTitle">
+             <property name="text"><string>最近维护记录</string></property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QTableView" name="tableAdminRecent">
+             <property name="minimumSize"><size><width>0</width><height>120</height></size></property>
+             <property name="alternatingRowColors"><bool>true</bool></property>
+             <property name="selectionBehavior"><enum>QAbstractItemView::SelectionBehavior::SelectRows</enum></property>
+             <property name="editTriggers"><enum>QAbstractItemView::EditTrigger::NoEditTriggers</enum></property>
+            </widget>
+           </item>
+          </layout>
+         </widget>
+        </item>
+        <item>
+         <spacer name="verticalSpacerAdminPage"><property name="orientation"><enum>Qt::Orientation::Vertical</enum></property><property name="sizeHint" stdset="0"><size><width>20</width><height>40</height></size></property></spacer>
+        </item>
+       </layout>
+      </widget>
       <widget class="QWidget" name="pageStatistics"/>
       <widget class="QWidget" name="pageSettings"/>
      </widget>
