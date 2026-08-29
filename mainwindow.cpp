@@ -76,8 +76,6 @@ MainWindow::MainWindow(QWidget *parent)
 
     ui->tableTickets->verticalHeader()->setVisible(false);
 
-    ui->dateTravel->setFocusPolicy(Qt::NoFocus);
-
     const auto setNavigationIcon = [](QToolButton *button,
                                       const QString &normalPath,
                                       const QString &checkedPath) {

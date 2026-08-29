@@ -87,3 +87,10 @@ build/
 .vscode/
 *.user
 .DS_Store
+
+# CMake and Qt Creator local build metadata
+compile_commands.json
+CMakeUserPresets.json
+.cache/
+.cmake/
+.qt/
