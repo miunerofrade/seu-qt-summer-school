@@ -25,6 +25,8 @@ set(PROJECT_SOURCES
         mainwindow.ui
         dateedit.cpp
         dateedit.h
+        flowlayout.cpp
+        flowlayout.h
         resources.qrc
         ${TS_FILES}
 )

@@ -1,5 +1,6 @@
 #include "mainwindow.h"
 #include "./ui_mainwindow.h"
+#include "flowlayout.h"
 #include <QAbstractItemView>
 #include <QDialog>
 #include <QDialogButtonBox>
@@ -63,6 +64,20 @@ MainWindow::MainWindow(QWidget *parent)
 {
     ui->setupUi(this);
 
+    // Qt Widgets 没有内置 flex-wrap；用 FlowLayout 按逻辑组自动换行。
+    QLayout *placeholderLayout = ui->statisticsFilterCard->layout();
+    while (QLayoutItem *item = placeholderLayout->takeAt(0))
+        delete item; // 只删除布局项，控件仍由 statisticsFilterCard 持有。
+    delete placeholderLayout;
+
+    auto *statisticsFilterFlow = new FlowLayout(ui->statisticsFilterCard, 0, 12, 10);
+    statisticsFilterFlow->setContentsMargins(16, 12, 16, 12);
+    statisticsFilterFlow->addWidget(ui->statisticsQuickFilterGroup);
+    statisticsFilterFlow->addWidget(ui->statisticsDateFilterGroup);
+    statisticsFilterFlow->addWidget(ui->statisticsTrainFilterGroup);
+    statisticsFilterFlow->addWidget(ui->statisticsStationFilterGroup);
+    statisticsFilterFlow->addWidget(ui->statisticsActionGroup);
+
     auto *ticketModel = new QStandardItemModel(0, 8, this);
     ticketModel->setHorizontalHeaderLabels({
         tr("车次"), tr("出发站"), tr("到达站"), tr("出发时间"),
@@ -87,6 +102,17 @@ MainWindow::MainWindow(QWidget *parent)
     ui->tableAdminRecent->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
     ui->tableAdminRecent->verticalHeader()->setVisible(false);
 
+    // 统计页先建立空模型和表头，业务数据接入后只需向模型填充行。
+    auto *statisticsTrainModel = new QStandardItemModel(0, 6, this);
+    statisticsTrainModel->setHorizontalHeaderLabels({
+        tr("车次"), tr("区间"), tr("售票数"), tr("退票数"), tr("销售额"), tr("余票率")
+    });
+    ui->tableStatisticsTrains->setModel(statisticsTrainModel);
+    ui->tableStatisticsTrains->setEditTriggers(QAbstractItemView::NoEditTriggers);
+    ui->tableStatisticsTrains->setSelectionBehavior(QAbstractItemView::SelectRows);
+    ui->tableStatisticsTrains->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
+    ui->tableStatisticsTrains->verticalHeader()->setVisible(false);
+
     const auto setNavigationIcon = [](QToolButton *button,
                                       const QString &normalPath,
                                       const QString &checkedPath) {
@@ -103,6 +129,7 @@ MainWindow::MainWindow(QWidget *parent)
     setNavigationIcon(ui->btnSettings, ":/icons/nav-settings.svg", ":/icons/nav-settings-white.svg");
 
     ui->editPassengerSearch->addAction(QIcon(":/icons/nav-search.svg"), QLineEdit::LeadingPosition);
+    ui->editAdminSearch->addAction(QIcon(":/icons/nav-search.svg"), QLineEdit::LeadingPosition);
 
     ui->tablePassengers->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
     ui->tablePassengers->verticalHeader()->setVisible(false);

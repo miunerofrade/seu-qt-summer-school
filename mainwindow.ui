@@ -1187,6 +1187,15 @@ QLabel#labelSeatAdminTitle {
     font-weight: 600;
 }
 
+QLabel#labelStationAdminIcon,
+QLabel#labelTrainAdminIcon,
+QLabel#labelScheduleAdminIcon,
+QLabel#labelSeatAdminIcon {
+    background-color: #EAF3FF;
+    border-radius: 8px;
+    padding: 8px;
+}
+
 QLabel#labelStationAdminDescription,
 QLabel#labelTrainAdminDescription,
 QLabel#labelScheduleAdminDescription,
@@ -1260,8 +1269,7 @@ QPushButton#btnAddAdminData:hover {
              <property name="topMargin"><number>16</number></property>
              <property name="rightMargin"><number>16</number></property>
              <property name="bottomMargin"><number>16</number></property>
-             <item><widget class="QLabel" name="labelStationAdminTitle"><property name="text"><string>车站管理</string></property><property name="class">adminCardTitle</property></widget></item>
-             <item><widget class="QLabel" name="labelStationAdminDescription"><property name="text"><string>维护车站名称、城市和站点状态</string></property><property name="class">adminCardDescription</property></widget></item>
+             <item><widget class="QWidget" name="stationAdminHeaderRow" native="true"><layout class="QHBoxLayout" name="horizontalLayoutStationAdminHeader"><property name="leftMargin"><number>0</number></property><property name="topMargin"><number>0</number></property><property name="rightMargin"><number>0</number></property><property name="bottomMargin"><number>0</number></property><item><widget class="QLabel" name="labelStationAdminIcon"><property name="minimumSize"><size><width>44</width><height>44</height></size></property><property name="maximumSize"><size><width>44</width><height>44</height></size></property><property name="pixmap"><pixmap resource="resources.qrc">:/icons/landmark.svg</pixmap></property><property name="alignment"><set>Qt::AlignmentFlag::AlignCenter</set></property></widget></item><item><layout class="QVBoxLayout" name="verticalLayoutStationAdminHeaderText"><item><widget class="QLabel" name="labelStationAdminTitle"><property name="text"><string>车站管理</string></property><property name="class">adminCardTitle</property></widget></item><item><widget class="QLabel" name="labelStationAdminDescription"><property name="text"><string>维护车站名称、城市和站点状态</string></property><property name="class">adminCardDescription</property></widget></item></layout></item></layout></widget></item>
              <item><spacer name="verticalSpacerStationAdmin"><property name="orientation"><enum>Qt::Orientation::Vertical</enum></property><property name="sizeHint" stdset="0"><size><width>20</width><height>20</height></size></property></spacer></item>
              <item><widget class="QWidget" name="stationAdminMetaRow" native="true"><layout class="QHBoxLayout" name="horizontalLayoutStationAdminMeta"><property name="leftMargin"><number>0</number></property><property name="topMargin"><number>0</number></property><property name="rightMargin"><number>0</number></property><property name="bottomMargin"><number>0</number></property><item><widget class="QLabel" name="labelStationAdminData"><property name="text"><string>暂无数据</string></property><property name="class">adminCardDescription</property></widget></item><item><spacer name="horizontalSpacerStationAdminMeta"><property name="orientation"><enum>Qt::Orientation::Horizontal</enum></property><property name="sizeHint" stdset="0"><size><width>20</width><height>20</height></size></property></spacer></item><item><widget class="QPushButton" name="btnManageStations"><property name="text"><string>管理车站</string></property><property name="class">adminEntryButton</property></widget></item></layout></widget></item>
             </layout>
@@ -1273,8 +1281,7 @@ QPushButton#btnAddAdminData:hover {
             <property name="class">adminCard</property>
             <layout class="QVBoxLayout" name="verticalLayoutTrainAdmin">
              <property name="leftMargin"><number>16</number></property><property name="topMargin"><number>16</number></property><property name="rightMargin"><number>16</number></property><property name="bottomMargin"><number>16</number></property>
-             <item><widget class="QLabel" name="labelTrainAdminTitle"><property name="text"><string>车次管理</string></property><property name="class">adminCardTitle</property></widget></item>
-             <item><widget class="QLabel" name="labelTrainAdminDescription"><property name="text"><string>维护车次编号、起终点和运行状态</string></property><property name="class">adminCardDescription</property></widget></item>
+             <item><widget class="QWidget" name="trainAdminHeaderRow" native="true"><layout class="QHBoxLayout" name="horizontalLayoutTrainAdminHeader"><property name="leftMargin"><number>0</number></property><property name="topMargin"><number>0</number></property><property name="rightMargin"><number>0</number></property><property name="bottomMargin"><number>0</number></property><item><widget class="QLabel" name="labelTrainAdminIcon"><property name="minimumSize"><size><width>44</width><height>44</height></size></property><property name="maximumSize"><size><width>44</width><height>44</height></size></property><property name="pixmap"><pixmap resource="resources.qrc">:/icons/train-front.svg</pixmap></property><property name="alignment"><set>Qt::AlignmentFlag::AlignCenter</set></property></widget></item><item><layout class="QVBoxLayout" name="verticalLayoutTrainAdminHeaderText"><item><widget class="QLabel" name="labelTrainAdminTitle"><property name="text"><string>车次管理</string></property><property name="class">adminCardTitle</property></widget></item><item><widget class="QLabel" name="labelTrainAdminDescription"><property name="text"><string>维护车次编号、起终点和运行状态</string></property><property name="class">adminCardDescription</property></widget></item></layout></item></layout></widget></item>
              <item><spacer name="verticalSpacerTrainAdmin"><property name="orientation"><enum>Qt::Orientation::Vertical</enum></property><property name="sizeHint" stdset="0"><size><width>20</width><height>20</height></size></property></spacer></item>
              <item><widget class="QWidget" name="trainAdminMetaRow" native="true"><layout class="QHBoxLayout" name="horizontalLayoutTrainAdminMeta"><property name="leftMargin"><number>0</number></property><property name="topMargin"><number>0</number></property><property name="rightMargin"><number>0</number></property><property name="bottomMargin"><number>0</number></property><item><widget class="QLabel" name="labelTrainAdminData"><property name="text"><string>暂无数据</string></property><property name="class">adminCardDescription</property></widget></item><item><spacer name="horizontalSpacerTrainAdminMeta"><property name="orientation"><enum>Qt::Orientation::Horizontal</enum></property><property name="sizeHint" stdset="0"><size><width>20</width><height>20</height></size></property></spacer></item><item><widget class="QPushButton" name="btnManageTrains"><property name="text"><string>管理车次</string></property><property name="class">adminEntryButton</property></widget></item></layout></widget></item>
             </layout>
@@ -1286,8 +1293,7 @@ QPushButton#btnAddAdminData:hover {
             <property name="class">adminCard</property>
             <layout class="QVBoxLayout" name="verticalLayoutScheduleAdmin">
              <property name="leftMargin"><number>16</number></property><property name="topMargin"><number>16</number></property><property name="rightMargin"><number>16</number></property><property name="bottomMargin"><number>16</number></property>
-             <item><widget class="QLabel" name="labelScheduleAdminTitle"><property name="text"><string>时刻 / 经停站</string></property><property name="class">adminCardTitle</property></widget></item>
-             <item><widget class="QLabel" name="labelScheduleAdminDescription"><property name="text"><string>维护发车时刻、到站时刻和经停站</string></property><property name="class">adminCardDescription</property></widget></item>
+             <item><widget class="QWidget" name="scheduleAdminHeaderRow" native="true"><layout class="QHBoxLayout" name="horizontalLayoutScheduleAdminHeader"><property name="leftMargin"><number>0</number></property><property name="topMargin"><number>0</number></property><property name="rightMargin"><number>0</number></property><property name="bottomMargin"><number>0</number></property><item><widget class="QLabel" name="labelScheduleAdminIcon"><property name="minimumSize"><size><width>44</width><height>44</height></size></property><property name="maximumSize"><size><width>44</width><height>44</height></size></property><property name="pixmap"><pixmap resource="resources.qrc">:/icons/clock.svg</pixmap></property><property name="alignment"><set>Qt::AlignmentFlag::AlignCenter</set></property></widget></item><item><layout class="QVBoxLayout" name="verticalLayoutScheduleAdminHeaderText"><item><widget class="QLabel" name="labelScheduleAdminTitle"><property name="text"><string>时刻 / 经停站</string></property><property name="class">adminCardTitle</property></widget></item><item><widget class="QLabel" name="labelScheduleAdminDescription"><property name="text"><string>维护发车时刻、到站时刻和经停站</string></property><property name="class">adminCardDescription</property></widget></item></layout></item></layout></widget></item>
              <item><spacer name="verticalSpacerScheduleAdmin"><property name="orientation"><enum>Qt::Orientation::Vertical</enum></property><property name="sizeHint" stdset="0"><size><width>20</width><height>20</height></size></property></spacer></item>
              <item><widget class="QWidget" name="scheduleAdminMetaRow" native="true"><layout class="QHBoxLayout" name="horizontalLayoutScheduleAdminMeta"><property name="leftMargin"><number>0</number></property><property name="topMargin"><number>0</number></property><property name="rightMargin"><number>0</number></property><property name="bottomMargin"><number>0</number></property><item><widget class="QLabel" name="labelScheduleAdminData"><property name="text"><string>暂无数据</string></property><property name="class">adminCardDescription</property></widget></item><item><spacer name="horizontalSpacerScheduleAdminMeta"><property name="orientation"><enum>Qt::Orientation::Horizontal</enum></property><property name="sizeHint" stdset="0"><size><width>20</width><height>20</height></size></property></spacer></item><item><widget class="QPushButton" name="btnManageSchedules"><property name="text"><string>管理时刻与经停站</string></property><property name="class">adminEntryButton</property></widget></item></layout></widget></item>
             </layout>
@@ -1299,8 +1305,7 @@ QPushButton#btnAddAdminData:hover {
             <property name="class">adminCard</property>
             <layout class="QVBoxLayout" name="verticalLayoutSeatAdmin">
              <property name="leftMargin"><number>16</number></property><property name="topMargin"><number>16</number></property><property name="rightMargin"><number>16</number></property><property name="bottomMargin"><number>16</number></property>
-             <item><widget class="QLabel" name="labelSeatAdminTitle"><property name="text"><string>席别 / 票价 / 余票</string></property><property name="class">adminCardTitle</property></widget></item>
-             <item><widget class="QLabel" name="labelSeatAdminDescription"><property name="text"><string>维护席别配置、票价规则和余票数量</string></property><property name="class">adminCardDescription</property></widget></item>
+             <item><widget class="QWidget" name="seatAdminHeaderRow" native="true"><layout class="QHBoxLayout" name="horizontalLayoutSeatAdminHeader"><property name="leftMargin"><number>0</number></property><property name="topMargin"><number>0</number></property><property name="rightMargin"><number>0</number></property><property name="bottomMargin"><number>0</number></property><item><widget class="QLabel" name="labelSeatAdminIcon"><property name="minimumSize"><size><width>44</width><height>44</height></size></property><property name="maximumSize"><size><width>44</width><height>44</height></size></property><property name="pixmap"><pixmap resource="resources.qrc">:/icons/badge-yen.svg</pixmap></property><property name="alignment"><set>Qt::AlignmentFlag::AlignCenter</set></property></widget></item><item><layout class="QVBoxLayout" name="verticalLayoutSeatAdminHeaderText"><item><widget class="QLabel" name="labelSeatAdminTitle"><property name="text"><string>席别 / 票价 / 余票</string></property><property name="class">adminCardTitle</property></widget></item><item><widget class="QLabel" name="labelSeatAdminDescription"><property name="text"><string>维护席别配置、票价规则和余票数量</string></property><property name="class">adminCardDescription</property></widget></item></layout></item></layout></widget></item>
              <item><spacer name="verticalSpacerSeatAdmin"><property name="orientation"><enum>Qt::Orientation::Vertical</enum></property><property name="sizeHint" stdset="0"><size><width>20</width><height>20</height></size></property></spacer></item>
              <item><widget class="QWidget" name="seatAdminMetaRow" native="true"><layout class="QHBoxLayout" name="horizontalLayoutSeatAdminMeta"><property name="leftMargin"><number>0</number></property><property name="topMargin"><number>0</number></property><property name="rightMargin"><number>0</number></property><property name="bottomMargin"><number>0</number></property><item><widget class="QLabel" name="labelSeatAdminData"><property name="text"><string>暂无数据</string></property><property name="class">adminCardDescription</property></widget></item><item><spacer name="horizontalSpacerSeatAdminMeta"><property name="orientation"><enum>Qt::Orientation::Horizontal</enum></property><property name="sizeHint" stdset="0"><size><width>20</width><height>20</height></size></property></spacer></item><item><widget class="QPushButton" name="btnManageSeats"><property name="text"><string>管理席别与票价</string></property><property name="class">adminEntryButton</property></widget></item></layout></widget></item>
             </layout>
@@ -1336,7 +1341,198 @@ QPushButton#btnAddAdminData:hover {
         </item>
        </layout>
       </widget>
-      <widget class="QWidget" name="pageStatistics"/>
+      <widget class="QWidget" name="pageStatistics">
+       <property name="styleSheet">
+        <string notr="true">QWidget#pageStatistics,
+QWidget#statisticsScrollContent {
+    background-color: #F3F3F3;
+}
+
+QLabel#labelStatisticsTitle {
+    color: #1D1D1F;
+    font-size: 22px;
+    font-weight: 600;
+}
+
+QLabel#labelStatisticsSubtitle,
+QLabel.statisticsCaption,
+QLabel.statisticsPlaceholder {
+    color: #6E6E73;
+    font-size: 13px;
+}
+
+QWidget#statisticsFilterCard,
+QFrame#metricTicketsCard,
+QFrame#metricRefundsCard,
+QFrame#metricRevenueCard,
+QFrame#metricRateCard,
+QFrame#statisticsTrendCard,
+QFrame#statisticsSeatCard,
+QWidget#statisticsTableCard {
+    background-color: #FFFFFF;
+    border: 1px solid #E5E7EB;
+    border-radius: 10px;
+}
+
+QLabel.statisticsMetricIcon {
+    background-color: #EAF3FF;
+    border-radius: 22px;
+    padding: 10px;
+}
+
+QLabel.statisticsMetricTitle {
+    color: #6E6E73;
+    font-size: 13px;
+}
+
+QLabel.statisticsMetricValue {
+    color: #1D1D1F;
+    font-size: 22px;
+    font-weight: 600;
+}
+
+QLabel.statisticsSectionTitle {
+    color: #1D1D1F;
+    font-size: 15px;
+    font-weight: 600;
+}
+
+QFrame.statisticsChartPlaceholder {
+    background-color: #FAFBFC;
+    border: 1px dashed #D8DDE6;
+    border-radius: 6px;
+}
+
+QPushButton#btnStatisticsQuery {
+    background-color: #0A84FF;
+    border: none;
+    border-radius: 6px;
+    color: #FFFFFF;
+    padding: 6px 18px;
+}
+
+QPushButton#btnStatisticsQuery:hover {
+    background-color: #0071E3;
+}
+
+QTableView#tableStatisticsTrains {
+    background-color: #FFFFFF;
+    border: 1px solid #E5E7EB;
+    border-radius: 0px;
+    color: #2F3033;
+    gridline-color: #ECEDEF;
+}
+
+QTableView#tableStatisticsTrains QHeaderView::section {
+    background-color: #FFFFFF;
+    border: none;
+    border-bottom: 1px solid #E5E7EB;
+    color: #6E6E73;
+    padding: 8px;
+}</string>
+       </property>
+       <layout class="QVBoxLayout" name="verticalLayoutStatisticsPage">
+        <property name="spacing"><number>0</number></property>
+        <property name="leftMargin"><number>0</number></property>
+        <property name="topMargin"><number>0</number></property>
+        <property name="rightMargin"><number>0</number></property>
+        <property name="bottomMargin"><number>0</number></property>
+        <item>
+         <widget class="QScrollArea" name="scrollAreaStatistics">
+          <property name="frameShape"><enum>QFrame::Shape::NoFrame</enum></property>
+          <property name="widgetResizable"><bool>true</bool></property>
+          <widget class="QWidget" name="statisticsScrollContent">
+           <property name="geometry"><rect><x>0</x><y>0</y><width>800</width><height>820</height></rect></property>
+           <layout class="QVBoxLayout" name="verticalLayoutStatisticsContent">
+            <property name="spacing"><number>16</number></property>
+            <property name="leftMargin"><number>24</number></property>
+            <property name="topMargin"><number>24</number></property>
+            <property name="rightMargin"><number>24</number></property>
+            <property name="bottomMargin"><number>24</number></property>
+            <item><widget class="QLabel" name="labelStatisticsTitle"><property name="text"><string>统计</string></property></widget></item>
+            <item><widget class="QLabel" name="labelStatisticsSubtitle"><property name="text"><string>查看售票、退票、收入与余票情况</string></property></widget></item>
+            <item>
+             <widget class="QWidget" name="statisticsFilterCard" native="true">
+              <layout class="QHBoxLayout" name="horizontalLayoutStatisticsFiltersPlaceholder">
+               <property name="spacing"><number>12</number></property><property name="leftMargin"><number>16</number></property><property name="topMargin"><number>12</number></property><property name="rightMargin"><number>16</number></property><property name="bottomMargin"><number>12</number></property>
+               <item>
+                <widget class="QWidget" name="statisticsQuickFilterGroup" native="true">
+                 <layout class="QHBoxLayout" name="horizontalLayoutStatisticsQuickFilters">
+                  <property name="leftMargin"><number>0</number></property><property name="topMargin"><number>0</number></property><property name="rightMargin"><number>0</number></property><property name="bottomMargin"><number>0</number></property>
+                  <item><widget class="QPushButton" name="btnStatisticsToday"><property name="text"><string>今日</string></property><property name="checkable"><bool>true</bool></property><property name="autoExclusive"><bool>true</bool></property></widget></item>
+                  <item><widget class="QPushButton" name="btnStatisticsWeek"><property name="text"><string>近7天</string></property><property name="checkable"><bool>true</bool></property><property name="autoExclusive"><bool>true</bool></property></widget></item>
+                  <item><widget class="QPushButton" name="btnStatisticsMonth"><property name="text"><string>本月</string></property><property name="checkable"><bool>true</bool></property><property name="checked"><bool>true</bool></property><property name="autoExclusive"><bool>true</bool></property></widget></item>
+                 </layout>
+                </widget>
+               </item>
+               <item>
+                <widget class="QWidget" name="statisticsDateFilterGroup" native="true">
+                 <layout class="QHBoxLayout" name="horizontalLayoutStatisticsDates">
+                  <property name="leftMargin"><number>0</number></property><property name="topMargin"><number>0</number></property><property name="rightMargin"><number>0</number></property><property name="bottomMargin"><number>0</number></property>
+                  <item><widget class="DateEdit" name="dateStatisticsFrom"><property name="minimumSize"><size><width>120</width><height>28</height></size></property></widget></item>
+                  <item><widget class="QLabel" name="labelStatisticsDateSeparator"><property name="text"><string>至</string></property><property name="alignment"><set>Qt::AlignmentFlag::AlignCenter</set></property></widget></item>
+                  <item><widget class="DateEdit" name="dateStatisticsTo"><property name="minimumSize"><size><width>120</width><height>28</height></size></property></widget></item>
+                 </layout>
+                </widget>
+               </item>
+               <item>
+                <widget class="QWidget" name="statisticsTrainFilterGroup" native="true">
+                 <layout class="QHBoxLayout" name="horizontalLayoutStatisticsTrainFilter">
+                  <property name="leftMargin"><number>0</number></property><property name="topMargin"><number>0</number></property><property name="rightMargin"><number>0</number></property><property name="bottomMargin"><number>0</number></property>
+                  <item><widget class="QComboBox" name="comboStatisticsTrain"><property name="minimumSize"><size><width>120</width><height>28</height></size></property><item><property name="text"><string>全部车次</string></property></item></widget></item>
+                 </layout>
+                </widget>
+               </item>
+               <item>
+                <widget class="QWidget" name="statisticsStationFilterGroup" native="true">
+                 <layout class="QHBoxLayout" name="horizontalLayoutStatisticsStationFilter">
+                  <property name="leftMargin"><number>0</number></property><property name="topMargin"><number>0</number></property><property name="rightMargin"><number>0</number></property><property name="bottomMargin"><number>0</number></property>
+                  <item><widget class="QComboBox" name="comboStatisticsStation"><property name="minimumSize"><size><width>120</width><height>28</height></size></property><item><property name="text"><string>全部站点</string></property></item></widget></item>
+                 </layout>
+                </widget>
+               </item>
+               <item>
+                <widget class="QWidget" name="statisticsActionGroup" native="true">
+                 <layout class="QHBoxLayout" name="horizontalLayoutStatisticsActions">
+                  <property name="leftMargin"><number>0</number></property><property name="topMargin"><number>0</number></property><property name="rightMargin"><number>0</number></property><property name="bottomMargin"><number>0</number></property>
+                  <item><widget class="QPushButton" name="btnStatisticsQuery"><property name="minimumSize"><size><width>88</width><height>28</height></size></property><property name="text"><string>查询</string></property></widget></item>
+                  <item><widget class="QPushButton" name="btnStatisticsExport"><property name="text"><string>导出报表</string></property></widget></item>
+                 </layout>
+                </widget>
+               </item>
+              </layout>
+             </widget>
+            </item>
+            <item>
+             <layout class="QHBoxLayout" name="horizontalLayoutStatisticsMetrics">
+              <property name="spacing"><number>16</number></property>
+              <item><widget class="QFrame" name="metricTicketsCard"><layout class="QHBoxLayout" name="horizontalLayoutMetricTickets"><property name="leftMargin"><number>16</number></property><property name="topMargin"><number>14</number></property><property name="rightMargin"><number>16</number></property><property name="bottomMargin"><number>14</number></property><item><widget class="QLabel" name="iconMetricTickets"><property name="minimumSize"><size><width>44</width><height>44</height></size></property><property name="maximumSize"><size><width>44</width><height>44</height></size></property><property name="pixmap"><pixmap resource="resources.qrc">:/icons/ticket.svg</pixmap></property><property name="alignment"><set>Qt::AlignmentFlag::AlignCenter</set></property><property name="class">statisticsMetricIcon</property></widget></item><item><layout class="QVBoxLayout" name="verticalLayoutMetricTickets"><item><widget class="QLabel" name="labelMetricTicketsTitle"><property name="text"><string>售票数</string></property><property name="class">statisticsMetricTitle</property></widget></item><item><widget class="QLabel" name="labelMetricTicketsValue"><property name="text"><string>--</string></property><property name="class">statisticsMetricValue</property></widget></item><item><widget class="QLabel" name="labelMetricTicketsCaption"><property name="text"><string>暂无数据</string></property><property name="class">statisticsCaption</property></widget></item></layout></item></layout></widget></item>
+              <item><widget class="QFrame" name="metricRefundsCard"><layout class="QHBoxLayout" name="horizontalLayoutMetricRefunds"><property name="leftMargin"><number>16</number></property><property name="topMargin"><number>14</number></property><property name="rightMargin"><number>16</number></property><property name="bottomMargin"><number>14</number></property><item><widget class="QLabel" name="iconMetricRefunds"><property name="minimumSize"><size><width>44</width><height>44</height></size></property><property name="maximumSize"><size><width>44</width><height>44</height></size></property><property name="pixmap"><pixmap resource="resources.qrc">:/icons/refresh-cw.svg</pixmap></property><property name="alignment"><set>Qt::AlignmentFlag::AlignCenter</set></property><property name="class">statisticsMetricIcon</property></widget></item><item><layout class="QVBoxLayout" name="verticalLayoutMetricRefunds"><item><widget class="QLabel" name="labelMetricRefundsTitle"><property name="text"><string>退票数</string></property><property name="class">statisticsMetricTitle</property></widget></item><item><widget class="QLabel" name="labelMetricRefundsValue"><property name="text"><string>--</string></property><property name="class">statisticsMetricValue</property></widget></item><item><widget class="QLabel" name="labelMetricRefundsCaption"><property name="text"><string>暂无数据</string></property><property name="class">statisticsCaption</property></widget></item></layout></item></layout></widget></item>
+              <item><widget class="QFrame" name="metricRevenueCard"><layout class="QHBoxLayout" name="horizontalLayoutMetricRevenue"><property name="leftMargin"><number>16</number></property><property name="topMargin"><number>14</number></property><property name="rightMargin"><number>16</number></property><property name="bottomMargin"><number>14</number></property><item><widget class="QLabel" name="iconMetricRevenue"><property name="minimumSize"><size><width>44</width><height>44</height></size></property><property name="maximumSize"><size><width>44</width><height>44</height></size></property><property name="pixmap"><pixmap resource="resources.qrc">:/icons/wallet.svg</pixmap></property><property name="alignment"><set>Qt::AlignmentFlag::AlignCenter</set></property><property name="class">statisticsMetricIcon</property></widget></item><item><layout class="QVBoxLayout" name="verticalLayoutMetricRevenue"><item><widget class="QLabel" name="labelMetricRevenueTitle"><property name="text"><string>销售额</string></property><property name="class">statisticsMetricTitle</property></widget></item><item><widget class="QLabel" name="labelMetricRevenueValue"><property name="text"><string>--</string></property><property name="class">statisticsMetricValue</property></widget></item><item><widget class="QLabel" name="labelMetricRevenueCaption"><property name="text"><string>暂无数据</string></property><property name="class">statisticsCaption</property></widget></item></layout></item></layout></widget></item>
+              <item><widget class="QFrame" name="metricRateCard"><layout class="QHBoxLayout" name="horizontalLayoutMetricRate"><property name="leftMargin"><number>16</number></property><property name="topMargin"><number>14</number></property><property name="rightMargin"><number>16</number></property><property name="bottomMargin"><number>14</number></property><item><widget class="QLabel" name="iconMetricRate"><property name="minimumSize"><size><width>44</width><height>44</height></size></property><property name="maximumSize"><size><width>44</width><height>44</height></size></property><property name="pixmap"><pixmap resource="resources.qrc">:/icons/chart-pie.svg</pixmap></property><property name="alignment"><set>Qt::AlignmentFlag::AlignCenter</set></property><property name="class">statisticsMetricIcon</property></widget></item><item><layout class="QVBoxLayout" name="verticalLayoutMetricRate"><item><widget class="QLabel" name="labelMetricRateTitle"><property name="text"><string>平均余票率</string></property><property name="class">statisticsMetricTitle</property></widget></item><item><widget class="QLabel" name="labelMetricRateValue"><property name="text"><string>--</string></property><property name="class">statisticsMetricValue</property></widget></item><item><widget class="QLabel" name="labelMetricRateCaption"><property name="text"><string>暂无数据</string></property><property name="class">statisticsCaption</property></widget></item></layout></item></layout></widget></item>
+             </layout>
+            </item>
+            <item>
+             <layout class="QHBoxLayout" name="horizontalLayoutStatisticsCharts">
+              <property name="spacing"><number>16</number></property>
+              <item><widget class="QFrame" name="statisticsTrendCard"><layout class="QVBoxLayout" name="verticalLayoutStatisticsTrend"><property name="leftMargin"><number>16</number></property><property name="topMargin"><number>16</number></property><property name="rightMargin"><number>16</number></property><property name="bottomMargin"><number>16</number></property><item><widget class="QLabel" name="labelStatisticsTrendTitle"><property name="text"><string>售票趋势</string></property><property name="class">statisticsSectionTitle</property></widget></item><item><widget class="QFrame" name="statisticsTrendPlaceholder"><property name="minimumSize"><size><width>0</width><height>150</height></size></property><property name="class">statisticsChartPlaceholder</property><layout class="QVBoxLayout" name="verticalLayoutStatisticsTrendPlaceholder"><item><widget class="QLabel" name="labelStatisticsTrendPlaceholder"><property name="text"><string>趋势图区域（暂无数据）</string></property><property name="alignment"><set>Qt::AlignmentFlag::AlignCenter</set></property><property name="class">statisticsPlaceholder</property></widget></item></layout></widget></item></layout></widget></item>
+              <item><widget class="QFrame" name="statisticsSeatCard"><layout class="QVBoxLayout" name="verticalLayoutStatisticsSeat"><property name="leftMargin"><number>16</number></property><property name="topMargin"><number>16</number></property><property name="rightMargin"><number>16</number></property><property name="bottomMargin"><number>16</number></property><item><widget class="QLabel" name="labelStatisticsSeatTitle"><property name="text"><string>席别销售占比</string></property><property name="class">statisticsSectionTitle</property></widget></item><item><widget class="QFrame" name="statisticsSeatPlaceholder"><property name="minimumSize"><size><width>0</width><height>150</height></size></property><property name="class">statisticsChartPlaceholder</property><layout class="QVBoxLayout" name="verticalLayoutStatisticsSeatPlaceholder"><item><widget class="QLabel" name="labelStatisticsSeatPlaceholder"><property name="text"><string>占比图区域（暂无数据）</string></property><property name="alignment"><set>Qt::AlignmentFlag::AlignCenter</set></property><property name="class">statisticsPlaceholder</property></widget></item></layout></widget></item></layout></widget></item>
+             </layout>
+            </item>
+            <item>
+             <widget class="QWidget" name="statisticsTableCard" native="true">
+              <layout class="QVBoxLayout" name="verticalLayoutStatisticsTable"><property name="leftMargin"><number>16</number></property><property name="topMargin"><number>16</number></property><property name="rightMargin"><number>16</number></property><property name="bottomMargin"><number>16</number></property>
+               <item><widget class="QLabel" name="labelStatisticsTableTitle"><property name="text"><string>热门车次统计</string></property><property name="class">statisticsSectionTitle</property></widget></item>
+               <item><widget class="QTableView" name="tableStatisticsTrains"><property name="minimumSize"><size><width>0</width><height>130</height></size></property><property name="alternatingRowColors"><bool>true</bool></property><property name="selectionBehavior"><enum>QAbstractItemView::SelectionBehavior::SelectRows</enum></property><property name="editTriggers"><enum>QAbstractItemView::EditTrigger::NoEditTriggers</enum></property></widget></item>
+              </layout>
+             </widget>
+            </item>
+           </layout>
+          </widget>
+         </widget>
+        </item>
+       </layout>
+      </widget>
       <widget class="QWidget" name="pageSettings"/>
      </widget>
     </item>

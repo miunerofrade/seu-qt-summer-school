@@ -1,9 +1,9 @@
 <RCC>
  <qresource prefix="/icons">
-    <file alias="chevron-down.svg">icons/lucide-chevron-down.svg</file>
-    <file alias="chevron-up.svg">icons/lucide-chevron-up.svg</file>
-    <file alias="chevron-left.svg">icons/lucide-chevron-left.svg</file>
-    <file alias="chevron-right.svg">icons/lucide-chevron-right.svg</file>
+    <file alias="chevron-down.svg">icons/chevron-down.svg</file>
+    <file alias="chevron-up.svg">icons/chevron-up.svg</file>
+    <file alias="chevron-left.svg">icons/chevron-left.svg</file>
+    <file alias="chevron-right.svg">icons/chevron-right.svg</file>
   <file alias="nav-search.svg">icons/nav-search.svg</file>
   <file alias="nav-search-white.svg">icons/nav-search-white.svg</file>
   <file alias="nav-users.svg">icons/nav-users.svg</file>
@@ -16,5 +16,13 @@
   <file alias="nav-statistics-white.svg">icons/nav-statistics-white.svg</file>
   <file alias="nav-settings.svg">icons/nav-settings.svg</file>
   <file alias="nav-settings-white.svg">icons/nav-settings-white.svg</file>
+  <file alias="landmark.svg">icons/landmark.svg</file>
+  <file alias="train-front.svg">icons/train-front.svg</file>
+  <file alias="clock.svg">icons/clock.svg</file>
+  <file alias="badge-yen.svg">icons/badge-yen.svg</file>
+  <file alias="ticket.svg">icons/ticket.svg</file>
+  <file alias="refresh-cw.svg">icons/refresh-cw.svg</file>
+  <file alias="wallet.svg">icons/wallet.svg</file>
+  <file alias="chart-pie.svg">icons/chart-pie.svg</file>
  </qresource>
 </RCC>
