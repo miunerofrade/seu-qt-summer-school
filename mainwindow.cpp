@@ -116,9 +116,11 @@ MainWindow::MainWindow(QWidget *parent)
     const auto setNavigationIcon = [](QToolButton *button,
                                       const QString &normalPath,
                                       const QString &checkedPath) {
+        constexpr int navigationIconSize = 20;
         QIcon icon(normalPath);
-        icon.addFile(checkedPath, QSize(18, 18), QIcon::Normal, QIcon::On);
+        icon.addFile(checkedPath, QSize(navigationIconSize, navigationIconSize), QIcon::Normal, QIcon::On);
         button->setIcon(icon);
+        button->setIconSize(QSize(navigationIconSize, navigationIconSize));
     };
 
     setNavigationIcon(ui->btnQuery, ":/icons/nav-search.svg", ":/icons/nav-search-white.svg");
@@ -206,6 +208,10 @@ MainWindow::MainWindow(QWidget *parent)
 
     connect(ui->btnStatistics, &QToolButton::clicked,this, [this]() {
         ui->stackedWidget->setCurrentWidget(ui->pageStatistics);
+    });
+
+    connect(ui->btnSettings, &QToolButton::clicked, this, [this]() {
+        ui->stackedWidget->setCurrentWidget(ui->pageSettings);
     });
 }
 

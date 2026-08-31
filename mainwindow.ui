@@ -40,20 +40,42 @@
      <widget class="QWidget" name="navWidget" native="true">
       <property name="minimumSize">
        <size>
-        <width>132</width>
+        <width>160</width>
         <height>0</height>
        </size>
       </property>
       <property name="maximumSize">
        <size>
-        <width>144</width>
+        <width>176</width>
         <height>16777215</height>
        </size>
       </property>
       <property name="styleSheet">
     <string notr="true">QWidget#navWidget {
-    background-color: #F3F3F3;
+    background-color: #F0F4F9;
     border-right: 1px solid #D8D8DC;
+}
+
+QWidget#userModeCard {
+    background-color: transparent;
+    border: none;
+}
+
+QLabel#labelUserModeAvatar {
+    background-color: #E8EAED;
+    border-radius: 17px;
+    padding: 7px;
+}
+
+QLabel#labelUserModeCaption {
+    color: #6E6E73;
+    font-size: 11px;
+}
+
+QLabel#labelUserModeValue {
+    color: #2F3033;
+    font-size: 13px;
+    font-weight: 600;
 }
 
 QToolButton {
@@ -103,6 +125,41 @@ QToolButton:pressed {
        <property name="bottomMargin">
         <number>5</number>
        </property>
+       <item>
+        <widget class="QWidget" name="userModeCard" native="true">
+         <property name="minimumSize"><size><width>0</width><height>68</height></size></property>
+         <layout class="QHBoxLayout" name="horizontalLayoutUserMode">
+          <property name="spacing"><number>8</number></property>
+          <property name="leftMargin"><number>8</number></property>
+          <property name="topMargin"><number>10</number></property>
+          <property name="rightMargin"><number>8</number></property>
+          <property name="bottomMargin"><number>10</number></property>
+          <item>
+           <widget class="QLabel" name="labelUserModeAvatar">
+            <property name="minimumSize"><size><width>34</width><height>34</height></size></property>
+            <property name="maximumSize"><size><width>34</width><height>34</height></size></property>
+            <property name="pixmap"><pixmap resource="resources.qrc">:/icons/nav-users.svg</pixmap></property>
+            <property name="alignment"><set>Qt::AlignmentFlag::AlignCenter</set></property>
+           </widget>
+          </item>
+          <item>
+           <layout class="QVBoxLayout" name="verticalLayoutUserModeText">
+            <property name="spacing"><number>2</number></property>
+            <item><widget class="QLabel" name="labelUserModeCaption"><property name="text"><string>当前模式</string></property></widget></item>
+            <item><widget class="QLabel" name="labelUserModeValue"><property name="text"><string>管理员</string></property></widget></item>
+           </layout>
+          </item>
+         </layout>
+        </widget>
+       </item>
+       <item>
+        <widget class="QFrame" name="lineUserModeSeparator">
+         <property name="styleSheet"><string notr="true">color: #D8D8DC;</string></property>
+         <property name="frameShape"><enum>QFrame::Shape::HLine</enum></property>
+         <property name="frameShadow"><enum>QFrame::Shadow::Plain</enum></property>
+         <property name="lineWidth"><number>1</number></property>
+        </widget>
+       </item>
        <item>
         <widget class="QToolButton" name="btnQuery">
                  <property name="icon">
@@ -272,7 +329,15 @@ QToolButton:pressed {
            <height>40</height>
           </size>
          </property>
-        </spacer>
+       </spacer>
+      </item>
+       <item>
+        <widget class="QFrame" name="lineSettingsSeparator">
+         <property name="styleSheet"><string notr="true">color: #D8D8DC;</string></property>
+         <property name="frameShape"><enum>QFrame::Shape::HLine</enum></property>
+         <property name="frameShadow"><enum>QFrame::Shadow::Plain</enum></property>
+         <property name="lineWidth"><number>1</number></property>
+        </widget>
        </item>
        <item>
         <widget class="QToolButton" name="btnSettings">
@@ -328,7 +393,7 @@ QToolButton:pressed {
       <widget class="QWidget" name="pageQuery">
        <property name="styleSheet">
         <string notr="true">QWidget#pageQuery {
-    background-color: #F3F3F3;
+    background-color: #FFFFFF;
 }
 
 QLabel#labelQueryTitle {
@@ -759,7 +824,7 @@ QLabel#labelSort {
       <widget class="QWidget" name="pagePassenger">
        <property name="styleSheet">
         <string notr="true">QWidget#pagePassenger {
-    background-color: #F3F3F3;
+    background-color: #FFFFFF;
 }
 
 QLabel#labelPassengerTitle {
@@ -891,7 +956,7 @@ QPushButton#btnAddPassenger {
       <widget class="QWidget" name="pageOrder">
        <property name="styleSheet">
         <string notr="true">QWidget#pageOrder {
-    background-color: #F3F3F3;
+    background-color: #FFFFFF;
 }
 
 QLabel#labelOrderTitle {
@@ -1105,8 +1170,8 @@ QPushButton#btnSearchOrders:hover {
       </widget>
       <widget class="QWidget" name="pageAdmin">
        <property name="styleSheet">
-        <string notr="true">QWidget#pageAdmin {
-    background-color: #F3F3F3;
+         <string notr="true">QWidget#pageAdmin {
+    background-color: #FFFFFF;
 }
 
 QLabel#labelAdminTitle {
@@ -1345,7 +1410,7 @@ QPushButton#btnAddAdminData:hover {
        <property name="styleSheet">
         <string notr="true">QWidget#pageStatistics,
 QWidget#statisticsScrollContent {
-    background-color: #F3F3F3;
+    background-color: #FFFFFF;
 }
 
 QLabel#labelStatisticsTitle {
@@ -1459,9 +1524,15 @@ QTableView#tableStatisticsTrains QHeaderView::section {
                 <widget class="QWidget" name="statisticsQuickFilterGroup" native="true">
                  <layout class="QHBoxLayout" name="horizontalLayoutStatisticsQuickFilters">
                   <property name="leftMargin"><number>0</number></property><property name="topMargin"><number>0</number></property><property name="rightMargin"><number>0</number></property><property name="bottomMargin"><number>0</number></property>
-                  <item><widget class="QPushButton" name="btnStatisticsToday"><property name="text"><string>今日</string></property><property name="checkable"><bool>true</bool></property><property name="autoExclusive"><bool>true</bool></property></widget></item>
-                  <item><widget class="QPushButton" name="btnStatisticsWeek"><property name="text"><string>近7天</string></property><property name="checkable"><bool>true</bool></property><property name="autoExclusive"><bool>true</bool></property></widget></item>
-                  <item><widget class="QPushButton" name="btnStatisticsMonth"><property name="text"><string>本月</string></property><property name="checkable"><bool>true</bool></property><property name="checked"><bool>true</bool></property><property name="autoExclusive"><bool>true</bool></property></widget></item>
+                  <item>
+                   <widget class="QComboBox" name="comboStatisticsPeriod">
+                    <property name="minimumSize"><size><width>100</width><height>28</height></size></property>
+                    <property name="currentIndex"><number>2</number></property>
+                    <item><property name="text"><string>今日</string></property></item>
+                    <item><property name="text"><string>近7天</string></property></item>
+                    <item><property name="text"><string>本月</string></property></item>
+                   </widget>
+                  </item>
                  </layout>
                 </widget>
                </item>
@@ -1533,7 +1604,144 @@ QTableView#tableStatisticsTrains QHeaderView::section {
         </item>
        </layout>
       </widget>
-      <widget class="QWidget" name="pageSettings"/>
+      <widget class="QWidget" name="pageSettings">
+       <property name="styleSheet">
+        <string notr="true">QWidget#pageSettings,
+QWidget#settingsScrollContent {
+    background-color: #FFFFFF;
+}
+
+QLabel#labelSettingsTitle {
+    color: #1D1D1F;
+    font-size: 22px;
+    font-weight: 600;
+}
+
+QLabel#labelSettingsSubtitle,
+QLabel.settingsSecondary {
+    color: #6E6E73;
+    font-size: 13px;
+}
+
+QWidget#settingsDataCard,
+QWidget#settingsBackupCard,
+QWidget#settingsAboutCard {
+    background-color: #FFFFFF;
+    border: 1px solid #E5E7EB;
+    border-radius: 10px;
+}
+
+QLabel.settingsSectionTitle {
+    color: #1D1D1F;
+    font-size: 16px;
+    font-weight: 600;
+}
+
+QLabel.settingsFieldLabel {
+    color: #2F3033;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+QLabel#labelSettingsDataStatus {
+    color: #0A7B3E;
+    font-weight: 600;
+}
+
+QPushButton#btnSaveDataNow {
+    background-color: #0A84FF;
+    border: none;
+    border-radius: 6px;
+    color: #FFFFFF;
+    padding: 6px 16px;
+}
+
+QPushButton#btnSaveDataNow:hover {
+    background-color: #0071E3;
+}</string>
+       </property>
+       <layout class="QVBoxLayout" name="verticalLayoutSettingsPage">
+        <property name="spacing"><number>0</number></property><property name="leftMargin"><number>0</number></property><property name="topMargin"><number>0</number></property><property name="rightMargin"><number>0</number></property><property name="bottomMargin"><number>0</number></property>
+        <item>
+         <widget class="QScrollArea" name="scrollAreaSettings">
+          <property name="frameShape"><enum>QFrame::Shape::NoFrame</enum></property>
+          <property name="widgetResizable"><bool>true</bool></property>
+          <widget class="QWidget" name="settingsScrollContent">
+           <property name="geometry"><rect><x>0</x><y>0</y><width>800</width><height>700</height></rect></property>
+           <layout class="QVBoxLayout" name="verticalLayoutSettingsContent">
+            <property name="spacing"><number>16</number></property><property name="leftMargin"><number>24</number></property><property name="topMargin"><number>24</number></property><property name="rightMargin"><number>24</number></property><property name="bottomMargin"><number>24</number></property>
+            <item><widget class="QLabel" name="labelSettingsTitle"><property name="text"><string>设置</string></property></widget></item>
+            <item><widget class="QLabel" name="labelSettingsSubtitle"><property name="text"><string>管理本地数据、备份恢复与应用信息</string></property></widget></item>
+            <item>
+             <widget class="QWidget" name="settingsDataCard" native="true">
+              <layout class="QVBoxLayout" name="verticalLayoutSettingsDataCard">
+               <property name="spacing"><number>12</number></property><property name="leftMargin"><number>20</number></property><property name="topMargin"><number>18</number></property><property name="rightMargin"><number>20</number></property><property name="bottomMargin"><number>18</number></property>
+               <item><widget class="QLabel" name="labelSettingsDataTitle"><property name="text"><string>数据管理</string></property><property name="class">settingsSectionTitle</property></widget></item>
+               <item>
+                <layout class="QGridLayout" name="gridLayoutSettingsData">
+                 <property name="horizontalSpacing"><number>16</number></property><property name="verticalSpacing"><number>12</number></property>
+                 <item row="0" column="0"><widget class="QLabel" name="labelSettingsDataStatusCaption"><property name="text"><string>本地 JSON 状态</string></property><property name="class">settingsFieldLabel</property></widget></item>
+                 <item row="0" column="1"><widget class="QLabel" name="labelSettingsDataStatus"><property name="text"><string>待接入（UI 占位）</string></property></widget></item>
+                 <item row="1" column="0"><widget class="QLabel" name="labelSettingsDataFileCaption"><property name="text"><string>数据文件</string></property><property name="class">settingsFieldLabel</property></widget></item>
+                 <item row="1" column="1"><widget class="QLabel" name="labelSettingsDataFile"><property name="text"><string>data/app-data.json（占位）</string></property><property name="textInteractionFlags"><set>Qt::TextInteractionFlag::TextSelectableByMouse</set></property><property name="class">settingsSecondary</property></widget></item>
+                 <item row="2" column="0"><widget class="QLabel" name="labelSettingsDataDirectoryCaption"><property name="text"><string>数据目录</string></property><property name="class">settingsFieldLabel</property></widget></item>
+                 <item row="2" column="1"><widget class="QLabel" name="labelSettingsDataDirectory"><property name="text"><string>data/（占位）</string></property><property name="textInteractionFlags"><set>Qt::TextInteractionFlag::TextSelectableByMouse</set></property><property name="class">settingsSecondary</property></widget></item>
+                 <item row="2" column="2"><widget class="QPushButton" name="btnOpenDataDirectory"><property name="text"><string>打开目录</string></property></widget></item>
+                 <item row="3" column="0"><widget class="QLabel" name="labelSettingsLastSavedCaption"><property name="text"><string>最近保存时间</string></property><property name="class">settingsFieldLabel</property></widget></item>
+                 <item row="3" column="1"><widget class="QLabel" name="labelSettingsLastSaved"><property name="text"><string>—</string></property><property name="class">settingsSecondary</property></widget></item>
+                 <item row="4" column="0"><widget class="QLabel" name="labelSettingsAutoLoadCaption"><property name="text"><string>启动时自动加载</string></property><property name="class">settingsFieldLabel</property></widget></item>
+                 <item row="4" column="1"><widget class="QLabel" name="labelSettingsAutoLoad"><property name="text"><string>待实现</string></property><property name="class">settingsSecondary</property></widget></item>
+                </layout>
+               </item>
+               <item>
+                <layout class="QHBoxLayout" name="horizontalLayoutSettingsDataActions">
+                 <item><spacer name="horizontalSpacerSettingsDataActions"><property name="orientation"><enum>Qt::Orientation::Horizontal</enum></property><property name="sizeHint" stdset="0"><size><width>40</width><height>20</height></size></property></spacer></item>
+                 <item><widget class="QPushButton" name="btnSaveDataNow"><property name="text"><string>立即保存</string></property></widget></item>
+                 <item><widget class="QPushButton" name="btnReloadData"><property name="text"><string>重新加载</string></property></widget></item>
+                </layout>
+               </item>
+              </layout>
+             </widget>
+            </item>
+            <item>
+             <widget class="QWidget" name="settingsBackupCard" native="true">
+              <layout class="QVBoxLayout" name="verticalLayoutSettingsBackupCard">
+               <property name="spacing"><number>12</number></property><property name="leftMargin"><number>20</number></property><property name="topMargin"><number>18</number></property><property name="rightMargin"><number>20</number></property><property name="bottomMargin"><number>18</number></property>
+               <item><widget class="QLabel" name="labelSettingsBackupTitle"><property name="text"><string>备份与恢复</string></property><property name="class">settingsSectionTitle</property></widget></item>
+               <item><widget class="QLabel" name="labelSettingsBackupNote"><property name="text"><string>以下能力将在后续版本中提供</string></property><property name="class">settingsSecondary</property></widget></item>
+               <item><widget class="QWidget" name="settingsCreateBackupRow" native="true"><layout class="QHBoxLayout" name="horizontalLayoutSettingsCreateBackup"><property name="leftMargin"><number>0</number></property><property name="topMargin"><number>0</number></property><property name="rightMargin"><number>0</number></property><property name="bottomMargin"><number>0</number></property><item><widget class="QLabel" name="labelSettingsCreateBackup"><property name="text"><string>创建本地数据备份</string></property><property name="class">settingsFieldLabel</property></widget></item><item><spacer name="horizontalSpacerSettingsCreateBackup"><property name="orientation"><enum>Qt::Orientation::Horizontal</enum></property><property name="sizeHint" stdset="0"><size><width>40</width><height>20</height></size></property></spacer></item><item><widget class="QPushButton" name="btnCreateBackup"><property name="enabled"><bool>false</bool></property><property name="text"><string>创建备份（后续功能）</string></property></widget></item></layout></widget></item>
+               <item><widget class="QWidget" name="settingsRestoreBackupRow" native="true"><layout class="QHBoxLayout" name="horizontalLayoutSettingsRestoreBackup"><property name="leftMargin"><number>0</number></property><property name="topMargin"><number>0</number></property><property name="rightMargin"><number>0</number></property><property name="bottomMargin"><number>0</number></property><item><widget class="QLabel" name="labelSettingsRestoreBackup"><property name="text"><string>从备份文件恢复数据</string></property><property name="class">settingsFieldLabel</property></widget></item><item><spacer name="horizontalSpacerSettingsRestoreBackup"><property name="orientation"><enum>Qt::Orientation::Horizontal</enum></property><property name="sizeHint" stdset="0"><size><width>40</width><height>20</height></size></property></spacer></item><item><widget class="QPushButton" name="btnRestoreBackup"><property name="enabled"><bool>false</bool></property><property name="text"><string>恢复备份（后续功能）</string></property></widget></item></layout></widget></item>
+              </layout>
+             </widget>
+            </item>
+            <item>
+             <widget class="QWidget" name="settingsAboutCard" native="true">
+              <layout class="QVBoxLayout" name="verticalLayoutSettingsAboutCard">
+               <property name="spacing"><number>12</number></property><property name="leftMargin"><number>20</number></property><property name="topMargin"><number>18</number></property><property name="rightMargin"><number>20</number></property><property name="bottomMargin"><number>18</number></property>
+               <item><widget class="QLabel" name="labelSettingsAboutTitle"><property name="text"><string>关于</string></property><property name="class">settingsSectionTitle</property></widget></item>
+               <item>
+                <layout class="QGridLayout" name="gridLayoutSettingsAbout">
+                 <property name="horizontalSpacing"><number>20</number></property><property name="verticalSpacing"><number>10</number></property>
+                 <item row="0" column="0"><widget class="QLabel" name="labelSettingsAppNameCaption"><property name="text"><string>程序名称</string></property><property name="class">settingsFieldLabel</property></widget></item>
+                 <item row="0" column="1"><widget class="QLabel" name="labelSettingsAppName"><property name="text"><string>列车客运售票管理系统</string></property><property name="class">settingsSecondary</property></widget></item>
+                 <item row="0" column="2"><widget class="QLabel" name="labelSettingsProjectTypeCaption"><property name="text"><string>项目类型</string></property><property name="class">settingsFieldLabel</property></widget></item>
+                 <item row="0" column="3"><widget class="QLabel" name="labelSettingsProjectType"><property name="text"><string>Qt 课程设计</string></property><property name="class">settingsSecondary</property></widget></item>
+                 <item row="1" column="0"><widget class="QLabel" name="labelSettingsVersionCaption"><property name="text"><string>版本</string></property><property name="class">settingsFieldLabel</property></widget></item>
+                 <item row="1" column="1"><widget class="QLabel" name="labelSettingsVersion"><property name="text"><string>v0.1</string></property><property name="class">settingsSecondary</property></widget></item>
+                 <item row="1" column="2"><widget class="QLabel" name="labelSettingsStorageCaption"><property name="text"><string>数据存储</string></property><property name="class">settingsFieldLabel</property></widget></item>
+                 <item row="1" column="3"><widget class="QLabel" name="labelSettingsStorage"><property name="text"><string>本地 JSON</string></property><property name="class">settingsSecondary</property></widget></item>
+                </layout>
+               </item>
+              </layout>
+             </widget>
+            </item>
+            <item><spacer name="verticalSpacerSettings"><property name="orientation"><enum>Qt::Orientation::Vertical</enum></property><property name="sizeHint" stdset="0"><size><width>20</width><height>20</height></size></property></spacer></item>
+           </layout>
+          </widget>
+         </widget>
+        </item>
+       </layout>
+      </widget>
      </widget>
     </item>
    </layout>
