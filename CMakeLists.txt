@@ -43,10 +43,16 @@ set(PROJECT_SOURCES
         src/models/passengerfilterproxymodel.h
         src/models/passengertablemodel.cpp
         src/models/passengertablemodel.h
+        src/models/trainqueryfilterproxymodel.cpp
+        src/models/trainqueryfilterproxymodel.h
+        src/models/trainquerymodel.cpp
+        src/models/trainquerymodel.h
         src/services/adminservice.cpp
         src/services/adminservice.h
         src/services/passengerservice.cpp
         src/services/passengerservice.h
+        src/services/queryservice.cpp
+        src/services/queryservice.h
         src/features/admin/admincontroller.cpp
         src/features/admin/admincontroller.h
         src/features/admin/managementdialogs.cpp
@@ -163,4 +169,25 @@ if(BUILD_TESTING)
     target_include_directories(phase2_tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
     target_link_libraries(phase2_tests PRIVATE Qt${QT_VERSION_MAJOR}::Test)
     add_test(NAME phase2_tests COMMAND phase2_tests)
+
+    add_executable(phase3_tests
+        tests/phase3_tests.cpp
+        src/domain/entities.cpp
+        src/domain/entities.h
+        src/common/result.h
+        src/data/datastore.cpp
+        src/data/datastore.h
+        src/data/idatarepository.h
+        src/data/jsonrepository.cpp
+        src/data/jsonrepository.h
+        src/models/trainqueryfilterproxymodel.cpp
+        src/models/trainqueryfilterproxymodel.h
+        src/models/trainquerymodel.cpp
+        src/models/trainquerymodel.h
+        src/services/queryservice.cpp
+        src/services/queryservice.h
+    )
+    target_include_directories(phase3_tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
+    target_link_libraries(phase3_tests PRIVATE Qt${QT_VERSION_MAJOR}::Test)
+    add_test(NAME phase3_tests COMMAND phase3_tests)
 endif()

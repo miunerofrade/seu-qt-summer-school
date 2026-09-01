@@ -45,7 +45,17 @@ MainWindow::MainWindow(QWidget *parent)
             button->setFixedWidth(standardButtonWidth);
     }
 
-    new QueryController(ui->tableTickets, this);
+    new QueryController(m_dataStore,
+                        ui->tableTickets,
+                        ui->comboDepartureStation,
+                        ui->comboArrivalStation,
+                        ui->dateTravel,
+                        ui->btnSearch,
+                        ui->comboTrainType,
+                        ui->comboSeatType,
+                        ui->checkAvailableOnly,
+                        ui->comboSort,
+                        this);
     new PassengerController(m_dataStore,
                             this,
                             ui->tablePassengers,
