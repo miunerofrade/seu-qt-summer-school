@@ -136,6 +136,13 @@ QToolButton:checked:hover {
 QToolButton:pressed {
     background-color: #0071E3;
     color: white;
+}
+
+/* 日期栏只保留 QDateEdit 外层边框，内部编辑框不重复绘制。 */
+QDateEdit QLineEdit {
+    border: none;
+    border-radius: 0;
+    background: transparent;
 }</string>
       </property>
       <layout class="QVBoxLayout" name="verticalLayout">
@@ -483,89 +490,13 @@ QTableView#tableTickets QHeaderView::up-arrow {
     right: 6px;
 }
 
-QCalendarWidget {
-    background-color: #FFFFFF;
-}
-
-QCalendarWidget QWidget {
-    background-color: #FFFFFF;
-    color: #31363B;
-}
-
-QCalendarWidget QToolButton {
-    background-color: transparent;
-    border: 1px solid #E5E7EB;
-    border-radius: 4px;
-    margin: 3px;
-    padding: 4px 16px 4px 6px;
-    color: #31363B;
-}
-
-QCalendarWidget QToolButton:hover {
-    border-color: #0A84FF;
-}
-
-QCalendarWidget QToolButton:pressed,
-QCalendarWidget QToolButton:checked {
-    background-color: rgba(10, 132, 255, 40);
-    border-color: #0A84FF;
-}
-
-QCalendarWidget QToolButton#qt_calendar_prevmonth {
-    image: url(:/icons/chevron-left.svg);
-    qproperty-iconSize: 0px 0px;
-    min-width: 28px;
-    min-height: 28px;
-    padding: 4px;
+QPushButton#btnBookTicket {
+    background-color: #0A84FF;
+    color: #FFFFFF;
 }
 
 QLineEdit#editPassengerSearch {
     min-width: 180px;
-}
-
-QCalendarWidget QToolButton#qt_calendar_nextmonth {
-    image: url(:/icons/chevron-right.svg);
-    qproperty-iconSize: 0px 0px;
-    min-width: 28px;
-    min-height: 28px;
-    padding: 4px;
-}
-
-QCalendarWidget QToolButton::menu-indicator {
-    image: url(:/icons/chevron-down.svg);
-    width: 12px;
-    height: 8px;
-    subcontrol-origin: padding;
-    subcontrol-position: center right;
-    right: 6px;
-}
-
-QCalendarWidget QAbstractItemView:enabled {
-    background-color: #FFFFFF;
-    border: none;
-    outline: none;
-    color: #31363B;
-    selection-background-color: #0A84FF;
-    selection-color: #FFFFFF;
-}
-
-QCalendarWidget QAbstractItemView::item:hover {
-    background-color: #E8F3FF;
-    color: #0A66C2;
-}
-
-QCalendarWidget QAbstractItemView::item:selected:hover {
-    background-color: #0071E3;
-    color: #FFFFFF;
-}
-
-QCalendarWidget QSpinBox {
-    background-color: #FFFFFF;
-    border: 1px solid #BAB9B8;
-    border-radius: 4px;
-    min-width: 56px;
-    padding: 2px 6px;
-    color: #31363B;
 }
 
 QLabel#labelDepartureStation,
@@ -784,6 +715,12 @@ QLabel#labelSort {
                                 <property name="tristate">
                                  <bool>false</bool>
                                 </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QPushButton" name="btnBookTicket">
+                <property name="minimumSize"><size><width>88</width><height>0</height></size></property>
+                <property name="text"><string>购票</string></property>
                </widget>
               </item>
               <item>
@@ -1011,35 +948,6 @@ QTableWidget#tableOrders QHeaderView::section {
 QWidget#orderFilterCard QDateEdit {
     min-height: 28px;
     max-height: 28px;
-}
-
-QCalendarWidget {
-    background-color: #FFFFFF;
-}
-
-QCalendarWidget QToolButton#qt_calendar_prevmonth {
-    image: url(:/icons/chevron-left.svg);
-    qproperty-iconSize: 0px 0px;
-    min-width: 28px;
-    min-height: 28px;
-    padding: 4px;
-}
-
-QCalendarWidget QToolButton#qt_calendar_nextmonth {
-    image: url(:/icons/chevron-right.svg);
-    qproperty-iconSize: 0px 0px;
-    min-width: 28px;
-    min-height: 28px;
-    padding: 4px;
-}
-
-QCalendarWidget QToolButton::menu-indicator {
-    image: url(:/icons/chevron-down.svg);
-    width: 12px;
-    height: 8px;
-    subcontrol-origin: padding;
-    subcontrol-position: center right;
-    right: 6px;
 }
 
 QPushButton#btnSearchOrders {

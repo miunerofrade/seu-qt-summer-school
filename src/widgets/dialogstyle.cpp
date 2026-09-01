@@ -1,6 +1,8 @@
 #include "widgets/dialogstyle.h"
 
 #include <QDialog>
+#include <QDateEdit>
+#include <QLineEdit>
 #include <QPushButton>
 
 void applyStandardDialogStyle(QDialog *dialog)
@@ -38,11 +40,22 @@ QLineEdit, QDateEdit, QTableView {
 QLineEdit, QDateEdit {
     min-height: 26px;
 }
+QDateEdit QLineEdit {
+    border: none;
+    border-radius: 0;
+}
 )"));
 
     const auto buttons = dialog->findChildren<QPushButton *>();
     for (QPushButton *button : buttons) {
         button->setFixedHeight(28);
         button->setMinimumWidth(88);
+    }
+    const auto dateEdits = dialog->findChildren<QDateEdit *>();
+    for (QDateEdit *dateEdit : dateEdits) {
+        if (auto *editor = dateEdit->findChild<QLineEdit *>()) {
+            editor->setFrame(false);
+            editor->setStyleSheet(QStringLiteral("border: none; border-radius: 0; background: transparent;"));
+        }
     }
 }

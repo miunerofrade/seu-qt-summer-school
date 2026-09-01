@@ -4,12 +4,14 @@
 #include "data/datastore.h"
 #include "data/jsonrepository.h"
 #include "features/admin/admincontroller.h"
+#include "features/booking/bookingcontroller.h"
 #include "features/passengers/passengercontroller.h"
 #include "features/query/querycontroller.h"
 #include "features/settings/settingscontroller.h"
 #include "features/statistics/statisticscontroller.h"
 
 #include <QDir>
+#include <QHeaderView>
 #include <QIcon>
 #include <QMessageBox>
 #include <QPushButton>
@@ -56,6 +58,14 @@ MainWindow::MainWindow(QWidget *parent)
                         ui->checkAvailableOnly,
                         ui->comboSort,
                         this);
+    ui->tableOrders->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
+    new BookingController(m_dataStore,
+                          ui->tableTickets,
+                          ui->comboDepartureStation,
+                          ui->comboArrivalStation,
+                          ui->dateTravel,
+                          ui->btnBookTicket,
+                          this);
     new PassengerController(m_dataStore,
                             this,
                             ui->tablePassengers,

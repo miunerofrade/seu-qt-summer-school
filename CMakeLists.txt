@@ -57,6 +57,10 @@ set(PROJECT_SOURCES
         src/features/admin/admincontroller.h
         src/features/admin/managementdialogs.cpp
         src/features/admin/managementdialogs.h
+        src/features/booking/bookingcontroller.cpp
+        src/features/booking/bookingcontroller.h
+        src/services/bookingservice.cpp
+        src/services/bookingservice.h
         src/features/passengers/passengercontroller.cpp
         src/features/passengers/passengercontroller.h
         src/features/query/querycontroller.cpp
@@ -190,4 +194,21 @@ if(BUILD_TESTING)
     target_include_directories(phase3_tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
     target_link_libraries(phase3_tests PRIVATE Qt${QT_VERSION_MAJOR}::Test)
     add_test(NAME phase3_tests COMMAND phase3_tests)
+
+    add_executable(phase4_tests
+        tests/phase4_tests.cpp
+        src/domain/entities.cpp
+        src/domain/entities.h
+        src/common/result.h
+        src/data/datastore.cpp
+        src/data/datastore.h
+        src/data/idatarepository.h
+        src/data/jsonrepository.cpp
+        src/data/jsonrepository.h
+        src/services/bookingservice.cpp
+        src/services/bookingservice.h
+    )
+    target_include_directories(phase4_tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
+    target_link_libraries(phase4_tests PRIVATE Qt${QT_VERSION_MAJOR}::Test)
+    add_test(NAME phase4_tests COMMAND phase4_tests)
 endif()

@@ -70,6 +70,7 @@ QueryController::QueryController(DataStore *dataStore,
     connect(m_dataStore, &DataStore::dataChanged, this, [this]() {
         loadStations();
         loadFilterOptions();
+        executeQuery();
     });
 
     executeQuery();
