@@ -1,7 +1,7 @@
 // Adapted from Qt's Flow Layout Example.
 // SPDX-License-Identifier: LicenseRef-Qt-Commercial OR BSD-3-Clause
 
-#include "flowlayout.h"
+#include "widgets/flowlayout.h"
 
 #include <QSizePolicy>
 #include <QWidget>

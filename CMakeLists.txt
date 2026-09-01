@@ -19,14 +19,22 @@ find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets LinguistTools)
 set(TS_FILES untitled_zh_CN.ts)
 
 set(PROJECT_SOURCES
-        main.cpp
-        mainwindow.cpp
-        mainwindow.h
-        mainwindow.ui
-        dateedit.cpp
-        dateedit.h
-        flowlayout.cpp
-        flowlayout.h
+        src/main.cpp
+        src/app/mainwindow.cpp
+        src/app/mainwindow.h
+        src/app/mainwindow.ui
+        src/widgets/dateedit.cpp
+        src/widgets/dateedit.h
+        src/widgets/flowlayout.cpp
+        src/widgets/flowlayout.h
+        src/features/admin/admincontroller.cpp
+        src/features/admin/admincontroller.h
+        src/features/passengers/passengercontroller.cpp
+        src/features/passengers/passengercontroller.h
+        src/features/query/querycontroller.cpp
+        src/features/query/querycontroller.h
+        src/features/statistics/statisticscontroller.cpp
+        src/features/statistics/statisticscontroller.h
         resources.qrc
         ${TS_FILES}
 )
@@ -59,7 +67,9 @@ else()
 endif()
 
 target_link_libraries(untitled PRIVATE Qt${QT_VERSION_MAJOR}::Widgets)
-target_include_directories(untitled PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+target_include_directories(untitled PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/src
+)
 
 # Qt for iOS sets MACOSX_BUNDLE_GUI_IDENTIFIER automatically since Qt 6.1.
 # If you are developing for iOS or macOS you should consider setting an

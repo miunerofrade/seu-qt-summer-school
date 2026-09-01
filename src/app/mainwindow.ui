@@ -1791,7 +1791,7 @@ QPushButton#btnSaveDataNow:hover {
   <customwidget>
    <class>DateEdit</class>
    <extends>QDateEdit</extends>
-   <header>dateedit.h</header>
+   <header>widgets/dateedit.h</header>
   </customwidget>
  </customwidgets>
  <connections/>
