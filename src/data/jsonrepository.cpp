@@ -129,14 +129,17 @@ QJsonObject orderToJson(const Order &order)
 
 QJsonObject ticketToJson(const Ticket &ticket)
 {
-    return {{QStringLiteral("id"), ticket.id},
-            {QStringLiteral("passengerId"), ticket.passengerId},
-            {QStringLiteral("trainNumber"), ticket.trainNumber},
-            {QStringLiteral("fromStationCode"), ticket.fromStationCode},
-            {QStringLiteral("toStationCode"), ticket.toStationCode},
-            {QStringLiteral("seatType"), ticket.seatType},
-            {QStringLiteral("priceCents"), static_cast<double>(ticket.priceCents)},
-            {QStringLiteral("status"), ticketStatusKey(ticket.status)}};
+    QJsonObject object{{QStringLiteral("id"), ticket.id},
+                       {QStringLiteral("passengerId"), ticket.passengerId},
+                       {QStringLiteral("trainNumber"), ticket.trainNumber},
+                       {QStringLiteral("fromStationCode"), ticket.fromStationCode},
+                       {QStringLiteral("toStationCode"), ticket.toStationCode},
+                       {QStringLiteral("seatType"), ticket.seatType},
+                       {QStringLiteral("priceCents"), static_cast<double>(ticket.priceCents)},
+                       {QStringLiteral("status"), ticketStatusKey(ticket.status)}};
+    if (ticket.serviceDate.isValid())
+        object.insert(QStringLiteral("serviceDate"), ticket.serviceDate.toString(Qt::ISODate));
+    return object;
 }
 
 QJsonObject refundToJson(const RefundRecord &refund)
@@ -381,6 +384,19 @@ bool parseTicket(const QJsonValue &value, Ticket *ticket, QString *error)
     if (ticket->priceCents < 0 || !ticketStatusFromKey(status, &ticket->status)) {
         *error = QObject::tr("车票金额或状态格式错误。");
         return false;
+    }
+    // 第一至第四阶段生成的旧数据没有 serviceDate；保留兼容性，业务层会按唯一车次回退查找。
+    const QJsonValue serviceDate = object.value(QStringLiteral("serviceDate"));
+    if (!serviceDate.isUndefined()) {
+        if (!serviceDate.isString()) {
+            *error = QObject::tr("字段 serviceDate 应为文本。");
+            return false;
+        }
+        ticket->serviceDate = QDate::fromString(serviceDate.toString(), Qt::ISODate);
+        if (!ticket->serviceDate.isValid()) {
+            *error = QObject::tr("车票运行日期格式错误。");
+            return false;
+        }
     }
     return true;
 }

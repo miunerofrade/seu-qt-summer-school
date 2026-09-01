@@ -120,6 +120,7 @@ OperationResult BookingService::book(const BookingRequest &request, BookingRecei
         ticket.seatType = seat.seatType;
         ticket.priceCents = unitPriceCents;
         ticket.status = domain::TicketStatus::Issued;
+        ticket.serviceDate = train.serviceDate;
         candidate.tickets.push_back(ticket);
         order.ticketIds.push_back(ticket.id);
     }

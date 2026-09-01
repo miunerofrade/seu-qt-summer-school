@@ -85,6 +85,7 @@ struct Ticket
     QString seatType;
     qint64 priceCents = 0;
     TicketStatus status = TicketStatus::Issued;
+    QDate serviceDate;
 };
 
 struct RefundRecord

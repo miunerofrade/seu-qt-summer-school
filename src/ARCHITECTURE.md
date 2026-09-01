@@ -40,5 +40,8 @@ Qt 原生控件和平台行为，不为原生控件添加额外的 QSS 外观覆
 第二阶段已实现 `PassengerTableModel`、`PassengerFilterProxyModel`、
 `PassengerService` 和 `AdminService`。第三阶段加入 `QueryService`、
 `TrainQueryModel` 和筛选代理；第四阶段加入 `BookingService` 和购票确认流程。
+第五阶段加入 `OrderService`、`RefundService`、`OrderTableModel` 和订单筛选代理，
+订单详情按单张车票办理退票；手续费、状态更新、退票记录与区间余票恢复均在 Service
+中原子完成，保存失败不会替换内存数据。
 车站、车次、时刻/经停站、席别/票价/余票分别使用独立管理对话框，正式需求未要求的
 维护日志不进入当前实现。

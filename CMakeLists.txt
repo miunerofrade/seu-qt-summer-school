@@ -43,6 +43,12 @@ set(PROJECT_SOURCES
         src/models/passengerfilterproxymodel.h
         src/models/passengertablemodel.cpp
         src/models/passengertablemodel.h
+        src/models/orderfilterproxymodel.cpp
+        src/models/orderfilterproxymodel.h
+        src/models/orderdelegates.cpp
+        src/models/orderdelegates.h
+        src/models/ordertablemodel.cpp
+        src/models/ordertablemodel.h
         src/models/trainqueryfilterproxymodel.cpp
         src/models/trainqueryfilterproxymodel.h
         src/models/trainquerymodel.cpp
@@ -53,12 +59,18 @@ set(PROJECT_SOURCES
         src/services/passengerservice.h
         src/services/queryservice.cpp
         src/services/queryservice.h
+        src/services/orderservice.cpp
+        src/services/orderservice.h
+        src/services/refundservice.cpp
+        src/services/refundservice.h
         src/features/admin/admincontroller.cpp
         src/features/admin/admincontroller.h
         src/features/admin/managementdialogs.cpp
         src/features/admin/managementdialogs.h
         src/features/booking/bookingcontroller.cpp
         src/features/booking/bookingcontroller.h
+        src/features/orders/ordercontroller.cpp
+        src/features/orders/ordercontroller.h
         src/services/bookingservice.cpp
         src/services/bookingservice.h
         src/features/passengers/passengercontroller.cpp
@@ -211,4 +223,25 @@ if(BUILD_TESTING)
     target_include_directories(phase4_tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
     target_link_libraries(phase4_tests PRIVATE Qt${QT_VERSION_MAJOR}::Test)
     add_test(NAME phase4_tests COMMAND phase4_tests)
+
+    add_executable(phase5_tests
+        tests/phase5_tests.cpp
+        src/domain/entities.cpp
+        src/domain/entities.h
+        src/common/result.h
+        src/data/datastore.cpp
+        src/data/datastore.h
+        src/data/idatarepository.h
+        src/data/jsonrepository.cpp
+        src/data/jsonrepository.h
+        src/services/bookingservice.cpp
+        src/services/bookingservice.h
+        src/services/orderservice.cpp
+        src/services/orderservice.h
+        src/services/refundservice.cpp
+        src/services/refundservice.h
+    )
+    target_include_directories(phase5_tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
+    target_link_libraries(phase5_tests PRIVATE Qt${QT_VERSION_MAJOR}::Test)
+    add_test(NAME phase5_tests COMMAND phase5_tests)
 endif()
