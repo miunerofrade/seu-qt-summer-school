@@ -46,7 +46,8 @@ MainWindow::MainWindow(QWidget *parent)
     }
 
     new QueryController(ui->tableTickets, this);
-    new PassengerController(this,
+    new PassengerController(m_dataStore,
+                            this,
                             ui->tablePassengers,
                             ui->editPassengerSearch,
                             ui->btnAddPassenger,
@@ -54,7 +55,25 @@ MainWindow::MainWindow(QWidget *parent)
                             ui->btnDeletePassenger,
                             ui->btnSearchPassenger,
                             this);
-    new AdminController(ui->editAdminSearch, ui->tableAdminRecent, this);
+    new AdminController(m_dataStore,
+                        {this,
+                         ui->editAdminSearch,
+                         ui->btnRecentAdmin,
+                         ui->btnAddAdminData,
+                         ui->btnManageStations,
+                         ui->btnManageTrains,
+                         ui->btnManageSchedules,
+                         ui->btnManageSeats,
+                         ui->labelStationAdminData,
+                         ui->labelTrainAdminData,
+                         ui->labelScheduleAdminData,
+                         ui->labelSeatAdminData,
+                         ui->cardStationAdmin,
+                         ui->cardTrainAdmin,
+                         ui->cardScheduleAdmin,
+                         ui->cardSeatAdmin,
+                         ui->adminRecentCard},
+                        this);
     new StatisticsController(ui->statisticsFilterCard,
                              ui->statisticsQuickFilterGroup,
                              ui->statisticsDateFilterGroup,

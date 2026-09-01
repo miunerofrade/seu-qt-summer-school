@@ -1,45 +1,55 @@
 #include "features/passengers/passengercontroller.h"
 
+#include "data/datastore.h"
+#include "models/passengerfilterproxymodel.h"
+#include "models/passengertablemodel.h"
+#include "widgets/dialogstyle.h"
+
 #include <QComboBox>
 #include <QDialog>
 #include <QDialogButtonBox>
 #include <QFormLayout>
 #include <QHeaderView>
 #include <QIcon>
+#include <QItemSelectionModel>
 #include <QLineEdit>
+#include <QMessageBox>
 #include <QPushButton>
-#include <QTableWidget>
-#include <QTableWidgetItem>
+#include <QTableView>
 
 namespace {
-QStringList editPassenger(QWidget *parent, const QStringList &values = {})
+struct PassengerFormData
+{
+    QString name;
+    QString documentType;
+    QString documentNumber;
+};
+
+bool editPassenger(QWidget *parent,
+                   const domain::Passenger *current,
+                   PassengerFormData *formData)
 {
     QDialog dialog(parent);
-    dialog.setWindowTitle(values.isEmpty() ? QObject::tr("新增乘车人") : QObject::tr("编辑乘车人"));
-    dialog.resize(460, 340);
+    dialog.setWindowTitle(current ? QObject::tr("编辑乘车人") : QObject::tr("新增乘车人"));
+    dialog.resize(460, 280);
 
     auto *layout = new QFormLayout(&dialog);
     layout->setContentsMargins(28, 24, 28, 24);
     layout->setHorizontalSpacing(18);
     layout->setVerticalSpacing(14);
-    auto *nameEdit = new QLineEdit(values.value(0), &dialog);
-    auto *idTypeEdit = new QComboBox(&dialog);
-    idTypeEdit->addItems({QObject::tr("身份证"), QObject::tr("护照"), QObject::tr("港澳通行证")});
-    idTypeEdit->setCurrentText(values.value(1, QObject::tr("身份证")));
-    auto *idNumberEdit = new QLineEdit(values.value(2), &dialog);
-    auto *typeEdit = new QComboBox(&dialog);
-    typeEdit->addItems({QObject::tr("成人"), QObject::tr("儿童"), QObject::tr("学生")});
-    typeEdit->setCurrentText(values.value(4, QObject::tr("成人")));
+    auto *nameEdit = new QLineEdit(current ? current->name : QString(), &dialog);
+    auto *documentTypeEdit = new QComboBox(&dialog);
+    documentTypeEdit->addItems({QObject::tr("身份证"), QObject::tr("护照"), QObject::tr("港澳通行证")});
+    if (current)
+        documentTypeEdit->setCurrentText(current->documentType);
+    auto *documentNumberEdit = new QLineEdit(current ? current->documentNumber : QString(), &dialog);
 
     nameEdit->setMinimumWidth(260);
-    idTypeEdit->setMinimumWidth(260);
-    idNumberEdit->setMinimumWidth(260);
-    typeEdit->setMinimumWidth(260);
-
+    documentTypeEdit->setMinimumWidth(260);
+    documentNumberEdit->setMinimumWidth(260);
     layout->addRow(QObject::tr("姓名"), nameEdit);
-    layout->addRow(QObject::tr("证件类型"), idTypeEdit);
-    layout->addRow(QObject::tr("证件号码"), idNumberEdit);
-    layout->addRow(QObject::tr("旅客类型"), typeEdit);
+    layout->addRow(QObject::tr("证件类型"), documentTypeEdit);
+    layout->addRow(QObject::tr("证件号码"), documentNumberEdit);
 
     auto *buttons = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel, &dialog);
     buttons->setCenterButtons(true);
@@ -48,16 +58,20 @@ QStringList editPassenger(QWidget *parent, const QStringList &values = {})
     layout->addRow(buttons);
     QObject::connect(buttons, &QDialogButtonBox::accepted, &dialog, &QDialog::accept);
     QObject::connect(buttons, &QDialogButtonBox::rejected, &dialog, &QDialog::reject);
+    applyStandardDialogStyle(&dialog);
 
     if (dialog.exec() != QDialog::Accepted)
-        return {};
-
-    return {nameEdit->text(), idTypeEdit->currentText(), idNumberEdit->text(), typeEdit->currentText()};
+        return false;
+    formData->name = nameEdit->text();
+    formData->documentType = documentTypeEdit->currentText();
+    formData->documentNumber = documentNumberEdit->text();
+    return true;
 }
-}
+} // namespace
 
-PassengerController::PassengerController(QWidget *dialogParent,
-                                         QTableWidget *table,
+PassengerController::PassengerController(DataStore *dataStore,
+                                         QWidget *dialogParent,
+                                         QTableView *table,
                                          QLineEdit *searchEdit,
                                          QPushButton *addButton,
                                          QPushButton *editButton,
@@ -65,66 +79,96 @@ PassengerController::PassengerController(QWidget *dialogParent,
                                          QPushButton *searchButton,
                                          QObject *parent)
     : QObject(parent)
+    , m_service(dataStore)
     , m_dialogParent(dialogParent)
     , m_table(table)
     , m_searchEdit(searchEdit)
+    , m_model(new PassengerTableModel(dataStore, this))
+    , m_proxy(new PassengerFilterProxyModel(this))
 {
-    m_searchEdit->addAction(QIcon(":/icons/nav-search.svg"), QLineEdit::LeadingPosition);
+    m_proxy->setSourceModel(m_model);
+    m_table->setModel(m_proxy);
+    m_table->setSelectionBehavior(QAbstractItemView::SelectRows);
+    m_table->setSelectionMode(QAbstractItemView::SingleSelection);
+    m_table->setEditTriggers(QAbstractItemView::NoEditTriggers);
+    m_table->setSortingEnabled(true);
     m_table->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
     m_table->verticalHeader()->setVisible(false);
-    m_table->setColumnCount(4);
+    m_searchEdit->addAction(QIcon(":/icons/nav-search.svg"), QLineEdit::LeadingPosition);
 
     connect(addButton, &QPushButton::clicked, this, [this]() { addPassenger(); });
     connect(editButton, &QPushButton::clicked, this, [this]() { editSelectedPassenger(); });
     connect(deleteButton, &QPushButton::clicked, this, [this]() { deleteSelectedPassenger(); });
     connect(searchButton, &QPushButton::clicked, this, [this]() { filterPassengers(); });
     connect(m_searchEdit, &QLineEdit::returnPressed, this, [this]() { filterPassengers(); });
+    connect(m_searchEdit, &QLineEdit::textChanged, this, [this]() { filterPassengers(); });
+    connect(m_table, &QTableView::doubleClicked, this, [this](const QModelIndex &) {
+        editSelectedPassenger();
+    });
 }
 
 void PassengerController::addPassenger()
 {
-    const QStringList values = editPassenger(m_dialogParent);
-    if (values.isEmpty())
+    PassengerFormData formData;
+    if (!editPassenger(m_dialogParent, nullptr, &formData))
         return;
-
-    const int row = m_table->rowCount();
-    m_table->insertRow(row);
-    for (int column = 0; column < values.size(); ++column)
-        m_table->setItem(row, column, new QTableWidgetItem(values.at(column)));
+    const OperationResult result = m_service.addPassenger(
+        formData.name, formData.documentType, formData.documentNumber);
+    if (!result)
+        QMessageBox::warning(m_dialogParent, tr("无法新增乘车人"), result.error);
 }
 
 void PassengerController::editSelectedPassenger()
 {
-    const int row = m_table->currentRow();
-    if (row < 0)
+    const QModelIndex proxyIndex = m_table->currentIndex();
+    if (!proxyIndex.isValid()) {
+        QMessageBox::information(m_dialogParent, tr("编辑乘车人"), tr("请先选择一名乘车人。"));
         return;
-
-    QStringList values;
-    for (int column = 0; column < m_table->columnCount(); ++column)
-        values.append(m_table->item(row, column)->text());
-
-    const QStringList editedValues = editPassenger(m_dialogParent, values);
-    if (editedValues.isEmpty())
+    }
+    const QModelIndex sourceIndex = m_proxy->mapToSource(proxyIndex);
+    const domain::Passenger *passenger = m_model->passengerAt(sourceIndex.row());
+    if (!passenger)
         return;
+    const domain::Passenger snapshot = *passenger;
 
-    for (int column = 0; column < editedValues.size(); ++column)
-        m_table->item(row, column)->setText(editedValues.at(column));
+    PassengerFormData formData;
+    if (!editPassenger(m_dialogParent, &snapshot, &formData))
+        return;
+    const OperationResult result = m_service.updatePassenger(
+        snapshot.id, formData.name, formData.documentType, formData.documentNumber);
+    if (!result)
+        QMessageBox::warning(m_dialogParent, tr("无法修改乘车人"), result.error);
 }
 
 void PassengerController::deleteSelectedPassenger()
 {
-    const int row = m_table->currentRow();
-    if (row >= 0)
-        m_table->removeRow(row);
+    const QString passengerId = selectedPassengerId();
+    if (passengerId.isEmpty()) {
+        QMessageBox::information(m_dialogParent, tr("删除乘车人"), tr("请先选择一名乘车人。"));
+        return;
+    }
+    if (QMessageBox::question(m_dialogParent,
+                              tr("删除乘车人"),
+                              tr("确定删除所选乘车人吗？"),
+                              QMessageBox::Yes | QMessageBox::No,
+                              QMessageBox::No)
+        != QMessageBox::Yes) {
+        return;
+    }
+    const OperationResult result = m_service.removePassenger(passengerId);
+    if (!result)
+        QMessageBox::warning(m_dialogParent, tr("无法删除乘车人"), result.error);
 }
 
 void PassengerController::filterPassengers()
 {
-    const QString keyword = m_searchEdit->text().trimmed();
-    for (int row = 0; row < m_table->rowCount(); ++row) {
-        const bool matches = keyword.isEmpty()
-            || m_table->item(row, 0)->text().contains(keyword, Qt::CaseInsensitive)
-            || m_table->item(row, 2)->text().contains(keyword, Qt::CaseInsensitive);
-        m_table->setRowHidden(row, !matches);
-    }
+    m_proxy->setKeyword(m_searchEdit->text());
+}
+
+QString PassengerController::selectedPassengerId() const
+{
+    const QModelIndex proxyIndex = m_table->currentIndex();
+    if (!proxyIndex.isValid())
+        return {};
+    return m_model->data(m_proxy->mapToSource(proxyIndex), Qt::UserRole).toString();
 }

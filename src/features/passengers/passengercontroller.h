@@ -1,18 +1,24 @@
 #ifndef PASSENGERCONTROLLER_H
 #define PASSENGERCONTROLLER_H
 
+#include "services/passengerservice.h"
+
 #include <QObject>
 
+class DataStore;
+class PassengerFilterProxyModel;
+class PassengerTableModel;
 class QLineEdit;
 class QPushButton;
-class QTableWidget;
+class QTableView;
 class QWidget;
 
 class PassengerController final : public QObject
 {
 public:
-    PassengerController(QWidget *dialogParent,
-                        QTableWidget *table,
+    PassengerController(DataStore *dataStore,
+                        QWidget *dialogParent,
+                        QTableView *table,
                         QLineEdit *searchEdit,
                         QPushButton *addButton,
                         QPushButton *editButton,
@@ -25,10 +31,14 @@ private:
     void editSelectedPassenger();
     void deleteSelectedPassenger();
     void filterPassengers();
+    QString selectedPassengerId() const;
 
+    PassengerService m_service;
     QWidget *m_dialogParent;
-    QTableWidget *m_table;
+    QTableView *m_table;
     QLineEdit *m_searchEdit;
+    PassengerTableModel *m_model;
+    PassengerFilterProxyModel *m_proxy;
 };
 
 #endif // PASSENGERCONTROLLER_H

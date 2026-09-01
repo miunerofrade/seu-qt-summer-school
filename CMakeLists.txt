@@ -27,6 +27,8 @@ set(PROJECT_SOURCES
         src/app/mainwindow.ui
         src/widgets/dateedit.cpp
         src/widgets/dateedit.h
+        src/widgets/dialogstyle.cpp
+        src/widgets/dialogstyle.h
         src/widgets/flowlayout.cpp
         src/widgets/flowlayout.h
         src/common/result.h
@@ -37,8 +39,18 @@ set(PROJECT_SOURCES
         src/data/idatarepository.h
         src/data/jsonrepository.cpp
         src/data/jsonrepository.h
+        src/models/passengerfilterproxymodel.cpp
+        src/models/passengerfilterproxymodel.h
+        src/models/passengertablemodel.cpp
+        src/models/passengertablemodel.h
+        src/services/adminservice.cpp
+        src/services/adminservice.h
+        src/services/passengerservice.cpp
+        src/services/passengerservice.h
         src/features/admin/admincontroller.cpp
         src/features/admin/admincontroller.h
+        src/features/admin/managementdialogs.cpp
+        src/features/admin/managementdialogs.h
         src/features/passengers/passengercontroller.cpp
         src/features/passengers/passengercontroller.h
         src/features/query/querycontroller.cpp
@@ -128,4 +140,27 @@ if(BUILD_TESTING)
     target_include_directories(phase1_tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
     target_link_libraries(phase1_tests PRIVATE Qt${QT_VERSION_MAJOR}::Test)
     add_test(NAME phase1_tests COMMAND phase1_tests)
+
+    add_executable(phase2_tests
+        tests/phase2_tests.cpp
+        src/domain/entities.cpp
+        src/domain/entities.h
+        src/common/result.h
+        src/data/datastore.cpp
+        src/data/datastore.h
+        src/data/idatarepository.h
+        src/data/jsonrepository.cpp
+        src/data/jsonrepository.h
+        src/models/passengerfilterproxymodel.cpp
+        src/models/passengerfilterproxymodel.h
+        src/models/passengertablemodel.cpp
+        src/models/passengertablemodel.h
+        src/services/adminservice.cpp
+        src/services/adminservice.h
+        src/services/passengerservice.cpp
+        src/services/passengerservice.h
+    )
+    target_include_directories(phase2_tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
+    target_link_libraries(phase2_tests PRIVATE Qt${QT_VERSION_MAJOR}::Test)
+    add_test(NAME phase2_tests COMMAND phase2_tests)
 endif()

@@ -443,11 +443,6 @@ QWidget#queryFiltersWidget {
     border: none;
 }
 
-QWidget#queryCard QComboBox {
-    color: #2F3033;
-}
-
-QWidget#queryConditionsWidget QComboBox,
 QWidget#queryConditionsWidget QDateEdit,
 QWidget#queryConditionsWidget QPushButton {
     min-height: 28px;
@@ -868,7 +863,7 @@ QWidget#passengerToolbar {
     border-radius: 10px;
 }
 
-QTableWidget#tablePassengers {
+QTableView#tablePassengers {
     background-color: #FFFFFF;
     border: 1px solid #E5E7EB;
     border-radius: 10px;
@@ -876,7 +871,7 @@ QTableWidget#tablePassengers {
     gridline-color: #ECEDEF;
 }
 
-QTableWidget#tablePassengers QHeaderView::section {
+QTableView#tablePassengers QHeaderView::section {
     background-color: #FFFFFF;
     border: none;
     border-bottom: 1px solid #E5E7EB;
@@ -969,15 +964,11 @@ QPushButton#btnAddPassenger {
          </widget>
         </item>
         <item>
-         <widget class="QTableWidget" name="tablePassengers">
+         <widget class="QTableView" name="tablePassengers">
           <property name="alternatingRowColors"><bool>true</bool></property>
           <property name="selectionBehavior"><enum>QAbstractItemView::SelectionBehavior::SelectRows</enum></property>
           <property name="selectionMode"><enum>QAbstractItemView::SelectionMode::SingleSelection</enum></property>
           <property name="editTriggers"><enum>QAbstractItemView::EditTrigger::NoEditTriggers</enum></property>
-          <column><property name="text"><string>姓名</string></property></column>
-          <column><property name="text"><string>证件类型</string></property></column>
-          <column><property name="text"><string>证件号码</string></property></column>
-          <column><property name="text"><string>旅客类型</string></property></column>
          </widget>
         </item>
        </layout>

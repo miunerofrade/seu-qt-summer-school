@@ -1,0 +1,170 @@
+#include "data/datastore.h"
+#include "data/jsonrepository.h"
+#include "models/passengerfilterproxymodel.h"
+#include "models/passengertablemodel.h"
+#include "services/adminservice.h"
+#include "services/passengerservice.h"
+
+#include <QTemporaryDir>
+#include <QtTest>
+
+#include <algorithm>
+#include <memory>
+
+class PhaseTwoTests final : public QObject
+{
+    Q_OBJECT
+
+private slots:
+    void passengerValidationMaskingAndModel();
+    void activeTicketPreventsPassengerDeletion();
+    void stationAndTrainCodesAreUnique();
+    void scheduleValidationAndSeatReset();
+    void seatInventoryValidation();
+    void referencedBaseDataCannotBeDeleted();
+};
+
+namespace {
+std::unique_ptr<DataStore> initializedStore(const QString &path)
+{
+    auto store = std::make_unique<DataStore>(std::make_unique<JsonRepository>(path));
+    if (!store->initialize())
+        return {};
+    return store;
+}
+} // namespace
+
+void PhaseTwoTests::passengerValidationMaskingAndModel()
+{
+    QTemporaryDir directory;
+    auto store = initializedStore(directory.filePath(QStringLiteral("app-data.json")));
+    QVERIFY(store);
+    PassengerService service(store.get());
+    const int initialCount = store->data().passengers.size();
+
+    QVERIFY(!service.addPassenger(QStringLiteral("  "), QStringLiteral("身份证"), QStringLiteral("1")));
+    QVERIFY(!service.addPassenger(QStringLiteral("重复"),
+                                  QStringLiteral("身份证"),
+                                  store->data().passengers.first().documentNumber));
+    QString createdId;
+    QVERIFY(service.addPassenger(QStringLiteral("  李四 "),
+                                 QStringLiteral("护照"),
+                                 QStringLiteral(" E12345678 "),
+                                 &createdId));
+    QCOMPARE(store->data().passengers.size(), initialCount + 1);
+    QCOMPARE(store->data().passengers.last().name, QStringLiteral("李四"));
+    QCOMPARE(PassengerService::maskedDocumentNumber(QStringLiteral("320101199001011234")),
+             QStringLiteral("3201**********1234"));
+
+    PassengerTableModel model(store.get());
+    PassengerFilterProxyModel proxy;
+    proxy.setSourceModel(&model);
+    QCOMPARE(proxy.rowCount(), initialCount + 1);
+    proxy.setKeyword(QStringLiteral("E123"));
+    QCOMPARE(proxy.rowCount(), 1);
+    QCOMPARE(proxy.index(0, PassengerTableModel::DocumentNumberColumn).data().toString(),
+             QStringLiteral("E123*5678"));
+
+    QVERIFY(service.removePassenger(createdId));
+    QCOMPARE(store->data().passengers.size(), initialCount);
+}
+
+void PhaseTwoTests::activeTicketPreventsPassengerDeletion()
+{
+    QTemporaryDir directory;
+    auto store = initializedStore(directory.filePath(QStringLiteral("app-data.json")));
+    QVERIFY(store);
+    const QString passengerId = store->data().passengers.first().id;
+    domain::AppData candidate = store->data();
+    candidate.tickets.append({QStringLiteral("ticket-1"),
+                              passengerId,
+                              QStringLiteral("G101"),
+                              QStringLiteral("NJN"),
+                              QStringLiteral("SHH"),
+                              QStringLiteral("二等座"),
+                              15000,
+                              domain::TicketStatus::Issued});
+    QVERIFY(store->commit(candidate));
+
+    PassengerService service(store.get());
+    QVERIFY(!service.removePassenger(passengerId));
+    QVERIFY(std::any_of(store->data().passengers.cbegin(),
+                        store->data().passengers.cend(),
+                        [&passengerId](const domain::Passenger &passenger) {
+                            return passenger.id == passengerId;
+                        }));
+}
+
+void PhaseTwoTests::stationAndTrainCodesAreUnique()
+{
+    QTemporaryDir directory;
+    auto store = initializedStore(directory.filePath(QStringLiteral("app-data.json")));
+    QVERIFY(store);
+    AdminService service(store.get());
+
+    QVERIFY(!service.addStation({QStringLiteral("njn"), QStringLiteral("重复南京南"), QStringLiteral("南京"), true}));
+    QVERIFY(service.addStation({QStringLiteral("WXH"), QStringLiteral("无锡东"), QStringLiteral("无锡"), true}));
+    QVERIFY(!service.addTrain({QStringLiteral("g101"), QDate::currentDate(), true, true, {}, {}}));
+    QVERIFY(service.addTrain({QStringLiteral("G999"), QDate::currentDate(), true, true, {}, {}}));
+}
+
+void PhaseTwoTests::scheduleValidationAndSeatReset()
+{
+    QTemporaryDir directory;
+    auto store = initializedStore(directory.filePath(QStringLiteral("app-data.json")));
+    QVERIFY(store);
+    AdminService service(store.get());
+
+    QVector<domain::TrainStop> duplicateStops{
+        {QStringLiteral("NJN"), 0, {}, QTime(8, 0), 0},
+        {QStringLiteral("NJN"), 1, QTime(9, 0), {}, 0}};
+    QVERIFY(!service.replaceStops(QStringLiteral("G101"), duplicateStops));
+
+    QVector<domain::TrainStop> validStops{
+        {QStringLiteral("NJN"), 0, {}, QTime(8, 0), 0},
+        {QStringLiteral("SHH"), 1, QTime(9, 20), {}, 0}};
+    QVERIFY(service.replaceStops(QStringLiteral("G101"), validStops));
+    const auto &train = store->data().trains.first();
+    QCOMPARE(train.stops.size(), 2);
+    QVERIFY(train.seats.isEmpty());
+}
+
+void PhaseTwoTests::seatInventoryValidation()
+{
+    QTemporaryDir directory;
+    auto store = initializedStore(directory.filePath(QStringLiteral("app-data.json")));
+    QVERIFY(store);
+    AdminService service(store.get());
+
+    QVector<domain::SeatInventory> invalid{{QStringLiteral("二等座"), {{1000, 10, 11}, {1000, 10, 9}}}};
+    QVERIFY(!service.replaceSeats(QStringLiteral("G101"), invalid));
+    QVector<domain::SeatInventory> valid{{QStringLiteral("商务座"), {{20000, 10, 8}, {18000, 10, 7}}}};
+    QVERIFY(service.replaceSeats(QStringLiteral("G101"), valid));
+    QCOMPARE(store->data().trains.first().seats.first().seatType, QStringLiteral("商务座"));
+}
+
+void PhaseTwoTests::referencedBaseDataCannotBeDeleted()
+{
+    QTemporaryDir directory;
+    auto store = initializedStore(directory.filePath(QStringLiteral("app-data.json")));
+    QVERIFY(store);
+    AdminService service(store.get());
+
+    QVERIFY(!service.removeStation(QStringLiteral("NJN")));
+    domain::AppData candidate = store->data();
+    candidate.tickets.append({QStringLiteral("ticket-2"),
+                              candidate.passengers.first().id,
+                              QStringLiteral("G101"),
+                              QStringLiteral("NJN"),
+                              QStringLiteral("SHH"),
+                              QStringLiteral("二等座"),
+                              15000,
+                              domain::TicketStatus::Completed});
+    QVERIFY(store->commit(candidate));
+    QVERIFY(!service.removeTrain(QStringLiteral("G101")));
+    QVERIFY(service.updateStation(QStringLiteral("NJN"), QStringLiteral("南京南"), QStringLiteral("南京"), false));
+}
+
+QTEST_GUILESS_MAIN(PhaseTwoTests)
+
+#include "phase2_tests.moc"
