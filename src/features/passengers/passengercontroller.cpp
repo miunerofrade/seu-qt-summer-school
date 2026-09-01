@@ -3,6 +3,7 @@
 #include "data/datastore.h"
 #include "models/passengerfilterproxymodel.h"
 #include "models/passengertablemodel.h"
+#include "services/passengerservice.h"
 #include "widgets/dialogstyle.h"
 
 #include <QComboBox>
@@ -12,6 +13,7 @@
 #include <QHeaderView>
 #include <QIcon>
 #include <QItemSelectionModel>
+#include <QLabel>
 #include <QLineEdit>
 #include <QMessageBox>
 #include <QPushButton>
@@ -31,7 +33,7 @@ bool editPassenger(QWidget *parent,
 {
     QDialog dialog(parent);
     dialog.setWindowTitle(current ? QObject::tr("编辑乘车人") : QObject::tr("新增乘车人"));
-    dialog.resize(460, 280);
+    dialog.resize(460, 340);
 
     auto *layout = new QFormLayout(&dialog);
     layout->setContentsMargins(28, 24, 28, 24);
@@ -43,10 +45,15 @@ bool editPassenger(QWidget *parent,
     if (current)
         documentTypeEdit->setCurrentText(current->documentType);
     auto *documentNumberEdit = new QLineEdit(current ? current->documentNumber : QString(), &dialog);
+    auto *validationError = new QLabel(&dialog);
+    validationError->setStyleSheet(QStringLiteral("color: #d32f2f;"));
+    validationError->setVisible(false);
 
     nameEdit->setMinimumWidth(260);
+    nameEdit->setMaxLength(20);
     documentTypeEdit->setMinimumWidth(260);
     documentNumberEdit->setMinimumWidth(260);
+    documentNumberEdit->setMaxLength(documentTypeEdit->currentText() == QObject::tr("身份证") ? 18 : 30);
     layout->addRow(QObject::tr("姓名"), nameEdit);
     layout->addRow(QObject::tr("证件类型"), documentTypeEdit);
     layout->addRow(QObject::tr("证件号码"), documentNumberEdit);
@@ -55,8 +62,33 @@ bool editPassenger(QWidget *parent,
     buttons->setCenterButtons(true);
     buttons->button(QDialogButtonBox::Ok)->setText(QObject::tr("确定"));
     buttons->button(QDialogButtonBox::Cancel)->setText(QObject::tr("取消"));
+    layout->addRow(QString(), validationError);
     layout->addRow(buttons);
-    QObject::connect(buttons, &QDialogButtonBox::accepted, &dialog, &QDialog::accept);
+    auto validateOnSubmit = [=]() {
+        const QString name = nameEdit->text().trimmed();
+        const bool nameValid = !name.isEmpty() && name.size() >= 2 && name.size() <= 20;
+
+        const bool isIdentity = documentTypeEdit->currentText() == QObject::tr("身份证");
+        const QString number = documentNumberEdit->text().trimmed();
+        const bool numberValid = !number.isEmpty()
+            && (!isIdentity || (number.size() == 18 && PassengerService::isValidChineseIdCard(number)));
+        QStringList errors;
+        if (!nameValid)
+            errors << QObject::tr("不正确的姓名");
+        if (!numberValid)
+            errors << QObject::tr("不正确的身份证号码");
+        validationError->setText(errors.join(QStringLiteral("\n")));
+        validationError->setVisible(!errors.isEmpty());
+        return errors.isEmpty();
+    };
+    QObject::connect(documentTypeEdit, &QComboBox::currentTextChanged, &dialog, [=]() {
+        const bool isIdentity = documentTypeEdit->currentText() == QObject::tr("身份证");
+        documentNumberEdit->setMaxLength(isIdentity ? 18 : 30);
+    });
+    QObject::connect(buttons->button(QDialogButtonBox::Ok), &QPushButton::clicked, &dialog, [&dialog, validateOnSubmit]() {
+        if (validateOnSubmit())
+            dialog.accept();
+    });
     QObject::connect(buttons, &QDialogButtonBox::rejected, &dialog, &QDialog::reject);
     applyStandardDialogStyle(&dialog);
 

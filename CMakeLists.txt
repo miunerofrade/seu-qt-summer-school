@@ -49,6 +49,8 @@ set(PROJECT_SOURCES
         src/models/orderdelegates.h
         src/models/ordertablemodel.cpp
         src/models/ordertablemodel.h
+        src/models/statisticsmodel.cpp
+        src/models/statisticsmodel.h
         src/models/trainqueryfilterproxymodel.cpp
         src/models/trainqueryfilterproxymodel.h
         src/models/trainquerymodel.cpp
@@ -63,6 +65,8 @@ set(PROJECT_SOURCES
         src/services/orderservice.h
         src/services/refundservice.cpp
         src/services/refundservice.h
+        src/services/statisticsservice.cpp
+        src/services/statisticsservice.h
         src/features/admin/admincontroller.cpp
         src/features/admin/admincontroller.h
         src/features/admin/managementdialogs.cpp
@@ -244,4 +248,21 @@ if(BUILD_TESTING)
     target_include_directories(phase5_tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
     target_link_libraries(phase5_tests PRIVATE Qt${QT_VERSION_MAJOR}::Test)
     add_test(NAME phase5_tests COMMAND phase5_tests)
+
+    add_executable(phase6_tests
+        tests/phase6_tests.cpp
+        src/domain/entities.cpp
+        src/domain/entities.h
+        src/common/result.h
+        src/data/datastore.cpp
+        src/data/datastore.h
+        src/data/idatarepository.h
+        src/data/jsonrepository.cpp
+        src/data/jsonrepository.h
+        src/services/statisticsservice.cpp
+        src/services/statisticsservice.h
+    )
+    target_include_directories(phase6_tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
+    target_link_libraries(phase6_tests PRIVATE Qt${QT_VERSION_MAJOR}::Test)
+    add_test(NAME phase6_tests COMMAND phase6_tests)
 endif()

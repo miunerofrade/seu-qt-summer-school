@@ -17,6 +17,7 @@ class PhaseTwoTests final : public QObject
 
 private slots:
     void passengerValidationMaskingAndModel();
+    void identityValidationAndNameLength();
     void activeTicketPreventsPassengerDeletion();
     void stationAndTrainCodesAreUnique();
     void scheduleValidationAndSeatReset();
@@ -53,8 +54,8 @@ void PhaseTwoTests::passengerValidationMaskingAndModel()
                                  &createdId));
     QCOMPARE(store->data().passengers.size(), initialCount + 1);
     QCOMPARE(store->data().passengers.last().name, QStringLiteral("李四"));
-    QCOMPARE(PassengerService::maskedDocumentNumber(QStringLiteral("320101199001011234")),
-             QStringLiteral("3201**********1234"));
+    QCOMPARE(PassengerService::maskedDocumentNumber(QStringLiteral("320101199001010014")),
+             QStringLiteral("3201**********0014"));
 
     PassengerTableModel model(store.get());
     PassengerFilterProxyModel proxy;
@@ -67,6 +68,35 @@ void PhaseTwoTests::passengerValidationMaskingAndModel()
 
     QVERIFY(service.removePassenger(createdId));
     QCOMPARE(store->data().passengers.size(), initialCount);
+}
+
+void PhaseTwoTests::identityValidationAndNameLength()
+{
+    QTemporaryDir directory;
+    auto store = initializedStore(directory.filePath(QStringLiteral("app-data.json")));
+    QVERIFY(store);
+    PassengerService service(store.get());
+
+    QVERIFY(service.addPassenger(QStringLiteral("张三"),
+                                 QStringLiteral("身份证"),
+                                 QStringLiteral("110105198001010008")));
+    QVERIFY(service.addPassenger(QStringLiteral("李四"),
+                                 QStringLiteral("身份证"),
+                                 QStringLiteral("11010519810101003x")));
+    QCOMPARE(store->data().passengers.last().documentNumber,
+             QStringLiteral("11010519810101003X"));
+    QVERIFY(!service.addPassenger(QStringLiteral("王五"),
+                                  QStringLiteral("身份证"),
+                                  QStringLiteral("110105198001010009")));
+    QVERIFY(!service.addPassenger(QStringLiteral("赵六"),
+                                  QStringLiteral("身份证"),
+                                  QStringLiteral("110105198013010008")));
+    QVERIFY(!service.addPassenger(QStringLiteral("周七"),
+                                  QStringLiteral("身份证"),
+                                  QStringLiteral("11010519800101000")));
+    QVERIFY(!service.addPassenger(QString(21, QLatin1Char('a')),
+                                  QStringLiteral("护照"),
+                                  QStringLiteral("E12345678")));
 }
 
 void PhaseTwoTests::activeTicketPreventsPassengerDeletion()

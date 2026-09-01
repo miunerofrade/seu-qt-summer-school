@@ -2,9 +2,40 @@
 
 #include "data/datastore.h"
 
+#include <QDate>
 #include <QUuid>
 
 #include <algorithm>
+
+namespace {
+bool validChineseIdCard(const QString &number)
+{
+    if (number.size() != 18)
+        return false;
+    for (int i = 0; i < 17; ++i) {
+        if (number.at(i) < QLatin1Char('0') || number.at(i) > QLatin1Char('9'))
+            return false;
+    }
+    const QChar check = number.at(17).toUpper();
+    if (!((check >= QLatin1Char('0') && check <= QLatin1Char('9')) || check == QLatin1Char('X')))
+        return false;
+    if (!QDate::fromString(number.mid(6, 8), QStringLiteral("yyyyMMdd")).isValid())
+        return false;
+
+    static constexpr int weights[17] = {7, 9, 10, 5, 8, 4, 2, 1, 6,
+                                        3, 7, 9, 10, 5, 8, 4, 2};
+    static constexpr char checkCodes[] = "10X98765432";
+    int sum = 0;
+    for (int i = 0; i < 17; ++i)
+        sum += number.at(i).digitValue() * weights[i];
+    return check == QLatin1Char(checkCodes[sum % 11]);
+}
+} // namespace
+
+bool PassengerService::isValidChineseIdCard(const QString &documentNumber)
+{
+    return validChineseIdCard(documentNumber);
+}
 
 PassengerService::PassengerService(DataStore *dataStore)
     : m_dataStore(dataStore)
@@ -18,7 +49,9 @@ OperationResult PassengerService::addPassenger(const QString &name,
 {
     const QString normalizedName = name.trimmed();
     const QString normalizedType = documentType.trimmed();
-    const QString normalizedNumber = documentNumber.trimmed();
+    QString normalizedNumber = documentNumber.trimmed();
+    if (normalizedType == QStringLiteral("身份证"))
+        normalizedNumber = normalizedNumber.toUpper();
     const OperationResult validation = validate(normalizedName, normalizedType, normalizedNumber);
     if (!validation)
         return validation;
@@ -44,7 +77,9 @@ OperationResult PassengerService::updatePassenger(const QString &id,
 {
     const QString normalizedName = name.trimmed();
     const QString normalizedType = documentType.trimmed();
-    const QString normalizedNumber = documentNumber.trimmed();
+    QString normalizedNumber = documentNumber.trimmed();
+    if (normalizedType == QStringLiteral("身份证"))
+        normalizedNumber = normalizedNumber.toUpper();
     const OperationResult validation = validate(normalizedName, normalizedType, normalizedNumber, id);
     if (!validation)
         return validation;
@@ -108,10 +143,14 @@ OperationResult PassengerService::validate(const QString &name,
 {
     if (name.isEmpty())
         return OperationResult::failure(QObject::tr("姓名不能为空。"));
+    if (name.size() > 20)
+        return OperationResult::failure(QObject::tr("姓名长度不能超过 20 个字符。"));
     if (documentType.isEmpty())
         return OperationResult::failure(QObject::tr("证件类型不能为空。"));
     if (documentNumber.isEmpty())
         return OperationResult::failure(QObject::tr("证件号码不能为空。"));
+    if (documentType == QStringLiteral("身份证") && !isValidChineseIdCard(documentNumber))
+        return OperationResult::failure(QObject::tr("身份证号码必须为有效的 18 位号码（含正确校验码）。"));
 
     const auto &passengers = m_dataStore->data().passengers;
     const bool duplicate = std::any_of(passengers.cbegin(),

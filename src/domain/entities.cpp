@@ -92,7 +92,16 @@ AppData createDemoData(const QDate &serviceDate)
 
     data.trains = {morning, afternoon};
     data.passengers = {
-        {newId(), QStringLiteral("演示旅客"), QStringLiteral("身份证"), QStringLiteral("320101199001011234")}
+        {newId(), QStringLiteral("演示旅客1"), QStringLiteral("身份证"), QStringLiteral("320101199001010014")},
+        {newId(), QStringLiteral("演示旅客2"), QStringLiteral("身份证"), QStringLiteral("32010119910101002X")},
+        {newId(), QStringLiteral("演示旅客3"), QStringLiteral("身份证"), QStringLiteral("320101199201010035")},
+        {newId(), QStringLiteral("演示旅客4"), QStringLiteral("身份证"), QStringLiteral("320101199301010040")},
+        {newId(), QStringLiteral("演示旅客5"), QStringLiteral("身份证"), QStringLiteral("320101199401010056")},
+        {newId(), QStringLiteral("演示旅客6"), QStringLiteral("身份证"), QStringLiteral("320101199501010061")},
+        {newId(), QStringLiteral("演示旅客7"), QStringLiteral("身份证"), QStringLiteral("320101199601010077")},
+        {newId(), QStringLiteral("演示旅客8"), QStringLiteral("身份证"), QStringLiteral("320101199701010082")},
+        {newId(), QStringLiteral("演示旅客9"), QStringLiteral("身份证"), QStringLiteral("320101199801010098")},
+        {newId(), QStringLiteral("演示旅客10"), QStringLiteral("身份证"), QStringLiteral("320101199901010108")}
     };
     return data;
 }

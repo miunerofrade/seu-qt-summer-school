@@ -22,6 +22,7 @@ public:
                                     const QString &documentNumber);
     OperationResult removePassenger(const QString &id);
 
+    static bool isValidChineseIdCard(const QString &documentNumber);
     static QString maskedDocumentNumber(const QString &documentNumber);
 
 private:
