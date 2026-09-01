@@ -9,6 +9,7 @@
 #include <QIcon>
 #include <QComboBox>
 #include <QLineEdit>
+#include <QPushButton>
 #include <QStandardItemModel>
 #include <QTableWidgetItem>
 #include <QToolButton>
@@ -63,6 +64,21 @@ MainWindow::MainWindow(QWidget *parent)
     , ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
+
+    // 统一主界面操作按钮：常规按钮使用 88 × 28，长文案只按内容扩宽。
+    constexpr int standardButtonWidth = 88;
+    constexpr int standardButtonHeight = 28;
+    constexpr int buttonHorizontalContentPadding = 30;
+    const auto buttons = ui->centralwidget->findChildren<QPushButton *>();
+    for (QPushButton *button : buttons) {
+        button->setFixedHeight(standardButtonHeight);
+        button->setMinimumWidth(standardButtonWidth);
+
+        const int contentWidth = button->fontMetrics().horizontalAdvance(button->text())
+                                 + buttonHorizontalContentPadding;
+        if (contentWidth <= standardButtonWidth)
+            button->setFixedWidth(standardButtonWidth);
+    }
 
     // Qt Widgets 没有内置 flex-wrap；用 FlowLayout 按逻辑组自动换行。
     QLayout *placeholderLayout = ui->statisticsFilterCard->layout();

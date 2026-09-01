@@ -20,6 +20,35 @@
    <string>MainWindow</string>
   </property>
   <widget class="QWidget" name="centralwidget">
+   <property name="styleSheet">
+    <string notr="true">QPushButton {
+    background-color: #FFFFFF;
+    border: 1px solid #D8DDE6;
+    border-radius: 7px;
+    color: #2F3033;
+    padding: 5px 14px;
+}
+
+QPushButton:hover {
+    background-color: #F5F8FC;
+    border-color: #AEB8C6;
+}
+
+QPushButton:pressed {
+    background-color: #E8EEF6;
+    border-color: #8FA1B5;
+}
+
+QPushButton:focus {
+    border-color: #0A84FF;
+}
+
+QPushButton:disabled {
+    background-color: #F4F5F7;
+    border-color: #E3E5E8;
+    color: #A1A1A6;
+}</string>
+   </property>
    <layout class="QHBoxLayout" name="horizontalLayout">
     <property name="spacing">
      <number>0</number>
