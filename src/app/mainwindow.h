@@ -3,6 +3,8 @@
 
 #include <QMainWindow>
 
+class DataStore;
+
 QT_BEGIN_NAMESPACE
 namespace Ui {
 class MainWindow;
@@ -19,5 +21,6 @@ public:
 
 private:
     Ui::MainWindow *ui;
+    DataStore *m_dataStore;
 };
 #endif // MAINWINDOW_H

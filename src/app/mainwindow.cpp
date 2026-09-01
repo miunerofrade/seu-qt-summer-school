@@ -1,20 +1,34 @@
 #include "app/mainwindow.h"
 #include "ui_mainwindow.h"
 
+#include "data/datastore.h"
+#include "data/jsonrepository.h"
 #include "features/admin/admincontroller.h"
 #include "features/passengers/passengercontroller.h"
 #include "features/query/querycontroller.h"
+#include "features/settings/settingscontroller.h"
 #include "features/statistics/statisticscontroller.h"
 
+#include <QDir>
 #include <QIcon>
+#include <QMessageBox>
 #include <QPushButton>
+#include <QTimer>
 #include <QToolButton>
+
+#include <memory>
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
     , ui(new Ui::MainWindow)
+    , m_dataStore(nullptr)
 {
     ui->setupUi(this);
+
+    const QString dataFilePath = QDir(QStringLiteral(QT_SYNC_DATA_DIR))
+                                     .filePath(QStringLiteral("app-data.json"));
+    m_dataStore = new DataStore(std::make_unique<JsonRepository>(dataFilePath), this);
+    const OperationResult initialization = m_dataStore->initialize();
 
     // 统一主界面操作按钮：常规按钮使用 88 × 28，长文案只按内容扩宽。
     constexpr int standardButtonWidth = 88;
@@ -49,6 +63,27 @@ MainWindow::MainWindow(QWidget *parent)
                              ui->statisticsActionGroup,
                              ui->tableStatisticsTrains,
                              this);
+    new SettingsController(m_dataStore,
+                           this,
+                           ui->labelSettingsDataStatus,
+                           ui->labelSettingsDataFile,
+                           ui->labelSettingsDataDirectory,
+                           ui->labelSettingsLastSaved,
+                           ui->labelSettingsAutoLoad,
+                           ui->btnOpenDataDirectory,
+                           ui->btnSaveDataNow,
+                           ui->btnReloadData,
+                           this);
+
+    if (!initialization) {
+        const QString error = initialization.error;
+        QTimer::singleShot(0, this, [this, error]() {
+            QMessageBox::critical(
+                this,
+                tr("数据加载失败"),
+                tr("本地数据文件未被覆盖。请检查文件后在设置页重新加载。\n\n%1").arg(error));
+        });
+    }
 
     const auto setNavigationIcon = [](QToolButton *button,
                                       const QString &normalPath,

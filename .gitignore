@@ -94,3 +94,6 @@ CMakeUserPresets.json
 .cache/
 .cmake/
 .qt/
+
+# Runtime business data
+/data/app-data.json

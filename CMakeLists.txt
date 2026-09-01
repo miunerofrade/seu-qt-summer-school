@@ -9,6 +9,8 @@ set(CMAKE_AUTORCC ON)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+set(QT_SYNC_DATA_DIR "${CMAKE_SOURCE_DIR}/data" CACHE PATH "Directory for runtime JSON data")
+
 if(WIN32 AND NOT CMAKE_PREFIX_PATH AND EXISTS "D:/Qt/Qt/6.11.2/mingw_64")
     set(CMAKE_PREFIX_PATH "D:/Qt/Qt/6.11.2/mingw_64" CACHE PATH "Qt installation prefix")
 endif()
@@ -27,12 +29,22 @@ set(PROJECT_SOURCES
         src/widgets/dateedit.h
         src/widgets/flowlayout.cpp
         src/widgets/flowlayout.h
+        src/common/result.h
+        src/domain/entities.cpp
+        src/domain/entities.h
+        src/data/datastore.cpp
+        src/data/datastore.h
+        src/data/idatarepository.h
+        src/data/jsonrepository.cpp
+        src/data/jsonrepository.h
         src/features/admin/admincontroller.cpp
         src/features/admin/admincontroller.h
         src/features/passengers/passengercontroller.cpp
         src/features/passengers/passengercontroller.h
         src/features/query/querycontroller.cpp
         src/features/query/querycontroller.h
+        src/features/settings/settingscontroller.cpp
+        src/features/settings/settingscontroller.h
         src/features/statistics/statisticscontroller.cpp
         src/features/statistics/statisticscontroller.h
         resources.qrc
@@ -70,6 +82,9 @@ target_link_libraries(untitled PRIVATE Qt${QT_VERSION_MAJOR}::Widgets)
 target_include_directories(untitled PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/src
 )
+target_compile_definitions(untitled PRIVATE
+    QT_SYNC_DATA_DIR="${QT_SYNC_DATA_DIR}"
+)
 
 # Qt for iOS sets MACOSX_BUNDLE_GUI_IDENTIFIER automatically since Qt 6.1.
 # If you are developing for iOS or macOS you should consider setting an
@@ -94,4 +109,23 @@ install(TARGETS untitled
 
 if(QT_VERSION_MAJOR EQUAL 6)
     qt_finalize_executable(untitled)
+endif()
+
+include(CTest)
+if(BUILD_TESTING)
+    find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Test)
+    add_executable(phase1_tests
+        tests/phase1_tests.cpp
+        src/domain/entities.cpp
+        src/domain/entities.h
+        src/common/result.h
+        src/data/datastore.cpp
+        src/data/datastore.h
+        src/data/idatarepository.h
+        src/data/jsonrepository.cpp
+        src/data/jsonrepository.h
+    )
+    target_include_directories(phase1_tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
+    target_link_libraries(phase1_tests PRIVATE Qt${QT_VERSION_MAJOR}::Test)
+    add_test(NAME phase1_tests COMMAND phase1_tests)
 endif()
