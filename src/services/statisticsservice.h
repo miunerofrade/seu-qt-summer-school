@@ -28,6 +28,20 @@ struct StatisticsRow
     double remainingRate = 0.0;
 };
 
+struct DailyStatisticsPoint
+{
+    QDate date;
+    int soldCount = 0;
+    int refundedCount = 0;
+    qint64 netRevenueCents = 0;
+};
+
+struct SeatSharePoint
+{
+    QString seatType;
+    int soldCount = 0;
+};
+
 struct StatisticsSummary
 {
     int soldCount = 0;
@@ -35,6 +49,8 @@ struct StatisticsSummary
     qint64 netRevenueCents = 0;
     double averageRemainingRate = 0.0;
     QVector<StatisticsRow> rows;
+    QVector<DailyStatisticsPoint> dailyTrend;
+    QVector<SeatSharePoint> seatShares;
 };
 
 class StatisticsService final

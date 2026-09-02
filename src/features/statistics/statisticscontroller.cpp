@@ -3,6 +3,8 @@
 #include "data/datastore.h"
 #include "models/statisticsmodel.h"
 #include "widgets/flowlayout.h"
+#include "widgets/seatsharechartwidget.h"
+#include "widgets/trendchartwidget.h"
 
 #include <QAbstractItemView>
 #include <QComboBox>
@@ -29,13 +31,16 @@ StatisticsController::StatisticsController(DataStore *dataStore, QWidget *filter
                                            QPushButton *exportButton, QLabel *soldValue, QLabel *soldCaption,
                                            QLabel *refundedValue, QLabel *refundedCaption, QLabel *revenueValue,
                                            QLabel *revenueCaption, QLabel *rateValue, QLabel *rateCaption,
+                                           QWidget *trendContainer, QWidget *seatShareContainer,
                                            QTableView *trainTable, QObject *parent)
     : QObject(parent)
     , m_dataStore(dataStore), m_periodCombo(periodCombo), m_dateFrom(dateFrom), m_dateTo(dateTo)
     , m_trainCombo(trainCombo), m_stationCombo(stationCombo), m_seatCombo(seatCombo)
     , m_soldValue(soldValue), m_soldCaption(soldCaption), m_refundedValue(refundedValue)
     , m_refundedCaption(refundedCaption), m_revenueValue(revenueValue), m_revenueCaption(revenueCaption)
-    , m_rateValue(rateValue), m_rateCaption(rateCaption), m_model(new StatisticsModel(this))
+    , m_rateValue(rateValue), m_rateCaption(rateCaption)
+    , m_trendChart(new TrendChartWidget(trendContainer))
+    , m_seatShareChart(new SeatShareChartWidget(seatShareContainer)), m_model(new StatisticsModel(this))
 {
     QLayout *placeholderLayout = filterCard->layout();
     while (QLayoutItem *item = placeholderLayout->takeAt(0)) delete item;
@@ -45,6 +50,22 @@ StatisticsController::StatisticsController(DataStore *dataStore, QWidget *filter
     for (QWidget *group : {quickFilterGroup, dateFilterGroup, trainFilterGroup,
                            stationFilterGroup, seatFilterGroup, actionGroup})
         filterFlow->addWidget(group);
+
+    QLayout *trendLayout = trendContainer->layout();
+    while (QLayoutItem *item = trendLayout->takeAt(0)) {
+        delete item->widget();
+        delete item;
+    }
+    trendLayout->setContentsMargins(0, 0, 0, 0);
+    trendLayout->addWidget(m_trendChart);
+
+    QLayout *seatShareLayout = seatShareContainer->layout();
+    while (QLayoutItem *item = seatShareLayout->takeAt(0)) {
+        delete item->widget();
+        delete item;
+    }
+    seatShareLayout->setContentsMargins(0, 0, 0, 0);
+    seatShareLayout->addWidget(m_seatShareChart);
 
     trainTable->setModel(m_model);
     trainTable->setEditTriggers(QAbstractItemView::NoEditTriggers);
@@ -56,6 +77,7 @@ StatisticsController::StatisticsController(DataStore *dataStore, QWidget *filter
     const QDate today = QDate::currentDate();
     m_dateFrom->setDate(today);
     m_dateTo->setDate(today);
+    applyQuickPeriod();
     populateOptions();
     connect(queryButton, &QPushButton::clicked, this, [this]() { refresh(); });
     connect(m_periodCombo, qOverload<int>(&QComboBox::currentIndexChanged), this,
@@ -101,11 +123,19 @@ void StatisticsController::applyQuickPeriod()
 
 void StatisticsController::refresh()
 {
-    if (m_dateFrom->date() > m_dateTo->date()) { m_model->setSummary({}); updateMetrics({}); return; }
+    if (m_dateFrom->date() > m_dateTo->date()) {
+        m_model->setSummary({});
+        m_trendChart->setPoints({});
+        m_seatShareChart->setShares({});
+        updateMetrics({});
+        return;
+    }
     const StatisticsFilter filter{m_dateFrom->date(), m_dateTo->date(), m_trainCombo->currentData().toString(),
                                   m_stationCombo->currentData().toString(), m_seatCombo->currentData().toString()};
     const StatisticsSummary summary = StatisticsService(m_dataStore).summarize(filter);
     m_model->setSummary(summary);
+    m_trendChart->setPoints(summary.dailyTrend);
+    m_seatShareChart->setShares(summary.seatShares);
     updateMetrics(summary);
 }
 

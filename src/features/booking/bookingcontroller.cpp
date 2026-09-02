@@ -59,7 +59,8 @@ void BookingController::bookSelected()
         return;
     const QModelIndex sourceIndex = proxy->mapToSource(proxyIndex);
     const TrainQueryRow *row = model->rowAt(sourceIndex.row());
-    if (!row)
+    const TrainSeatOption *seat = model->selectedSeatAt(sourceIndex.row());
+    if (!row || !seat)
         return;
 
     QDialog dialog(m_table);
@@ -74,9 +75,9 @@ void BookingController::bookSelected()
                  row->trainNumber,
                  row->departureTime.toString(QStringLiteral("HH:mm")),
                  QStringLiteral("%1小时%2分").arg(row->durationMinutes / 60).arg(row->durationMinutes % 60, 2, 10, QLatin1Char('0')),
-                 row->seatType,
-                 formatMoney(row->priceCents),
-                 QString::number(row->remainingSeats)),
+                 seat->seatType,
+                 formatMoney(seat->priceCents),
+                 QString::number(seat->remainingSeats)),
         &dialog);
     summary->setWordWrap(true);
     layout->addWidget(summary);
@@ -108,7 +109,7 @@ void BookingController::bookSelected()
         for (int i = 0; i < passengers->count(); ++i)
             selected += passengers->item(i)->checkState() == Qt::Checked;
         confirmButton->setEnabled(selected > 0);
-        totalLabel->setText(tr("合计：%1").arg(formatMoney(row->priceCents * selected)));
+        totalLabel->setText(tr("合计：%1").arg(formatMoney(seat->priceCents * selected)));
     });
     connect(buttons, &QDialogButtonBox::rejected, &dialog, &QDialog::reject);
     BookingReceipt receipt;
@@ -124,7 +125,7 @@ void BookingController::bookSelected()
              m_travelDate->date(),
              m_departureStation->currentData().toString(),
              m_arrivalStation->currentData().toString(),
-             row->seatType,
+             seat->seatType,
              passengerIds},
             &receipt);
         if (!result) {

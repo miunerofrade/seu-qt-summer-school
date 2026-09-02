@@ -16,6 +16,13 @@ struct TrainQueryRequest
     QDate serviceDate;
 };
 
+struct TrainSeatOption
+{
+    QString seatType;
+    int remainingSeats = 0;
+    qint64 priceCents = 0;
+};
+
 struct TrainQueryRow
 {
     QString trainNumber;
@@ -26,9 +33,7 @@ struct TrainQueryRow
     int departureDayOffset = 0;
     int arrivalDayOffset = 0;
     int durationMinutes = 0;
-    QString seatType;
-    int remainingSeats = 0;
-    qint64 priceCents = 0;
+    QVector<TrainSeatOption> seats;
 };
 
 class QueryService final

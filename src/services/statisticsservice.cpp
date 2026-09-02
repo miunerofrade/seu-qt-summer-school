@@ -3,6 +3,7 @@
 #include "data/datastore.h"
 
 #include <QHash>
+#include <QMap>
 
 #include <algorithm>
 
@@ -67,6 +68,8 @@ StatisticsSummary StatisticsService::summarize(const StatisticsFilter &filter) c
         refunds.insert(refund.ticketId, &refund);
 
     QHash<QString, RowAccumulator> accumulators;
+    QMap<QDate, DailyStatisticsPoint> dailyPoints;
+    QHash<QString, int> seatSales;
     int remainingTotal = 0;
     int capacityTotal = 0;
     for (const domain::Train &train : data.trains) {
@@ -107,9 +110,17 @@ StatisticsSummary StatisticsService::summarize(const StatisticsFilter &filter) c
         accumulator.row.route = routeText(data, ticket);
         ++accumulator.row.soldCount;
         accumulator.row.netRevenueCents += ticket.priceCents;
+        ++seatSales[ticket.seatType];
+
+        DailyStatisticsPoint &daily = dailyPoints[serviceDate];
+        daily.date = serviceDate;
+        ++daily.soldCount;
+        daily.netRevenueCents += ticket.priceCents;
         if (const auto refund = refunds.value(ticket.id, nullptr)) {
             ++accumulator.row.refundedCount;
             accumulator.row.netRevenueCents -= refund->refundAmountCents;
+            ++daily.refundedCount;
+            daily.netRevenueCents -= refund->refundAmountCents;
         }
     }
 
@@ -127,6 +138,30 @@ StatisticsSummary StatisticsService::summarize(const StatisticsFilter &filter) c
     }
     if (capacityTotal > 0)
         summary.averageRemainingRate = static_cast<double>(remainingTotal) / capacityTotal;
+
+    // 对常用日期范围补零，使趋势线真实表达无销量日期；超长范围只保留有数据日期。
+    const qint64 rangeDays = filter.from.isValid() && filter.to.isValid()
+                                 ? filter.from.daysTo(filter.to)
+                                 : -1;
+    if (rangeDays >= 0 && rangeDays <= 366) {
+        for (QDate date = filter.from; date <= filter.to; date = date.addDays(1)) {
+            DailyStatisticsPoint point = dailyPoints.value(date);
+            point.date = date;
+            summary.dailyTrend.append(point);
+        }
+    } else {
+        summary.dailyTrend.reserve(dailyPoints.size());
+        for (auto it = dailyPoints.cbegin(); it != dailyPoints.cend(); ++it)
+            summary.dailyTrend.append(it.value());
+    }
+    summary.seatShares.reserve(seatSales.size());
+    for (auto it = seatSales.cbegin(); it != seatSales.cend(); ++it)
+        summary.seatShares.append({it.key(), it.value()});
+    std::sort(summary.seatShares.begin(), summary.seatShares.end(), [](const SeatSharePoint &left,
+                                                                       const SeatSharePoint &right) {
+        return left.soldCount > right.soldCount
+            || (left.soldCount == right.soldCount && left.seatType < right.seatType);
+    });
     std::sort(summary.rows.begin(), summary.rows.end(), [](const StatisticsRow &left, const StatisticsRow &right) {
         return left.trainNumber < right.trainNumber || (left.trainNumber == right.trainNumber && left.route < right.route);
     });

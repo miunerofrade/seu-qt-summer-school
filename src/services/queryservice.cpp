@@ -80,6 +80,15 @@ QVector<TrainQueryRow> QueryService::query(const TrainQueryRequest &request) con
         while (arrivalMinutes < departureMinutes)
             arrivalMinutes += 24 * 60;
 
+        TrainQueryRow row{train.number,
+                          stationName(stations, request.departureStationCode),
+                          stationName(stations, request.arrivalStationCode),
+                          departureTime,
+                          arrivalTime,
+                          fromStop.dayOffset,
+                          toStop.dayOffset,
+                          arrivalMinutes - departureMinutes,
+                          {}};
         for (const domain::SeatInventory &seat : train.seats) {
             if (seat.segments.size() < toIndex)
                 continue;
@@ -97,19 +106,12 @@ QVector<TrainQueryRow> QueryService::query(const TrainQueryRequest &request) con
             }
             if (!valid)
                 continue;
-
-            rows.push_back({train.number,
-                            stationName(stations, request.departureStationCode),
-                            stationName(stations, request.arrivalStationCode),
-                            departureTime,
-                            arrivalTime,
-                            fromStop.dayOffset,
-                            toStop.dayOffset,
-                            arrivalMinutes - departureMinutes,
-                            seat.seatType,
-                            remainingSeats == std::numeric_limits<int>::max() ? 0 : remainingSeats,
-                            priceCents});
+            row.seats.append({seat.seatType,
+                              remainingSeats == std::numeric_limits<int>::max() ? 0 : remainingSeats,
+                              priceCents});
         }
+        if (!row.seats.isEmpty())
+            rows.push_back(std::move(row));
     }
     return rows;
 }

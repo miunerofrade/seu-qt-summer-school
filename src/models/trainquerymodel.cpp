@@ -36,16 +36,24 @@ QVariant TrainQueryModel::data(const QModelIndex &index, int role) const
     if (!index.isValid() || index.row() < 0 || index.row() >= m_rows.size())
         return {};
     const TrainQueryRow &row = m_rows.at(index.row());
-    if (role == Qt::UserRole)
+    const TrainSeatOption *seat = selectedSeatAt(index.row());
+    if (role == TrainNumberRole)
         return row.trainNumber;
-    if (role == Qt::UserRole + 1)
-        return row.seatType;
-    if (role == Qt::UserRole + 2)
-        return row.remainingSeats;
-    if (role == Qt::UserRole + 3)
-        return row.priceCents;
-    if (role == Qt::UserRole + 4)
+    if (role == SeatTypeRole)
+        return seat ? seat->seatType : QString();
+    if (role == RemainingSeatsRole)
+        return seat ? seat->remainingSeats : 0;
+    if (role == PriceRole)
+        return seat ? seat->priceCents : 0;
+    if (role == DepartureTimeRole)
         return row.departureTime;
+    if (role == SeatOptionsRole) {
+        QStringList options;
+        options.reserve(row.seats.size());
+        for (const TrainSeatOption &option : row.seats)
+            options.append(option.seatType);
+        return options;
+    }
     if (role == Qt::TextAlignmentRole)
         return Qt::AlignCenter;
     if (role != Qt::DisplayRole)
@@ -63,14 +71,43 @@ QVariant TrainQueryModel::data(const QModelIndex &index, int role) const
     case DurationColumn:
         return formatDuration(row.durationMinutes);
     case SeatTypeColumn:
-        return row.seatType;
+        return seat ? seat->seatType : QString();
     case RemainingSeatsColumn:
-        return row.remainingSeats;
+        return seat ? seat->remainingSeats : 0;
     case PriceColumn:
-        return formatMoney(row.priceCents);
+        return seat ? formatMoney(seat->priceCents) : QString();
     default:
         return {};
     }
+}
+
+bool TrainQueryModel::setData(const QModelIndex &index, const QVariant &value, int role)
+{
+    if (!index.isValid() || index.column() != SeatTypeColumn || role != Qt::EditRole
+        || index.row() < 0 || index.row() >= m_rows.size())
+        return false;
+    const auto &seats = m_rows.at(index.row()).seats;
+    const QString requested = value.toString();
+    for (int seatIndex = 0; seatIndex < seats.size(); ++seatIndex) {
+        if (seats.at(seatIndex).seatType != requested)
+            continue;
+        if (m_selectedSeats.at(index.row()) == seatIndex)
+            return true;
+        m_selectedSeats[index.row()] = seatIndex;
+        emit dataChanged(this->index(index.row(), SeatTypeColumn),
+                         this->index(index.row(), PriceColumn),
+                         {Qt::DisplayRole, SeatTypeRole, RemainingSeatsRole, PriceRole});
+        return true;
+    }
+    return false;
+}
+
+Qt::ItemFlags TrainQueryModel::flags(const QModelIndex &index) const
+{
+    Qt::ItemFlags result = QAbstractTableModel::flags(index);
+    if (index.isValid() && index.column() == SeatTypeColumn)
+        result |= Qt::ItemIsEditable;
+    return result;
 }
 
 QVariant TrainQueryModel::headerData(int section, Qt::Orientation orientation, int role) const
@@ -88,10 +125,40 @@ void TrainQueryModel::setRows(QVector<TrainQueryRow> rows)
 {
     beginResetModel();
     m_rows = std::move(rows);
+    m_selectedSeats.fill(0, m_rows.size());
     endResetModel();
 }
 
 const TrainQueryRow *TrainQueryModel::rowAt(int row) const
 {
     return row >= 0 && row < m_rows.size() ? &m_rows.at(row) : nullptr;
+}
+
+const TrainSeatOption *TrainQueryModel::selectedSeatAt(int row) const
+{
+    const TrainQueryRow *queryRow = rowAt(row);
+    if (!queryRow || row >= m_selectedSeats.size())
+        return nullptr;
+    const int seatIndex = m_selectedSeats.at(row);
+    return seatIndex >= 0 && seatIndex < queryRow->seats.size() ? &queryRow->seats.at(seatIndex) : nullptr;
+}
+
+void TrainQueryModel::selectSeatType(const QString &seatType, bool availableOnly)
+{
+    for (int row = 0; row < m_rows.size(); ++row) {
+        const auto &seats = m_rows.at(row).seats;
+        int selected = -1;
+        for (int seatIndex = 0; seatIndex < seats.size(); ++seatIndex) {
+            if ((!seatType.isEmpty() && seats.at(seatIndex).seatType == seatType)
+                || (seatType.isEmpty() && (!availableOnly || seats.at(seatIndex).remainingSeats > 0))) {
+                selected = seatIndex;
+                break;
+            }
+        }
+        if (selected < 0 || selected == m_selectedSeats.at(row))
+            continue;
+        m_selectedSeats[row] = selected;
+        emit dataChanged(index(row, SeatTypeColumn), index(row, PriceColumn),
+                         {Qt::DisplayRole, SeatTypeRole, RemainingSeatsRole, PriceRole});
+    }
 }

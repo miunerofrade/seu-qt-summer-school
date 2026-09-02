@@ -12,7 +12,11 @@
 #include "features/statistics/statisticscontroller.h"
 
 #include <QDir>
+#include <QAction>
 #include <QIcon>
+#include <QKeySequence>
+#include <QMenu>
+#include <QMenuBar>
 #include <QMessageBox>
 #include <QPushButton>
 #include <QTimer>
@@ -120,6 +124,8 @@ MainWindow::MainWindow(QWidget *parent)
                              ui->labelMetricRevenueCaption,
                              ui->labelMetricRateValue,
                              ui->labelMetricRateCaption,
+                             ui->statisticsTrendPlaceholder,
+                             ui->statisticsSeatPlaceholder,
                              ui->tableStatisticsTrains,
                              this);
     new SettingsController(m_dataStore,
@@ -133,6 +139,8 @@ MainWindow::MainWindow(QWidget *parent)
                            ui->btnSaveDataNow,
                            ui->btnReloadData,
                            this);
+
+    setupMenuBar();
 
     if (!initialization) {
         const QString error = initialization.error;
@@ -187,4 +195,79 @@ MainWindow::MainWindow(QWidget *parent)
 MainWindow::~MainWindow()
 {
     delete ui;
+}
+
+void MainWindow::setupMenuBar()
+{
+    ui->menubar->setStyleSheet(QStringLiteral(R"(
+QMenuBar {
+    background-color: #FFFFFF;
+    border-bottom: 1px solid #E5E7EB;
+    padding: 2px 6px;
+}
+QMenuBar::item {
+    background: transparent;
+    border-radius: 4px;
+    padding: 4px 9px;
+}
+QMenuBar::item:selected {
+    background-color: #EDF3FA;
+}
+)"));
+
+    QMenu *fileMenu = ui->menubar->addMenu(tr("文件(&F)"));
+    QAction *saveAction = fileMenu->addAction(tr("保存数据(&S)"));
+    saveAction->setShortcut(QKeySequence::Save);
+    saveAction->setEnabled(m_dataStore->isWritable());
+    connect(saveAction, &QAction::triggered, ui->btnSaveDataNow, &QPushButton::click);
+    connect(m_dataStore, &DataStore::statusChanged, saveAction, [this, saveAction]() {
+        saveAction->setEnabled(m_dataStore->isWritable());
+    });
+
+    QAction *openDirectoryAction = fileMenu->addAction(tr("打开数据目录(&O)"));
+    connect(openDirectoryAction, &QAction::triggered, ui->btnOpenDataDirectory, &QPushButton::click);
+    QAction *reloadAction = fileMenu->addAction(tr("重新加载数据(&R)"));
+    reloadAction->setShortcut(QKeySequence(QStringLiteral("Ctrl+Shift+R")));
+    connect(reloadAction, &QAction::triggered, ui->btnReloadData, &QPushButton::click);
+    fileMenu->addSeparator();
+    QAction *exitAction = fileMenu->addAction(tr("退出(&X)"));
+    exitAction->setShortcut(QKeySequence::Quit);
+    connect(exitAction, &QAction::triggered, this, &QWidget::close);
+
+    QMenu *dataMenu = ui->menubar->addMenu(tr("数据(&D)"));
+    QAction *addPassengerAction = dataMenu->addAction(tr("新增乘车人(&P)"));
+    addPassengerAction->setShortcut(QKeySequence::New);
+    connect(addPassengerAction, &QAction::triggered, ui->btnAddPassenger, &QPushButton::click);
+    dataMenu->addSeparator();
+    QAction *stationAction = dataMenu->addAction(tr("车站管理"));
+    connect(stationAction, &QAction::triggered, ui->btnManageStations, &QPushButton::click);
+    QAction *trainAction = dataMenu->addAction(tr("车次管理"));
+    connect(trainAction, &QAction::triggered, ui->btnManageTrains, &QPushButton::click);
+    QAction *scheduleAction = dataMenu->addAction(tr("时刻与经停站管理"));
+    connect(scheduleAction, &QAction::triggered, ui->btnManageSchedules, &QPushButton::click);
+    QAction *seatAction = dataMenu->addAction(tr("席别、票价与余票管理"));
+    connect(seatAction, &QAction::triggered, ui->btnManageSeats, &QPushButton::click);
+
+    QMenu *viewMenu = ui->menubar->addMenu(tr("视图(&V)"));
+    const auto addPageAction = [viewMenu](const QString &text, const QKeySequence &shortcut,
+                                          QToolButton *button) {
+        QAction *action = viewMenu->addAction(text);
+        action->setShortcut(shortcut);
+        QObject::connect(action, &QAction::triggered, button, &QToolButton::click);
+    };
+    addPageAction(tr("车票查询"), QKeySequence(QStringLiteral("Ctrl+1")), ui->btnQuery);
+    addPageAction(tr("乘车人"), QKeySequence(QStringLiteral("Ctrl+2")), ui->btnPassenger);
+    addPageAction(tr("订单"), QKeySequence(QStringLiteral("Ctrl+3")), ui->btnOrder);
+    addPageAction(tr("管理"), QKeySequence(QStringLiteral("Ctrl+4")), ui->btnAdmin);
+    addPageAction(tr("统计"), QKeySequence(QStringLiteral("Ctrl+5")), ui->btnStatistics);
+    addPageAction(tr("设置"), QKeySequence(QStringLiteral("Ctrl+6")), ui->btnSettings);
+
+    QMenu *helpMenu = ui->menubar->addMenu(tr("帮助(&H)"));
+    QAction *aboutAction = helpMenu->addAction(tr("关于(&A)"));
+    aboutAction->setShortcut(QKeySequence::HelpContents);
+    connect(aboutAction, &QAction::triggered, this, [this]() {
+        QMessageBox::about(this,
+                           tr("关于列车客运售票管理系统"),
+                           tr("列车客运售票管理系统\n\n用于车票查询、乘车人及订单管理、运营配置与数据统计。"));
+    });
 }

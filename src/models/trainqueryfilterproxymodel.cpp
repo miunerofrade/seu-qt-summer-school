@@ -2,6 +2,8 @@
 
 #include "models/trainquerymodel.h"
 
+#include <algorithm>
+
 TrainQueryFilterProxyModel::TrainQueryFilterProxyModel(QObject *parent)
     : QSortFilterProxyModel(parent)
 {
@@ -53,9 +55,11 @@ bool TrainQueryFilterProxyModel::filterAcceptsRow(int sourceRow, const QModelInd
     const TrainQueryRow *row = model->rowAt(sourceRow);
     if (!row)
         return false;
-    return (m_trainNumber.isEmpty() || row->trainNumber == m_trainNumber)
-           && (m_seatType.isEmpty() || row->seatType == m_seatType)
-           && (!m_availableOnly || row->remainingSeats > 0);
+    const bool hasMatchingSeat = std::any_of(row->seats.cbegin(), row->seats.cend(), [this](const TrainSeatOption &seat) {
+        return (m_seatType.isEmpty() || seat.seatType == m_seatType)
+            && (!m_availableOnly || seat.remainingSeats > 0);
+    });
+    return (m_trainNumber.isEmpty() || row->trainNumber == m_trainNumber) && hasMatchingSeat;
 }
 
 bool TrainQueryFilterProxyModel::lessThan(const QModelIndex &left, const QModelIndex &right) const
@@ -67,8 +71,11 @@ bool TrainQueryFilterProxyModel::lessThan(const QModelIndex &left, const QModelI
     const TrainQueryRow *rightRow = model->rowAt(right.row());
     if (!leftRow || !rightRow)
         return false;
-    if (m_sortByPrice)
-        return leftRow->priceCents < rightRow->priceCents;
+    if (m_sortByPrice) {
+        const TrainSeatOption *leftSeat = model->selectedSeatAt(left.row());
+        const TrainSeatOption *rightSeat = model->selectedSeatAt(right.row());
+        return leftSeat && rightSeat ? leftSeat->priceCents < rightSeat->priceCents : leftSeat != nullptr;
+    }
     const int leftTime = leftRow->departureTime.hour() * 60 + leftRow->departureTime.minute()
                          + leftRow->departureDayOffset * 24 * 60;
     const int rightTime = rightRow->departureTime.hour() * 60 + rightRow->departureTime.minute()

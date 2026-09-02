@@ -39,14 +39,19 @@ void PhaseThreeTests::directQueryAggregatesPriceAndInventory()
 
     QueryService service(store.get());
     const auto rows = service.query({QStringLiteral("NJN"), QStringLiteral("SHH"), QDate::currentDate()});
-    QCOMPARE(rows.size(), 4);
+    QCOMPARE(rows.size(), 2);
 
     const auto it = std::find_if(rows.cbegin(), rows.cend(), [](const TrainQueryRow &row) {
-        return row.trainNumber == QStringLiteral("G101") && row.seatType == QStringLiteral("二等座");
+        return row.trainNumber == QStringLiteral("G101");
     });
     QVERIFY(it != rows.cend());
-    QCOMPARE(it->priceCents, qint64(15000));
-    QCOMPARE(it->remainingSeats, 35);
+    QCOMPARE(it->seats.size(), 2);
+    const auto seat = std::find_if(it->seats.cbegin(), it->seats.cend(), [](const TrainSeatOption &option) {
+        return option.seatType == QStringLiteral("二等座");
+    });
+    QVERIFY(seat != it->seats.cend());
+    QCOMPARE(seat->priceCents, qint64(15000));
+    QCOMPARE(seat->remainingSeats, 35);
     QCOMPARE(it->departureTime, QTime(8, 0));
     QCOMPARE(it->arrivalTime, QTime(9, 20));
     QCOMPARE(it->durationMinutes, 80);
@@ -60,12 +65,13 @@ void PhaseThreeTests::multiSegmentQueryUsesRequestedRange()
 
     QueryService service(store.get());
     const auto rows = service.query({QStringLiteral("NJN"), QStringLiteral("HGH"), QDate::currentDate()});
-    QCOMPARE(rows.size(), 2);
-    for (const TrainQueryRow &row : rows) {
-        QCOMPARE(row.trainNumber, QStringLiteral("G205"));
-        QCOMPARE(row.priceCents, row.seatType == QStringLiteral("二等座") ? qint64(22200) : qint64(35400));
-        QCOMPARE(row.remainingSeats, row.seatType == QStringLiteral("二等座") ? 58 : 15);
-    }
+    QCOMPARE(rows.size(), 1);
+    QCOMPARE(rows.first().trainNumber, QStringLiteral("G205"));
+    QCOMPARE(rows.first().seats.size(), 2);
+    QCOMPARE(rows.first().seats.at(0).priceCents, qint64(22200));
+    QCOMPARE(rows.first().seats.at(0).remainingSeats, 58);
+    QCOMPARE(rows.first().seats.at(1).priceCents, qint64(35400));
+    QCOMPARE(rows.first().seats.at(1).remainingSeats, 15);
 }
 
 void PhaseThreeTests::disabledAndInvalidRoutesAreExcluded()
@@ -82,7 +88,7 @@ void PhaseThreeTests::disabledAndInvalidRoutesAreExcluded()
     candidate.trains[0].enabled = false;
     QVERIFY(store->commit(candidate));
     const auto rows = service.query({QStringLiteral("NJN"), QStringLiteral("SHH"), QDate::currentDate()});
-    QCOMPARE(rows.size(), 2);
+    QCOMPARE(rows.size(), 1);
     for (const TrainQueryRow &row : rows)
         QCOMPARE(row.trainNumber, QStringLiteral("G205"));
 }
@@ -98,17 +104,21 @@ void PhaseThreeTests::proxyFiltersAndSortsRows()
     TrainQueryFilterProxyModel proxy;
     proxy.setSourceModel(&model);
 
-    QCOMPARE(proxy.rowCount(), 4);
-    proxy.setTrainNumberFilter(QStringLiteral("G101"));
     QCOMPARE(proxy.rowCount(), 2);
+    proxy.setTrainNumberFilter(QStringLiteral("G101"));
+    QCOMPARE(proxy.rowCount(), 1);
     proxy.setSeatTypeFilter(QStringLiteral("一等座"));
     QCOMPARE(proxy.rowCount(), 1);
     proxy.setTrainNumberFilter({});
     proxy.setSeatTypeFilter({});
     proxy.setAvailableOnly(true);
-    QCOMPARE(proxy.rowCount(), 4);
+    QCOMPARE(proxy.rowCount(), 2);
     proxy.setSortByPrice(true);
     QCOMPARE(proxy.index(0, TrainQueryModel::PriceColumn).data().toString(), QStringLiteral("¥149.00"));
+
+    const QModelIndex g205Seat = model.index(1, TrainQueryModel::SeatTypeColumn);
+    QVERIFY(model.setData(g205Seat, QStringLiteral("一等座")));
+    QCOMPARE(model.index(1, TrainQueryModel::PriceColumn).data().toString(), QStringLiteral("¥238.00"));
 }
 
 QTEST_GUILESS_MAIN(PhaseThreeTests)

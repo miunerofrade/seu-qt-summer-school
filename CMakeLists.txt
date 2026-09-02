@@ -31,6 +31,10 @@ set(PROJECT_SOURCES
         src/widgets/dialogstyle.h
         src/widgets/flowlayout.cpp
         src/widgets/flowlayout.h
+        src/widgets/seatsharechartwidget.cpp
+        src/widgets/seatsharechartwidget.h
+        src/widgets/trendchartwidget.cpp
+        src/widgets/trendchartwidget.h
         src/common/result.h
         src/domain/entities.cpp
         src/domain/entities.h
@@ -49,6 +53,8 @@ set(PROJECT_SOURCES
         src/models/orderdelegates.h
         src/models/ordertablemodel.cpp
         src/models/ordertablemodel.h
+        src/models/seattypecombodelegate.cpp
+        src/models/seattypecombodelegate.h
         src/models/statisticsmodel.cpp
         src/models/statisticsmodel.h
         src/models/trainqueryfilterproxymodel.cpp

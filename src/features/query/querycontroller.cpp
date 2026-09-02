@@ -3,6 +3,7 @@
 #include "data/datastore.h"
 #include "models/trainqueryfilterproxymodel.h"
 #include "models/trainquerymodel.h"
+#include "models/seattypecombodelegate.h"
 #include "services/queryservice.h"
 
 #include <QAbstractItemView>
@@ -44,10 +45,12 @@ QueryController::QueryController(DataStore *dataStore,
     m_proxy->setSourceModel(m_model);
     m_proxy->sort(0, Qt::AscendingOrder);
     m_table->setModel(m_proxy);
-    m_table->setEditTriggers(QAbstractItemView::NoEditTriggers);
+    m_table->setEditTriggers(QAbstractItemView::CurrentChanged | QAbstractItemView::SelectedClicked);
     m_table->setSelectionBehavior(QAbstractItemView::SelectRows);
     m_table->setSelectionMode(QAbstractItemView::SingleSelection);
     m_table->setSortingEnabled(false);
+    m_table->setItemDelegateForColumn(TrainQueryModel::SeatTypeColumn,
+                                      new SeatTypeComboDelegate(m_table));
     m_table->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
     m_table->verticalHeader()->setVisible(false);
 
@@ -154,6 +157,7 @@ void QueryController::executeQuery()
 
 void QueryController::applyFilters()
 {
+    m_model->selectSeatType(m_seatFilter->currentData().toString(), m_availableOnly->isChecked());
     m_proxy->setTrainNumberFilter(m_trainFilter->currentData().toString());
     m_proxy->setSeatTypeFilter(m_seatFilter->currentData().toString());
     m_proxy->setAvailableOnly(m_availableOnly->isChecked());

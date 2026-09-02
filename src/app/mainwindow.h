@@ -20,6 +20,8 @@ public:
     ~MainWindow() override;
 
 private:
+    void setupMenuBar();
+
     Ui::MainWindow *ui;
     DataStore *m_dataStore;
 };

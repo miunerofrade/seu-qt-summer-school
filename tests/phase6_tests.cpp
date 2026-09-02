@@ -44,6 +44,14 @@ void PhaseSixTests::aggregatesTicketsRefundsAndNetRevenue()
     QCOMPARE(summary.netRevenueCents, qint64(15000));
     QVERIFY(!summary.rows.isEmpty());
     QVERIFY(summary.averageRemainingRate > 0.0);
+    QCOMPARE(summary.dailyTrend.size(), 1);
+    QCOMPARE(summary.dailyTrend.first().date, date);
+    QCOMPARE(summary.dailyTrend.first().soldCount, 2);
+    QCOMPARE(summary.dailyTrend.first().refundedCount, 1);
+    QCOMPARE(summary.dailyTrend.first().netRevenueCents, qint64(15000));
+    QCOMPARE(summary.seatShares.size(), 1);
+    QCOMPARE(summary.seatShares.first().seatType, QStringLiteral("二等座"));
+    QCOMPARE(summary.seatShares.first().soldCount, 2);
 }
 
 void PhaseSixTests::filtersByTrainSeatStationAndDate()

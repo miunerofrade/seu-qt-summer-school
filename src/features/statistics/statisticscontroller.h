@@ -13,6 +13,8 @@ class QPushButton;
 class QTableView;
 class QWidget;
 class StatisticsModel;
+class TrendChartWidget;
+class SeatShareChartWidget;
 
 class StatisticsController final : public QObject
 {
@@ -25,6 +27,7 @@ public:
                          QPushButton *exportButton, QLabel *soldValue, QLabel *soldCaption,
                          QLabel *refundedValue, QLabel *refundedCaption, QLabel *revenueValue,
                          QLabel *revenueCaption, QLabel *rateValue, QLabel *rateCaption,
+                         QWidget *trendContainer, QWidget *seatShareContainer,
                          QTableView *trainTable, QObject *parent = nullptr);
 
 private:
@@ -48,6 +51,8 @@ private:
     QLabel *m_revenueCaption;
     QLabel *m_rateValue;
     QLabel *m_rateCaption;
+    TrendChartWidget *m_trendChart;
+    SeatShareChartWidget *m_seatShareChart;
     StatisticsModel *m_model;
 };
 
