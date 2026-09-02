@@ -87,9 +87,6 @@ MainWindow::MainWindow(QWidget *parent)
                             this);
     new AdminController(m_dataStore,
                         {this,
-                         ui->editAdminSearch,
-                         ui->btnRecentAdmin,
-                         ui->btnAddAdminData,
                          ui->btnManageStations,
                          ui->btnManageTrains,
                          ui->btnManageSchedules,
@@ -97,12 +94,7 @@ MainWindow::MainWindow(QWidget *parent)
                          ui->labelStationAdminData,
                          ui->labelTrainAdminData,
                          ui->labelScheduleAdminData,
-                         ui->labelSeatAdminData,
-                         ui->cardStationAdmin,
-                         ui->cardTrainAdmin,
-                         ui->cardScheduleAdmin,
-                         ui->cardSeatAdmin,
-                         ui->adminRecentCard},
+                         ui->labelSeatAdminData},
                         this);
     new StatisticsController(m_dataStore,
                              ui->statisticsFilterCard,
