@@ -37,6 +37,67 @@ QLineEdit, QDateEdit, QTableView {
     border: 1px solid #D8DDE6;
     border-radius: 6px;
 }
+QTableView {
+    outline: none;
+    selection-background-color: #0A84FF;
+    selection-color: #FFFFFF;
+}
+QTableView::item:selected,
+QTableView::item:selected:active,
+QTableView::item:selected:!active {
+    background-color: #0A84FF;
+    border: none;
+    border-radius: 0px;
+    color: #FFFFFF;
+}
+QTableView::item:hover {
+    background-color: transparent;
+    border: none;
+    border-radius: 0px;
+}
+QTableView::item:selected:hover {
+    background-color: #0A84FF;
+    color: #FFFFFF;
+}
+QTableView QHeaderView {
+    background-color: #FFFFFF;
+    border: none;
+    border-top-left-radius: 5px;
+    border-top-right-radius: 5px;
+}
+QTableView QHeaderView::section {
+    background-color: #FFFFFF;
+    border: none;
+    border-bottom: 1px solid #E5E7EB;
+    color: #6E6E73;
+    padding: 8px;
+}
+QTableView QHeaderView::section:first {
+    border-top-left-radius: 5px;
+}
+QTableView QHeaderView::section:last {
+    border-top-right-radius: 5px;
+}
+QTableView QHeaderView::section:only-one {
+    border-top-left-radius: 5px;
+    border-top-right-radius: 5px;
+}
+QTableView QHeaderView::down-arrow {
+    image: url(:/icons/chevron-down.svg);
+    width: 10px;
+    height: 10px;
+    subcontrol-origin: padding;
+    subcontrol-position: right center;
+    right: 6px;
+}
+QTableView QHeaderView::up-arrow {
+    image: url(:/icons/chevron-up.svg);
+    width: 10px;
+    height: 10px;
+    subcontrol-origin: padding;
+    subcontrol-position: right center;
+    right: 6px;
+}
 QLineEdit, QDateEdit {
     min-height: 26px;
 }
