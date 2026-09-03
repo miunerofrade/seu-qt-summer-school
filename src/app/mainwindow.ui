@@ -1194,15 +1194,22 @@ QLabel#labelAdminTitle {
     font-weight: 600;
 }
 
+QLabel#labelAdminSubtitle {
+    color: #6E6E73;
+    font-size: 13px;
+}
+
 QFrame#adminBaseGroup,
-QFrame#adminOperationGroup {
+QFrame#adminOperationGroup,
+QFrame#adminRecoveryGroup {
     background-color: #FFFFFF;
     border: 1px solid #E5E7EB;
     border-radius: 10px;
 }
 
 QLabel#labelAdminBaseGroup,
-QLabel#labelAdminOperationGroup {
+QLabel#labelAdminOperationGroup,
+QLabel#labelAdminRecoveryGroup {
     background-color: #F7F9FC;
     border: none;
     border-bottom: 1px solid #E5E7EB;
@@ -1217,7 +1224,8 @@ QLabel#labelAdminOperationGroup {
 QPushButton#btnManageStations,
 QPushButton#btnManageTrains,
 QPushButton#btnManageSchedules,
-QPushButton#btnManageSeats {
+QPushButton#btnManageSeats,
+QPushButton#btnResetAdminData {
     background-color: #FFFFFF;
     border: 1px solid #D8DDE6;
     border-radius: 6px;
@@ -1231,6 +1239,15 @@ QPushButton#btnManageSchedules:hover,
 QPushButton#btnManageSeats:hover {
     background-color: #F0F6FF;
     border-color: #A8CFFF;
+}
+
+QPushButton#btnResetAdminData {
+    color: #C9342C;
+}
+
+QPushButton#btnResetAdminData:hover {
+    background-color: #FFF3F2;
+    border-color: #F1B7B2;
 }
 
 QFrame#cardStationAdmin,
@@ -1280,6 +1297,11 @@ QLabel#labelSeatAdminData {
     color: #515866;
     font-size: 12px;
     padding-right: 8px;
+}
+
+QLabel#labelAdminBackupData {
+    color: #6E6E73;
+    font-size: 12px;
 }</string>
        </property>
        <layout class="QVBoxLayout" name="verticalLayoutAdmin">
@@ -1290,9 +1312,10 @@ QLabel#labelSeatAdminData {
         <property name="bottomMargin"><number>24</number></property>
         <item>
          <widget class="QLabel" name="labelAdminTitle">
-          <property name="text"><string>管理</string></property>
+          <property name="text"><string>运营数据管理</string></property>
          </widget>
         </item>
+        <item><widget class="QLabel" name="labelAdminSubtitle"><property name="text"><string>直接维护本地演示数据；所有修改会立即保存到 JSON</string></property></widget></item>
         <item>
          <widget class="QFrame" name="adminBaseGroup">
           <property name="frameShape"><enum>QFrame::Shape::StyledPanel</enum></property>
@@ -1319,7 +1342,7 @@ QLabel#labelSeatAdminData {
              <layout class="QHBoxLayout" name="horizontalLayoutTrainAdmin">
               <property name="spacing"><number>12</number></property><property name="leftMargin"><number>16</number></property><property name="topMargin"><number>12</number></property><property name="rightMargin"><number>16</number></property><property name="bottomMargin"><number>12</number></property>
               <item><widget class="QLabel" name="labelTrainAdminIcon"><property name="minimumSize"><size><width>44</width><height>44</height></size></property><property name="maximumSize"><size><width>44</width><height>44</height></size></property><property name="pixmap"><pixmap resource="resources.qrc">:/icons/train-front.svg</pixmap></property><property name="alignment"><set>Qt::AlignmentFlag::AlignCenter</set></property></widget></item>
-              <item><layout class="QVBoxLayout" name="verticalLayoutTrainAdminText"><property name="spacing"><number>2</number></property><item><widget class="QLabel" name="labelTrainAdminTitle"><property name="text"><string>车次管理</string></property></widget></item><item><widget class="QLabel" name="labelTrainAdminDescription"><property name="text"><string>维护车次编号、起终点和运行状态</string></property></widget></item></layout></item>
+              <item><layout class="QVBoxLayout" name="verticalLayoutTrainAdminText"><property name="spacing"><number>2</number></property><item><widget class="QLabel" name="labelTrainAdminTitle"><property name="text"><string>车次管理</string></property></widget></item><item><widget class="QLabel" name="labelTrainAdminDescription"><property name="text"><string>新增每日运行车次，或隐藏查询中不需要的车次</string></property></widget></item></layout></item>
               <item><spacer name="horizontalSpacerTrainAdmin"><property name="orientation"><enum>Qt::Orientation::Horizontal</enum></property><property name="sizeHint" stdset="0"><size><width>40</width><height>20</height></size></property></spacer></item>
               <item><widget class="QLabel" name="labelTrainAdminData"><property name="text"><string>暂无数据</string></property></widget></item>
               <item><widget class="QPushButton" name="btnManageTrains"><property name="text"><string>管理车次</string></property></widget></item>
@@ -1359,6 +1382,28 @@ QLabel#labelSeatAdminData {
               <item><spacer name="horizontalSpacerSeatAdmin"><property name="orientation"><enum>Qt::Orientation::Horizontal</enum></property><property name="sizeHint" stdset="0"><size><width>40</width><height>20</height></size></property></spacer></item>
               <item><widget class="QLabel" name="labelSeatAdminData"><property name="text"><string>暂无数据</string></property></widget></item>
               <item><widget class="QPushButton" name="btnManageSeats"><property name="text"><string>管理席别与票价</string></property></widget></item>
+             </layout>
+            </widget>
+           </item>
+          </layout>
+         </widget>
+        </item>
+        <item>
+         <widget class="QFrame" name="adminRecoveryGroup">
+          <property name="frameShape"><enum>QFrame::Shape::StyledPanel</enum></property>
+          <layout class="QVBoxLayout" name="verticalLayoutAdminRecoveryGroup">
+           <property name="spacing"><number>0</number></property>
+           <property name="leftMargin"><number>0</number></property><property name="topMargin"><number>0</number></property><property name="rightMargin"><number>0</number></property><property name="bottomMargin"><number>0</number></property>
+           <item><widget class="QLabel" name="labelAdminRecoveryGroup"><property name="text"><string>数据恢复</string></property></widget></item>
+           <item>
+            <widget class="QFrame" name="cardAdminRecovery">
+             <property name="minimumSize"><size><width>0</width><height>76</height></size></property>
+             <layout class="QHBoxLayout" name="horizontalLayoutAdminRecovery">
+              <property name="spacing"><number>12</number></property><property name="leftMargin"><number>16</number></property><property name="topMargin"><number>12</number></property><property name="rightMargin"><number>16</number></property><property name="bottomMargin"><number>12</number></property>
+              <item><layout class="QVBoxLayout" name="verticalLayoutAdminRecoveryText"><property name="spacing"><number>2</number></property><item><widget class="QLabel" name="labelAdminRecoveryTitle"><property name="text"><string>恢复初始数据</string></property><property name="styleSheet"><string notr="true">font-size: 16px; font-weight: 600; color: #1D1D1F;</string></property></widget></item><item><widget class="QLabel" name="labelAdminRecoveryDescription"><property name="text"><string>从基线备份恢复完整业务数据，恢复前自动保留当前快照</string></property><property name="styleSheet"><string notr="true">color: #6E6E73; font-size: 13px;</string></property></widget></item></layout></item>
+              <item><spacer name="horizontalSpacerAdminRecovery"><property name="orientation"><enum>Qt::Orientation::Horizontal</enum></property><property name="sizeHint" stdset="0"><size><width>40</width><height>20</height></size></property></spacer></item>
+              <item><widget class="QLabel" name="labelAdminBackupData"><property name="text"><string>正在检查备份</string></property></widget></item>
+              <item><widget class="QPushButton" name="btnResetAdminData"><property name="text"><string>恢复初始数据</string></property></widget></item>
              </layout>
             </widget>
            </item>
@@ -1686,9 +1731,9 @@ QPushButton#btnSaveDataNow:hover {
               <layout class="QVBoxLayout" name="verticalLayoutSettingsBackupCard">
                <property name="spacing"><number>12</number></property><property name="leftMargin"><number>20</number></property><property name="topMargin"><number>18</number></property><property name="rightMargin"><number>20</number></property><property name="bottomMargin"><number>18</number></property>
                <item><widget class="QLabel" name="labelSettingsBackupTitle"><property name="text"><string>备份与恢复</string></property><property name="class">settingsSectionTitle</property></widget></item>
-               <item><widget class="QLabel" name="labelSettingsBackupNote"><property name="text"><string>以下能力将在后续版本中提供</string></property><property name="class">settingsSecondary</property></widget></item>
-               <item><widget class="QWidget" name="settingsCreateBackupRow" native="true"><layout class="QHBoxLayout" name="horizontalLayoutSettingsCreateBackup"><property name="leftMargin"><number>0</number></property><property name="topMargin"><number>0</number></property><property name="rightMargin"><number>0</number></property><property name="bottomMargin"><number>0</number></property><item><widget class="QLabel" name="labelSettingsCreateBackup"><property name="text"><string>创建本地数据备份</string></property><property name="class">settingsFieldLabel</property></widget></item><item><spacer name="horizontalSpacerSettingsCreateBackup"><property name="orientation"><enum>Qt::Orientation::Horizontal</enum></property><property name="sizeHint" stdset="0"><size><width>40</width><height>20</height></size></property></spacer></item><item><widget class="QPushButton" name="btnCreateBackup"><property name="enabled"><bool>false</bool></property><property name="text"><string>创建备份（后续功能）</string></property></widget></item></layout></widget></item>
-               <item><widget class="QWidget" name="settingsRestoreBackupRow" native="true"><layout class="QHBoxLayout" name="horizontalLayoutSettingsRestoreBackup"><property name="leftMargin"><number>0</number></property><property name="topMargin"><number>0</number></property><property name="rightMargin"><number>0</number></property><property name="bottomMargin"><number>0</number></property><item><widget class="QLabel" name="labelSettingsRestoreBackup"><property name="text"><string>从备份文件恢复数据</string></property><property name="class">settingsFieldLabel</property></widget></item><item><spacer name="horizontalSpacerSettingsRestoreBackup"><property name="orientation"><enum>Qt::Orientation::Horizontal</enum></property><property name="sizeHint" stdset="0"><size><width>40</width><height>20</height></size></property></spacer></item><item><widget class="QPushButton" name="btnRestoreBackup"><property name="enabled"><bool>false</bool></property><property name="text"><string>恢复备份（后续功能）</string></property></widget></item></layout></widget></item>
+               <item><widget class="QLabel" name="labelSettingsBackupNote"><property name="text"><string>正在检查基线备份</string></property><property name="class">settingsSecondary</property></widget></item>
+               <item><widget class="QWidget" name="settingsCreateBackupRow" native="true"><layout class="QHBoxLayout" name="horizontalLayoutSettingsCreateBackup"><property name="leftMargin"><number>0</number></property><property name="topMargin"><number>0</number></property><property name="rightMargin"><number>0</number></property><property name="bottomMargin"><number>0</number></property><item><widget class="QLabel" name="labelSettingsCreateBackup"><property name="text"><string>将当前数据设为恢复基线</string></property><property name="class">settingsFieldLabel</property></widget></item><item><spacer name="horizontalSpacerSettingsCreateBackup"><property name="orientation"><enum>Qt::Orientation::Horizontal</enum></property><property name="sizeHint" stdset="0"><size><width>40</width><height>20</height></size></property></spacer></item><item><widget class="QPushButton" name="btnCreateBackup"><property name="text"><string>更新基线备份</string></property></widget></item></layout></widget></item>
+               <item><widget class="QWidget" name="settingsRestoreBackupRow" native="true"><layout class="QHBoxLayout" name="horizontalLayoutSettingsRestoreBackup"><property name="leftMargin"><number>0</number></property><property name="topMargin"><number>0</number></property><property name="rightMargin"><number>0</number></property><property name="bottomMargin"><number>0</number></property><item><widget class="QLabel" name="labelSettingsRestoreBackup"><property name="text"><string>恢复基线并保留当前快照</string></property><property name="class">settingsFieldLabel</property></widget></item><item><spacer name="horizontalSpacerSettingsRestoreBackup"><property name="orientation"><enum>Qt::Orientation::Horizontal</enum></property><property name="sizeHint" stdset="0"><size><width>40</width><height>20</height></size></property></spacer></item><item><widget class="QPushButton" name="btnRestoreBackup"><property name="text"><string>从基线恢复</string></property></widget></item></layout></widget></item>
               </layout>
              </widget>
             </item>

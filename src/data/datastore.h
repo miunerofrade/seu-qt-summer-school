@@ -31,10 +31,15 @@ public:
     OperationResult reload();
     OperationResult save();
     OperationResult commit(domain::AppData candidate);
+    OperationResult ensureBackup();
+    OperationResult createBackup();
+    OperationResult restoreBackup();
 
     const domain::AppData &data() const;
     QString dataFilePath() const;
     QString dataDirectory() const;
+    QString backupFilePath() const;
+    QString lastSafetyBackupPath() const;
     QDateTime lastSavedAt() const;
     LoadState loadState() const;
     QString errorMessage() const;
@@ -54,6 +59,7 @@ private:
     LoadState m_loadState = LoadState::NotLoaded;
     QString m_errorMessage;
     QDateTime m_lastSavedAt;
+    QString m_lastSafetyBackupPath;
     bool m_writable = false;
 };
 

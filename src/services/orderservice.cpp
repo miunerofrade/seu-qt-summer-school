@@ -11,8 +11,7 @@ namespace {
 const domain::Train *findTrain(const domain::AppData &data, const domain::Ticket &ticket)
 {
     const auto matches = [&ticket](const domain::Train &train) {
-        return train.number == ticket.trainNumber
-            && (!ticket.serviceDate.isValid() || train.serviceDate == ticket.serviceDate);
+        return train.number == ticket.trainNumber;
     };
     const auto it = std::find_if(data.trains.cbegin(), data.trains.cend(), matches);
     return it == data.trains.cend() ? nullptr : &*it;
@@ -29,12 +28,13 @@ const domain::TrainStop *findStop(const domain::Train &train, const QString &sta
 
 QDateTime stopDateTime(const domain::Train &train,
                        const domain::TrainStop &stop,
+                       const QDate &serviceDate,
                        bool departure)
 {
     QTime time = departure ? stop.departureTime : stop.arrivalTime;
     if (!time.isValid())
         time = departure ? stop.arrivalTime : stop.departureTime;
-    return time.isValid() ? QDateTime(train.serviceDate.addDays(stop.dayOffset), time) : QDateTime();
+    return time.isValid() ? QDateTime(serviceDate.addDays(stop.dayOffset), time) : QDateTime();
 }
 
 domain::TicketStatus aggregateStatus(const QVector<const domain::Ticket *> &tickets)
@@ -92,9 +92,7 @@ QVector<OrderSummary> OrderService::summaries() const
             if (!row.seatTypes.contains(ticket->seatType))
                 row.seatTypes.append(ticket->seatType);
             const domain::Train *train = findTrain(data, *ticket);
-            const QDate serviceDate = ticket->serviceDate.isValid()
-                                          ? ticket->serviceDate
-                                          : (train ? train->serviceDate : QDate());
+            const QDate serviceDate = ticket->serviceDate;
             if (!row.serviceDate.isValid() || (serviceDate.isValid() && serviceDate < row.serviceDate))
                 row.serviceDate = serviceDate;
         }
@@ -140,12 +138,11 @@ QVector<OrderTicketDetail> OrderService::details(const QString &orderId) const
         result.append({ticketIt->id,
                        passengerNames.value(ticketIt->passengerId, ticketIt->passengerId),
                        ticketIt->trainNumber,
-                       ticketIt->serviceDate.isValid() ? ticketIt->serviceDate
-                                                       : (train ? train->serviceDate : QDate()),
+                       ticketIt->serviceDate,
                        stationNames.value(ticketIt->fromStationCode, ticketIt->fromStationCode),
                        stationNames.value(ticketIt->toStationCode, ticketIt->toStationCode),
-                       train && fromStop ? stopDateTime(*train, *fromStop, true) : QDateTime(),
-                       train && toStop ? stopDateTime(*train, *toStop, false) : QDateTime(),
+                       train && fromStop ? stopDateTime(*train, *fromStop, ticketIt->serviceDate, true) : QDateTime(),
+                       train && toStop ? stopDateTime(*train, *toStop, ticketIt->serviceDate, false) : QDateTime(),
                        ticketIt->seatType,
                        ticketIt->priceCents,
                        ticketIt->status});
@@ -164,7 +161,9 @@ OperationResult OrderService::refreshCompletedTickets(const QDateTime &now)
             continue;
         const domain::Train *train = findTrain(candidate, ticket);
         const domain::TrainStop *stop = train ? findStop(*train, ticket.toStationCode) : nullptr;
-        const QDateTime arrivalAt = train && stop ? stopDateTime(*train, *stop, false) : QDateTime();
+        const QDateTime arrivalAt = train && stop
+                                        ? stopDateTime(*train, *stop, ticket.serviceDate, false)
+                                        : QDateTime();
         if (arrivalAt.isValid() && now >= arrivalAt) {
             ticket.status = domain::TicketStatus::Completed;
             changed = true;

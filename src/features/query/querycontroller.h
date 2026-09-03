@@ -3,7 +3,7 @@
 
 #include <QObject>
 
-#include "services/queryservice.h"
+#include "services/railwayqueryservice.h"
 
 class DataStore;
 class QCheckBox;
@@ -28,10 +28,12 @@ public:
                     QObject *parent = nullptr);
 
 private:
-    void loadStations();
-    void loadFilterOptions();
+    void loadStations(const QVector<RailwayStation> &stations);
+    bool isOfficialStation(const QString &code) const;
+    void loadFilterOptions(const QVector<TrainQueryRow> &rows);
     void executeQuery();
-    void showAvailableTrains();
+    void showCachedTrains();
+    void showRows(QVector<TrainQueryRow> rows);
     void applyFilters();
 
     DataStore *m_dataStore;
@@ -39,13 +41,14 @@ private:
     QComboBox *m_departureStation;
     QComboBox *m_arrivalStation;
     QDateEdit *m_travelDate;
+    QPushButton *m_searchButton;
     QComboBox *m_trainFilter;
     QComboBox *m_seatFilter;
     QCheckBox *m_availableOnly;
     QComboBox *m_sortCombo;
     class TrainQueryModel *m_model;
     class TrainQueryFilterProxyModel *m_proxy;
-    QueryService m_service;
+    RailwayQueryService *m_railwayService;
 };
 
 #endif // QUERYCONTROLLER_H

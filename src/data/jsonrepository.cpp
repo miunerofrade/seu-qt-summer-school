@@ -9,7 +9,9 @@
 #include <QJsonParseError>
 #include <QSaveFile>
 
+#include <algorithm>
 #include <cmath>
+#include <utility>
 
 namespace {
 using namespace domain;
@@ -101,9 +103,6 @@ QJsonObject trainToJson(const Train &train)
     for (const SeatInventory &seat : train.seats)
         seats.append(seatToJson(seat));
     return {{QStringLiteral("number"), train.number},
-            {QStringLiteral("serviceDate"), train.serviceDate.toString(Qt::ISODate)},
-            {QStringLiteral("enabled"), train.enabled},
-            {QStringLiteral("saleOpen"), train.saleOpen},
             {QStringLiteral("stops"), stops},
             {QStringLiteral("seats"), seats}};
 }
@@ -172,6 +171,9 @@ QJsonObject appDataToJson(const AppData &data)
     QJsonArray refunds;
     for (const RefundRecord &refund : data.refunds)
         refunds.append(refundToJson(refund));
+    QJsonArray hiddenTrainNumbers;
+    for (const QString &number : data.hiddenTrainNumbers)
+        hiddenTrainNumbers.append(number);
 
     return {{QStringLiteral("schemaVersion"), data.schemaVersion},
             {QStringLiteral("stations"), stations},
@@ -179,7 +181,8 @@ QJsonObject appDataToJson(const AppData &data)
             {QStringLiteral("passengers"), passengers},
             {QStringLiteral("orders"), orders},
             {QStringLiteral("tickets"), tickets},
-            {QStringLiteral("refunds"), refunds}};
+            {QStringLiteral("refunds"), refunds},
+            {QStringLiteral("hiddenTrainNumbers"), hiddenTrainNumbers}};
 }
 
 bool parseStation(const QJsonValue &value, Station *station, QString *error)
@@ -277,20 +280,11 @@ bool parseTrain(const QJsonValue &value, Train *train, QString *error)
         return false;
     }
     const QJsonObject object = value.toObject();
-    QString dateText;
     QJsonArray stops;
     QJsonArray seats;
     if (!readString(object, "number", &train->number, error)
-        || !readString(object, "serviceDate", &dateText, error)
-        || !readBool(object, "enabled", &train->enabled, error)
-        || !readBool(object, "saleOpen", &train->saleOpen, error)
         || !readArray(object, "stops", &stops, error)
         || !readArray(object, "seats", &seats, error)) {
-        return false;
-    }
-    train->serviceDate = QDate::fromString(dateText, Qt::ISODate);
-    if (!train->serviceDate.isValid()) {
-        *error = QObject::tr("车次运行日期格式错误。");
         return false;
     }
     for (const QJsonValue &stopValue : stops) {
@@ -445,7 +439,7 @@ bool appDataFromJson(const QJsonObject &object, AppData *data, QString *error)
     qint64 schemaVersion = 0;
     if (!readInteger(object, "schemaVersion", &schemaVersion, error))
         return false;
-    if (schemaVersion != CurrentSchemaVersion) {
+    if (schemaVersion != 1 && schemaVersion != CurrentSchemaVersion) {
         *error = QObject::tr("不支持的数据版本：%1，当前版本为 %2。")
                      .arg(schemaVersion)
                      .arg(CurrentSchemaVersion);
@@ -468,12 +462,45 @@ bool appDataFromJson(const QJsonObject &object, AppData *data, QString *error)
         return false;
     }
 
-    return parseList(stations, &data->stations, parseStation, error)
+    const QJsonValue hiddenValue = object.value(QStringLiteral("hiddenTrainNumbers"));
+    if (!hiddenValue.isUndefined()) {
+        if (!hiddenValue.isArray()) {
+            *error = QObject::tr("字段 hiddenTrainNumbers 应为数组。");
+            return false;
+        }
+        for (const QJsonValue &value : hiddenValue.toArray()) {
+            if (!value.isString()) {
+                *error = QObject::tr("隐藏车次编号格式错误。");
+                return false;
+            }
+            const QString number = value.toString().trimmed().toUpper();
+            if (!number.isEmpty() && !data->hiddenTrainNumbers.contains(number))
+                data->hiddenTrainNumbers.append(number);
+        }
+    }
+    data->schemaVersion = CurrentSchemaVersion;
+
+    const bool parsed = parseList(stations, &data->stations, parseStation, error)
         && parseList(trains, &data->trains, parseTrain, error)
         && parseList(passengers, &data->passengers, parsePassenger, error)
         && parseList(orders, &data->orders, parseOrder, error)
         && parseList(tickets, &data->tickets, parseTicket, error)
         && parseList(refunds, &data->refunds, parseRefund, error);
+    if (!parsed)
+        return false;
+
+    QVector<Train> uniqueTrains;
+    for (const Train &train : std::as_const(data->trains)) {
+        const auto existing = std::find_if(uniqueTrains.begin(), uniqueTrains.end(), [&train](const Train &item) {
+            return item.number.compare(train.number, Qt::CaseInsensitive) == 0;
+        });
+        if (existing == uniqueTrains.end())
+            uniqueTrains.append(train);
+        else
+            *existing = train;
+    }
+    data->trains = std::move(uniqueTrains);
+    return true;
 }
 } // namespace
 

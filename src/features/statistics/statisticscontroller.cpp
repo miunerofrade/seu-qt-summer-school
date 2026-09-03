@@ -103,7 +103,6 @@ void StatisticsController::populateOptions()
     for (const domain::Station &item : m_dataStore->data().stations)
         if (item.enabled) m_stationCombo->addItem(item.name, item.code);
     for (const domain::Train &item : m_dataStore->data().trains) {
-        if (!item.enabled) continue;
         if (!trains.contains(item.number)) trains.append(item.number), m_trainCombo->addItem(item.number, item.number);
         for (const domain::SeatInventory &itemSeat : item.seats)
             if (!seats.contains(itemSeat.seatType)) seats.append(itemSeat.seatType), m_seatCombo->addItem(itemSeat.seatType, itemSeat.seatType);

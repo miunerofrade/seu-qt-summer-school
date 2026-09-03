@@ -14,7 +14,8 @@ namespace {
 std::unique_ptr<DataStore> initializedStore(const QString &path, const QDate &serviceDate)
 {
     auto store = std::make_unique<DataStore>(std::make_unique<JsonRepository>(path));
-    if (!store->initialize() || !store->commit(domain::createDemoData(serviceDate)))
+    Q_UNUSED(serviceDate);
+    if (!store->initialize() || !store->commit(domain::createDemoData()))
         return {};
     return store;
 }

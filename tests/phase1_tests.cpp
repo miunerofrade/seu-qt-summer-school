@@ -46,6 +46,7 @@ private slots:
     void corruptJsonIsNotOverwritten();
     void unsupportedVersionIsRejected();
     void failedCommitKeepsMemoryUnchanged();
+    void backupRestoresDataAndKeepsSafetySnapshot();
 };
 
 void PhaseOneTests::missingFileCreatesDemoData()
@@ -69,7 +70,8 @@ void PhaseOneTests::jsonRoundTripPreservesDomainData()
     QTemporaryDir directory;
     QVERIFY(directory.isValid());
     const QString path = directory.filePath(QStringLiteral("app-data.json"));
-    const domain::AppData source = domain::createDemoData(QDate(2026, 9, 1));
+    domain::AppData source = domain::createDemoData();
+    source.hiddenTrainNumbers.append(QStringLiteral("G205"));
 
     JsonRepository repository(path);
     const OperationResult saved = repository.save(source);
@@ -80,7 +82,7 @@ void PhaseOneTests::jsonRoundTripPreservesDomainData()
     QCOMPARE(loaded.data.stations.size(), source.stations.size());
     QCOMPARE(loaded.data.trains.size(), source.trains.size());
     QCOMPARE(loaded.data.trains.first().number, QStringLiteral("G101"));
-    QCOMPARE(loaded.data.trains.first().serviceDate, QDate(2026, 9, 1));
+    QCOMPARE(loaded.data.hiddenTrainNumbers, QStringList{QStringLiteral("G205")});
     QCOMPARE(loaded.data.trains.first().seats.first().segments.at(1).remainingSeats, 35);
 }
 
@@ -123,7 +125,7 @@ void PhaseOneTests::unsupportedVersionIsRejected()
 
 void PhaseOneTests::failedCommitKeepsMemoryUnchanged()
 {
-    const domain::AppData original = domain::createDemoData(QDate(2026, 9, 1));
+    const domain::AppData original = domain::createDemoData();
     DataStore store(std::make_unique<FailingRepository>(original));
     QVERIFY(store.initialize());
 
@@ -132,6 +134,33 @@ void PhaseOneTests::failedCommitKeepsMemoryUnchanged()
     const OperationResult result = store.commit(candidate);
     QVERIFY(!result);
     QCOMPARE(store.data().stations.size(), original.stations.size());
+}
+
+void PhaseOneTests::backupRestoresDataAndKeepsSafetySnapshot()
+{
+    QTemporaryDir directory;
+    QVERIFY(directory.isValid());
+    const QString path = directory.filePath(QStringLiteral("data/app-data.json"));
+    DataStore store(std::make_unique<JsonRepository>(path));
+    QVERIFY(store.initialize());
+    const int originalStationCount = store.data().stations.size();
+
+    QVERIFY(store.ensureBackup());
+    QVERIFY(QFileInfo::exists(store.backupFilePath()));
+
+    domain::AppData changed = store.data();
+    changed.stations.append({QStringLiteral("TST"), QStringLiteral("测试站"), QStringLiteral("测试"), true});
+    QVERIFY(store.commit(changed));
+    QCOMPARE(store.data().stations.size(), originalStationCount + 1);
+
+    QVERIFY(store.restoreBackup());
+    QCOMPARE(store.data().stations.size(), originalStationCount);
+    QVERIFY(!store.lastSafetyBackupPath().isEmpty());
+    QVERIFY(QFileInfo::exists(store.lastSafetyBackupPath()));
+
+    const LoadResult safety = JsonRepository(store.lastSafetyBackupPath()).load();
+    QVERIFY(safety.success);
+    QCOMPARE(safety.data.stations.size(), originalStationCount + 1);
 }
 
 QTEST_GUILESS_MAIN(PhaseOneTests)

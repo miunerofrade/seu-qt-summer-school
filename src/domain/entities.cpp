@@ -54,7 +54,7 @@ bool ticketStatusFromKey(const QString &key, TicketStatus *status)
     return true;
 }
 
-AppData createDemoData(const QDate &serviceDate)
+AppData createDemoData()
 {
     AppData data;
     data.stations = {
@@ -66,7 +66,6 @@ AppData createDemoData(const QDate &serviceDate)
 
     Train morning;
     morning.number = QStringLiteral("G101");
-    morning.serviceDate = serviceDate;
     morning.stops = {
         stop(QStringLiteral("NJN"), 0, {}, QTime(8, 0)),
         stop(QStringLiteral("SZB"), 1, QTime(8, 45), QTime(8, 47)),
@@ -79,7 +78,6 @@ AppData createDemoData(const QDate &serviceDate)
 
     Train afternoon;
     afternoon.number = QStringLiteral("G205");
-    afternoon.serviceDate = serviceDate;
     afternoon.stops = {
         stop(QStringLiteral("NJN"), 0, {}, QTime(14, 10)),
         stop(QStringLiteral("SHH"), 1, QTime(15, 28), QTime(15, 32)),

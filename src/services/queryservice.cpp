@@ -32,8 +32,8 @@ QTime stopTime(const domain::TrainStop &stop, bool departure)
                                : (departure ? stop.arrivalTime : stop.departureTime);
 }
 
-bool hasDeparted(const domain::Train &train,
-                 const domain::TrainStop &stop,
+bool hasDeparted(const domain::TrainStop &stop,
+                 const QDate &serviceDate,
                  const QDateTime &notDepartedAfter)
 {
     if (!notDepartedAfter.isValid())
@@ -41,13 +41,14 @@ bool hasDeparted(const domain::Train &train,
     const QTime departureTime = stopTime(stop, true);
     if (!departureTime.isValid())
         return true;
-    return QDateTime(train.serviceDate.addDays(stop.dayOffset), departureTime)
+    return QDateTime(serviceDate.addDays(stop.dayOffset), departureTime)
            <= notDepartedAfter;
 }
 
 bool appendRow(const domain::Train &train,
                int fromIndex,
                int toIndex,
+               const QDate &serviceDate,
                const QHash<QString, domain::Station> &stations,
                const QDateTime &notDepartedAfter,
                QVector<TrainQueryRow> *rows)
@@ -60,7 +61,7 @@ bool appendRow(const domain::Train &train,
     const QTime departureTime = stopTime(fromStop, true);
     const QTime arrivalTime = stopTime(toStop, false);
     if (!departureTime.isValid() || !arrivalTime.isValid()
-        || hasDeparted(train, fromStop, notDepartedAfter))
+        || hasDeparted(fromStop, serviceDate, notDepartedAfter))
         return false;
 
     const int departureMinutes = absoluteMinutes(departureTime, fromStop.dayOffset);
@@ -69,9 +70,11 @@ bool appendRow(const domain::Train &train,
         arrivalMinutes += 24 * 60;
 
     TrainQueryRow row{train.number,
-                      train.serviceDate,
+                      serviceDate,
                       fromStop.stationCode,
                       toStop.stationCode,
+                      stationName(stations, train.stops.first().stationCode),
+                      stationName(stations, train.stops.last().stationCode),
                       stationName(stations, fromStop.stationCode),
                       stationName(stations, toStop.stationCode),
                       departureTime,
@@ -131,7 +134,7 @@ QVector<TrainQueryRow> QueryService::query(const TrainQueryRequest &request,
         return rows;
 
     for (const domain::Train &train : data.trains) {
-        if (!train.enabled || !train.saleOpen || train.serviceDate != request.serviceDate)
+        if (data.hiddenTrainNumbers.contains(train.number, Qt::CaseInsensitive))
             continue;
 
         int fromIndex = -1;
@@ -145,7 +148,7 @@ QVector<TrainQueryRow> QueryService::query(const TrainQueryRequest &request,
         if (fromIndex < 0 || toIndex <= fromIndex)
             continue;
 
-        appendRow(train, fromIndex, toIndex, stations, notDepartedAfter, &rows);
+        appendRow(train, fromIndex, toIndex, request.serviceDate, stations, notDepartedAfter, &rows);
     }
     return rows;
 }
@@ -162,13 +165,14 @@ QVector<TrainQueryRow> QueryService::available(const QDateTime &notDepartedAfter
         stations.insert(station.code, station);
 
     for (const domain::Train &train : data.trains) {
-        if (!train.enabled || !train.saleOpen || train.stops.size() < 2)
+        if (train.stops.size() < 2
+            || data.hiddenTrainNumbers.contains(train.number, Qt::CaseInsensitive))
             continue;
         const int lastIndex = train.stops.size() - 1;
         if (!isEnabledStation(stations, train.stops.first().stationCode)
             || !isEnabledStation(stations, train.stops.at(lastIndex).stationCode))
             continue;
-        appendRow(train, 0, lastIndex, stations, notDepartedAfter, &rows);
+        appendRow(train, 0, lastIndex, notDepartedAfter.date(), stations, notDepartedAfter, &rows);
     }
     return rows;
 }

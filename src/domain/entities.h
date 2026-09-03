@@ -10,7 +10,7 @@
 
 namespace domain {
 
-inline constexpr int CurrentSchemaVersion = 1;
+inline constexpr int CurrentSchemaVersion = 2;
 
 enum class TicketStatus
 {
@@ -52,9 +52,6 @@ struct SeatInventory
 struct Train
 {
     QString number;
-    QDate serviceDate;
-    bool enabled = true;
-    bool saleOpen = true;
     QVector<TrainStop> stops;
     QVector<SeatInventory> seats;
 };
@@ -107,11 +104,12 @@ struct AppData
     QVector<Order> orders;
     QVector<Ticket> tickets;
     QVector<RefundRecord> refunds;
+    QStringList hiddenTrainNumbers;
 };
 
 QString ticketStatusKey(TicketStatus status);
 bool ticketStatusFromKey(const QString &key, TicketStatus *status);
-AppData createDemoData(const QDate &serviceDate = QDate::currentDate());
+AppData createDemoData();
 
 } // namespace domain
 

@@ -104,47 +104,42 @@ OperationResult AdminService::addTrain(const domain::Train &train)
     normalized.number = normalized.number.trimmed().toUpper();
     if (normalized.number.isEmpty())
         return OperationResult::failure(QObject::tr("车次号不能为空。"));
-    if (!normalized.serviceDate.isValid())
-        return OperationResult::failure(QObject::tr("运行日期无效。"));
+    if (normalized.stops.size() < 2)
+        return OperationResult::failure(QObject::tr("新增车次至少需要起点和终点。"));
 
     domain::AppData candidate = m_dataStore->data();
-    if (findTrain(candidate, normalized.number) != candidate.trains.end())
+    QStringList stationCodes;
+    for (int index = 0; index < normalized.stops.size(); ++index) {
+        domain::TrainStop &stop = normalized.stops[index];
+        stop.stationCode = stop.stationCode.trimmed().toUpper();
+        stop.sequence = index;
+        if (findStation(candidate, stop.stationCode) == candidate.stations.end())
+            return OperationResult::failure(QObject::tr("经停站 %1 不存在。").arg(stop.stationCode));
+        if (stationCodes.contains(stop.stationCode, Qt::CaseInsensitive))
+            return OperationResult::failure(QObject::tr("同一车次不能重复经过车站 %1。").arg(stop.stationCode));
+        stationCodes.append(stop.stationCode);
+    }
+    const auto existing = findTrain(candidate, normalized.number);
+    if (existing != candidate.trains.end()
+        && !candidate.hiddenTrainNumbers.contains(normalized.number, Qt::CaseInsensitive))
         return OperationResult::failure(QObject::tr("车次号 %1 已经存在。").arg(normalized.number));
-    candidate.trains.append(normalized);
+    if (existing == candidate.trains.end())
+        candidate.trains.append(normalized);
+    else
+        *existing = normalized;
+    candidate.hiddenTrainNumbers.removeAll(normalized.number);
     return m_dataStore->commit(std::move(candidate));
 }
 
-OperationResult AdminService::updateTrain(const QString &number,
-                                          const QDate &serviceDate,
-                                          bool enabled,
-                                          bool saleOpen)
+OperationResult AdminService::removeTrain(const QString &number, bool knownFromRailwayCache)
 {
-    if (!serviceDate.isValid())
-        return OperationResult::failure(QObject::tr("运行日期无效。"));
+    const QString normalized = number.trimmed().toUpper();
     domain::AppData candidate = m_dataStore->data();
-    const auto train = findTrain(candidate, number);
-    if (train == candidate.trains.end())
-        return OperationResult::failure(QObject::tr("所选车次已不存在。"));
-    train->serviceDate = serviceDate;
-    train->enabled = enabled;
-    train->saleOpen = saleOpen;
-    return m_dataStore->commit(std::move(candidate));
-}
-
-OperationResult AdminService::removeTrain(const QString &number)
-{
-    const auto &data = m_dataStore->data();
-    const bool referenced = std::any_of(data.tickets.cbegin(), data.tickets.cend(), [&number](const domain::Ticket &ticket) {
-        return ticket.trainNumber.compare(number, Qt::CaseInsensitive) == 0;
-    });
-    if (referenced)
-        return OperationResult::failure(QObject::tr("该车次已产生车票，请改为停用。"));
-
-    domain::AppData candidate = data;
-    const auto train = findTrain(candidate, number);
-    if (train == candidate.trains.end())
-        return OperationResult::failure(QObject::tr("所选车次已不存在。"));
-    candidate.trains.erase(train);
+    const auto train = findTrain(candidate, normalized);
+    if (train == candidate.trains.end() && !knownFromRailwayCache)
+        return OperationResult::failure(QObject::tr("车次 %1 不存在，未写入隐藏名单。").arg(normalized));
+    if (!candidate.hiddenTrainNumbers.contains(normalized, Qt::CaseInsensitive))
+        candidate.hiddenTrainNumbers.append(normalized);
     return m_dataStore->commit(std::move(candidate));
 }
 
@@ -156,7 +151,7 @@ OperationResult AdminService::replaceStops(const QString &trainNumber,
 
     const auto &data = m_dataStore->data();
     QStringList stationCodes;
-    QDateTime previousEvent;
+    int previousMinute = -1;
     for (int index = 0; index < stops.size(); ++index) {
         const domain::TrainStop &stop = stops.at(index);
         const auto station = std::find_if(data.stations.cbegin(), data.stations.cend(), [&stop](const domain::Station &item) {
@@ -170,23 +165,20 @@ OperationResult AdminService::replaceStops(const QString &trainNumber,
         if (stop.dayOffset < 0)
             return OperationResult::failure(QObject::tr("跨日偏移不能为负数。"));
 
-        const auto train = std::find_if(data.trains.cbegin(), data.trains.cend(), [&trainNumber](const domain::Train &item) {
-            return item.number.compare(trainNumber, Qt::CaseInsensitive) == 0;
-        });
-        if (train == data.trains.cend())
-            return OperationResult::failure(QObject::tr("所选车次已不存在。"));
-        const QDate date = train->serviceDate.addDays(stop.dayOffset);
-        const QDateTime arrival = stop.arrivalTime.isValid() ? QDateTime(date, stop.arrivalTime) : QDateTime();
-        const QDateTime departure = stop.departureTime.isValid() ? QDateTime(date, stop.departureTime) : QDateTime();
-        if (arrival.isValid() && departure.isValid() && departure < arrival)
+        const int arrival = stop.arrivalTime.isValid()
+                                ? stop.dayOffset * 24 * 60 + stop.arrivalTime.hour() * 60 + stop.arrivalTime.minute()
+                                : -1;
+        const int departure = stop.departureTime.isValid()
+                                  ? stop.dayOffset * 24 * 60 + stop.departureTime.hour() * 60 + stop.departureTime.minute()
+                                  : -1;
+        if (arrival >= 0 && departure >= 0 && departure < arrival)
             return OperationResult::failure(QObject::tr("车站 %1 的出发时间早于到达时间。").arg(stop.stationCode));
-        const QDateTime firstEvent = arrival.isValid() ? arrival : departure;
-        const QDateTime lastEvent = departure.isValid() ? departure : arrival;
-        if (!firstEvent.isValid())
-            return OperationResult::failure(QObject::tr("车站 %1 至少需要一个到达或出发时间。").arg(stop.stationCode));
-        if (previousEvent.isValid() && firstEvent < previousEvent)
+        const int firstEvent = arrival >= 0 ? arrival : departure;
+        const int lastEvent = departure >= 0 ? departure : arrival;
+        if (firstEvent >= 0 && previousMinute >= 0 && firstEvent < previousMinute)
             return OperationResult::failure(QObject::tr("经停站时间顺序不合理。"));
-        previousEvent = lastEvent;
+        if (lastEvent >= 0)
+            previousMinute = lastEvent;
     }
 
     domain::AppData candidate = data;

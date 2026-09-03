@@ -2,11 +2,11 @@
 
 #include "data/datastore.h"
 #include "services/adminservice.h"
+#include "services/railwayqueryservice.h"
 #include "widgets/dialogstyle.h"
 
 #include <QCheckBox>
 #include <QComboBox>
-#include <QDateEdit>
 #include <QDialog>
 #include <QDialogButtonBox>
 #include <QDoubleSpinBox>
@@ -16,11 +16,13 @@
 #include <QInputDialog>
 #include <QLabel>
 #include <QLineEdit>
+#include <QListWidget>
 #include <QMessageBox>
 #include <QPushButton>
 #include <QSpinBox>
 #include <QStandardItemModel>
 #include <QTableView>
+#include <QTimeEdit>
 #include <QVBoxLayout>
 
 #include <algorithm>
@@ -92,41 +94,97 @@ bool editStationForm(QWidget *parent, const domain::Station *current, domain::St
     return true;
 }
 
-bool editTrainForm(QWidget *parent, const domain::Train *current, domain::Train *output)
+bool addTrainForm(QWidget *parent, const domain::AppData &data, domain::Train *output)
 {
     QDialog dialog(parent);
-    dialog.setWindowTitle(current ? QObject::tr("编辑车次") : QObject::tr("新增车次"));
-    auto *layout = new QFormLayout(&dialog);
+    dialog.setWindowTitle(QObject::tr("新增车次"));
+    dialog.resize(520, 460);
+    auto *layout = new QVBoxLayout(&dialog);
     layout->setContentsMargins(24, 20, 24, 20);
-    layout->setVerticalSpacing(12);
-    auto *numberEdit = new QLineEdit(current ? current->number : QString(), &dialog);
-    auto *dateEdit = new QDateEdit(current ? current->serviceDate : QDate::currentDate(), &dialog);
-    auto *enabledCheck = new QCheckBox(QObject::tr("启用车次"), &dialog);
-    auto *saleOpenCheck = new QCheckBox(QObject::tr("允许售票"), &dialog);
-    numberEdit->setEnabled(!current);
-    dateEdit->setCalendarPopup(true);
-    dateEdit->setDisplayFormat(QStringLiteral("yyyy-MM-dd"));
-    enabledCheck->setChecked(!current || current->enabled);
-    saleOpenCheck->setChecked(!current || current->saleOpen);
-    layout->addRow(QObject::tr("车次号"), numberEdit);
-    layout->addRow(QObject::tr("运行日期"), dateEdit);
-    layout->addRow(QObject::tr("使用状态"), enabledCheck);
-    layout->addRow(QObject::tr("售票状态"), saleOpenCheck);
+    layout->setSpacing(12);
+    auto *note = new QLabel(QObject::tr(
+        "手工车次按每日重复运行保存。由于无法估计实际运行线路，相邻经停站时刻统一按 1 小时间隔生成；可稍后在“时刻 / 经停站”中调整。"),
+                            &dialog);
+    note->setWordWrap(true);
+    layout->addWidget(note);
+    auto *form = new QFormLayout;
+    auto *numberEdit = new QLineEdit(&dialog);
+    auto *startTimeEdit = new QTimeEdit(QTime(8, 0), &dialog);
+    startTimeEdit->setDisplayFormat(QStringLiteral("HH:mm"));
+    form->addRow(QObject::tr("车次号"), numberEdit);
+    form->addRow(QObject::tr("首站发车"), startTimeEdit);
+    layout->addLayout(form);
+
+    auto *stops = new QListWidget(&dialog);
+    layout->addWidget(new QLabel(QObject::tr("经停站（按运行顺序，至少两个）"), &dialog));
+    layout->addWidget(stops);
+    auto *stopActions = new QHBoxLayout;
+    auto *addStopButton = new QPushButton(QObject::tr("增加经停站"), &dialog);
+    auto *removeStopButton = new QPushButton(QObject::tr("移除"), &dialog);
+    auto *upButton = new QPushButton(QObject::tr("上移"), &dialog);
+    auto *downButton = new QPushButton(QObject::tr("下移"), &dialog);
+    stopActions->addWidget(addStopButton);
+    stopActions->addWidget(removeStopButton);
+    stopActions->addWidget(upButton);
+    stopActions->addWidget(downButton);
+    stopActions->addStretch();
+    layout->addLayout(stopActions);
+
+    QObject::connect(addStopButton, &QPushButton::clicked, &dialog, [&dialog, &data, stops]() {
+        QStringList choices;
+        for (const domain::Station &station : data.stations) {
+            if (station.enabled)
+                choices.append(station.code + QStringLiteral(" - ") + station.name);
+        }
+        bool ok = false;
+        const QString selected = QInputDialog::getItem(
+            &dialog, QObject::tr("增加经停站"), QObject::tr("车站"), choices, 0, false, &ok);
+        if (!ok || selected.isEmpty())
+            return;
+        const QString code = selected.section(QStringLiteral(" - "), 0, 0);
+        for (int index = 0; index < stops->count(); ++index) {
+            if (stops->item(index)->data(Qt::UserRole).toString() == code) {
+                QMessageBox::information(&dialog, QObject::tr("增加经停站"), QObject::tr("该车站已经在运行线路中。"));
+                return;
+            }
+        }
+        auto *item = new QListWidgetItem(selected, stops);
+        item->setData(Qt::UserRole, code);
+    });
+    QObject::connect(removeStopButton, &QPushButton::clicked, &dialog, [stops]() {
+        delete stops->takeItem(stops->currentRow());
+    });
+    const auto moveStop = [stops](int offset) {
+        const int row = stops->currentRow();
+        const int target = row + offset;
+        if (row < 0 || target < 0 || target >= stops->count())
+            return;
+        stops->insertItem(target, stops->takeItem(row));
+        stops->setCurrentRow(target);
+    };
+    QObject::connect(upButton, &QPushButton::clicked, &dialog, [moveStop]() { moveStop(-1); });
+    QObject::connect(downButton, &QPushButton::clicked, &dialog, [moveStop]() { moveStop(1); });
+
     auto *buttons = new QDialogButtonBox(QDialogButtonBox::Save | QDialogButtonBox::Cancel, &dialog);
     buttons->button(QDialogButtonBox::Save)->setText(QObject::tr("保存"));
     buttons->button(QDialogButtonBox::Cancel)->setText(QObject::tr("取消"));
-    layout->addRow(buttons);
+    layout->addWidget(buttons);
     QObject::connect(buttons, &QDialogButtonBox::accepted, &dialog, &QDialog::accept);
     QObject::connect(buttons, &QDialogButtonBox::rejected, &dialog, &QDialog::reject);
     if (dialog.exec() != QDialog::Accepted)
         return false;
     output->number = numberEdit->text();
-    output->serviceDate = dateEdit->date();
-    output->enabled = enabledCheck->isChecked();
-    output->saleOpen = saleOpenCheck->isChecked();
-    if (current) {
-        output->stops = current->stops;
-        output->seats = current->seats;
+    const int startMinute = startTimeEdit->time().hour() * 60 + startTimeEdit->time().minute();
+    for (int index = 0; index < stops->count(); ++index) {
+        const int absoluteMinute = startMinute + index * 60;
+        const QTime time = QTime(0, 0).addSecs((absoluteMinute % (24 * 60)) * 60);
+        domain::TrainStop stop;
+        stop.stationCode = stops->item(index)->data(Qt::UserRole).toString();
+        stop.sequence = index;
+        stop.dayOffset = absoluteMinute / (24 * 60);
+        stop.arrivalTime = index == 0 ? QTime() : time;
+        stop.departureTime = index == stops->count() - 1 ? QTime() : time;
+        output->stops.append(stop);
     }
     return true;
 }
@@ -242,30 +300,28 @@ public:
         : QDialog(parent)
         , m_dataStore(dataStore)
         , m_service(dataStore)
+        , m_railwayService(new RailwayQueryService(dataStore->dataDirectory(), this))
         , m_table(new QTableView(this))
         , m_model(new QStandardItemModel(this))
     {
         setWindowTitle(tr("车次管理"));
         resize(780, 440);
         auto *layout = new QVBoxLayout(this);
-        layout->addWidget(new QLabel(tr("车次号创建后不可修改；经停站、票价和余票由对应管理入口配置。"), this));
+        layout->addWidget(new QLabel(tr("这里只维护手工新增车次和隐藏规则；车次按每日重复运行，不保存固定日期。"), this));
         configureTable(m_table);
         m_table->setEditTriggers(QAbstractItemView::NoEditTriggers);
         m_table->setModel(m_model);
         layout->addWidget(m_table);
         auto *actions = new QHBoxLayout;
         auto *addButton = new QPushButton(tr("新增"), this);
-        auto *editButton = new QPushButton(tr("编辑"), this);
         auto *deleteButton = new QPushButton(tr("删除"), this);
         auto *closeButton = new QPushButton(tr("关闭"), this);
         actions->addWidget(addButton);
-        actions->addWidget(editButton);
         actions->addWidget(deleteButton);
         actions->addStretch();
         actions->addWidget(closeButton);
         layout->addLayout(actions);
         connect(addButton, &QPushButton::clicked, this, [this]() { addTrain(); });
-        connect(editButton, &QPushButton::clicked, this, [this]() { editTrain(); });
         connect(deleteButton, &QPushButton::clicked, this, [this]() { deleteTrain(); });
         connect(closeButton, &QPushButton::clicked, this, &QDialog::accept);
         connect(m_dataStore, &DataStore::dataChanged, this, [this]() { refresh(); });
@@ -284,40 +340,59 @@ private:
     {
         m_model->clear();
         m_model->setHorizontalHeaderLabels(
-            {tr("车次"), tr("运行日期"), tr("经停站"), tr("席别"), tr("状态"), tr("售票")});
+            {tr("车次"), tr("来源"), tr("区间"), tr("发车"), tr("到达"), tr("历时"), tr("席别")});
+        QStringList visibleNumbers;
         for (const domain::Train &train : m_dataStore->data().trains) {
+            if (m_dataStore->data().hiddenTrainNumbers.contains(train.number, Qt::CaseInsensitive))
+                continue;
+            const QString origin = train.stops.isEmpty() ? tr("未配置") : train.stops.first().stationCode;
+            const QString terminal = train.stops.isEmpty() ? tr("未配置") : train.stops.last().stationCode;
+            const QTime departure = train.stops.isEmpty() ? QTime() : train.stops.first().departureTime;
+            int durationMinutes = 0;
+            if (train.stops.size() >= 2 && departure.isValid() && train.stops.last().arrivalTime.isValid()) {
+                durationMinutes = train.stops.last().dayOffset * 24 * 60
+                                  + train.stops.last().arrivalTime.hour() * 60
+                                  + train.stops.last().arrivalTime.minute()
+                                  - departure.hour() * 60 - departure.minute();
+            }
             QList<QStandardItem *> row{new QStandardItem(train.number),
-                                      new QStandardItem(train.serviceDate.toString(QStringLiteral("yyyy-MM-dd"))),
-                                      new QStandardItem(QString::number(train.stops.size())),
-                                      new QStandardItem(QString::number(train.seats.size())),
-                                      new QStandardItem(train.enabled ? tr("启用") : tr("停用")),
-                                      new QStandardItem(train.saleOpen ? tr("开售") : tr("停售"))};
+                                      new QStandardItem(tr("本地新增")),
+                                      new QStandardItem(origin + QStringLiteral(" → ") + terminal),
+                                      new QStandardItem(departure.isValid() ? departure.toString(QStringLiteral("HH:mm")) : tr("未配置")),
+                                      new QStandardItem(train.stops.isEmpty() || !train.stops.last().arrivalTime.isValid()
+                                                            ? tr("未配置")
+                                                            : train.stops.last().arrivalTime.toString(QStringLiteral("HH:mm"))),
+                                      new QStandardItem(durationMinutes > 0
+                                                            ? tr("%1小时%2分").arg(durationMinutes / 60).arg(durationMinutes % 60, 2, 10, QLatin1Char('0'))
+                                                            : tr("未配置")),
+                                      new QStandardItem(QString::number(train.seats.size()))};
             row.first()->setData(train.number, Qt::UserRole);
             m_model->appendRow(row);
+            visibleNumbers.append(train.number);
+        }
+        for (const TrainQueryRow &train : m_railwayService->cachedAll()) {
+            if (visibleNumbers.contains(train.trainNumber, Qt::CaseInsensitive)
+                || m_dataStore->data().hiddenTrainNumbers.contains(train.trainNumber, Qt::CaseInsensitive))
+                continue;
+            QList<QStandardItem *> row{
+                new QStandardItem(train.trainNumber),
+                new QStandardItem(tr("12306缓存")),
+                new QStandardItem(train.departureStationName + QStringLiteral(" → ") + train.arrivalStationName),
+                new QStandardItem(train.departureTime.toString(QStringLiteral("HH:mm"))),
+                new QStandardItem(train.arrivalTime.toString(QStringLiteral("HH:mm"))),
+                new QStandardItem(tr("%1小时%2分").arg(train.durationMinutes / 60).arg(train.durationMinutes % 60, 2, 10, QLatin1Char('0'))),
+                new QStandardItem(QString::number(train.seats.size()))};
+            row.first()->setData(train.trainNumber, Qt::UserRole);
+            m_model->appendRow(row);
+            visibleNumbers.append(train.trainNumber);
         }
     }
 
     void addTrain()
     {
         domain::Train train;
-        if (editTrainForm(this, nullptr, &train))
+        if (addTrainForm(this, m_dataStore->data(), &train))
             reportResult(this, m_service.addTrain(train), {});
-    }
-
-    void editTrain()
-    {
-        const QString number = selectedNumber();
-        const domain::Train *current = trainByNumber(m_dataStore->data(), number);
-        if (!current) {
-            QMessageBox::information(this, tr("编辑车次"), tr("请先选择一个车次。"));
-            return;
-        }
-        const domain::Train snapshot = *current;
-        domain::Train train;
-        if (editTrainForm(this, &snapshot, &train))
-            reportResult(this,
-                         m_service.updateTrain(number, train.serviceDate, train.enabled, train.saleOpen),
-                         {});
     }
 
     void deleteTrain()
@@ -327,15 +402,16 @@ private:
             QMessageBox::information(this, tr("删除车次"), tr("请先选择一个车次。"));
             return;
         }
-        if (QMessageBox::question(this, tr("删除车次"), tr("确定删除车次 %1 吗？").arg(number),
+        if (QMessageBox::question(this, tr("隐藏车次"), tr("确定隐藏车次 %1 吗？以后 12306 再返回该车次时也不会显示。").arg(number),
                                   QMessageBox::Yes | QMessageBox::No, QMessageBox::No)
             == QMessageBox::Yes) {
-            reportResult(this, m_service.removeTrain(number), {});
+            reportResult(this, m_service.removeTrain(number, true), {});
         }
     }
 
     DataStore *m_dataStore;
     AdminService m_service;
+    RailwayQueryService *m_railwayService;
     QTableView *m_table;
     QStandardItemModel *m_model;
 };
@@ -395,8 +471,10 @@ private:
     void refreshTrains()
     {
         m_trainCombo->clear();
-        for (const domain::Train &train : m_dataStore->data().trains)
-            m_trainCombo->addItem(train.number, train.number);
+        for (const domain::Train &train : m_dataStore->data().trains) {
+            if (!m_dataStore->data().hiddenTrainNumbers.contains(train.number, Qt::CaseInsensitive))
+                m_trainCombo->addItem(train.number, train.number);
+        }
         refreshRows();
     }
 
@@ -432,8 +510,8 @@ private:
             return;
         const QString code = selected.section(QStringLiteral(" - "), 0, 0);
         m_model->appendRow({new QStandardItem(code),
-                            new QStandardItem(QStringLiteral("00:00")),
-                            new QStandardItem(QStringLiteral("00:00")),
+                            new QStandardItem(QString()),
+                            new QStandardItem(QString()),
                             new QStandardItem(QStringLiteral("0"))});
     }
 
@@ -538,8 +616,10 @@ private:
     void refreshTrains()
     {
         m_trainCombo->clear();
-        for (const domain::Train &train : m_dataStore->data().trains)
-            m_trainCombo->addItem(train.number, train.number);
+        for (const domain::Train &train : m_dataStore->data().trains) {
+            if (!m_dataStore->data().hiddenTrainNumbers.contains(train.number, Qt::CaseInsensitive))
+                m_trainCombo->addItem(train.number, train.number);
+        }
         refreshRows();
     }
 

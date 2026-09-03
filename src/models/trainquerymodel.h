@@ -4,6 +4,7 @@
 #include "services/queryservice.h"
 
 #include <QAbstractTableModel>
+#include <QStringList>
 
 class TrainQueryModel final : public QAbstractTableModel
 {
@@ -14,6 +15,8 @@ public:
     {
         TrainNumberColumn,
         ServiceDateColumn,
+        OriginStationColumn,
+        TerminalStationColumn,
         DepartureStationColumn,
         ArrivalStationColumn,
         DepartureTimeColumn,
@@ -44,6 +47,7 @@ public:
     Qt::ItemFlags flags(const QModelIndex &index) const override;
 
     void setRows(QVector<TrainQueryRow> rows);
+    void setHiddenTrainNumbers(const QStringList &trainNumbers);
     const TrainQueryRow *rowAt(int row) const;
     const TrainSeatOption *selectedSeatAt(int row) const;
     void selectSeatType(const QString &seatType, bool availableOnly);
@@ -51,6 +55,7 @@ public:
 private:
     QVector<TrainQueryRow> m_rows;
     QVector<int> m_selectedSeats;
+    QStringList m_hiddenTrainNumbers;
 };
 
 #endif // TRAINQUERYMODEL_H

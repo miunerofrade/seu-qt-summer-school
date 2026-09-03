@@ -2,6 +2,8 @@
 
 #include <QStringList>
 
+#include <algorithm>
+
 namespace {
 QString formatMoney(qint64 cents)
 {
@@ -63,7 +65,11 @@ QVariant TrainQueryModel::data(const QModelIndex &index, int role) const
     case TrainNumberColumn:
         return row.trainNumber;
     case ServiceDateColumn:
-        return row.serviceDate.toString(QStringLiteral("yyyy-MM-dd"));
+        return row.serviceDate.toString(QStringLiteral("MM-dd"));
+    case OriginStationColumn:
+        return row.originStationName;
+    case TerminalStationColumn:
+        return row.terminalStationName;
     case DepartureStationColumn:
         return row.departureStationName;
     case ArrivalStationColumn:
@@ -75,9 +81,13 @@ QVariant TrainQueryModel::data(const QModelIndex &index, int role) const
     case SeatTypeColumn:
         return seat ? seat->seatType : QString();
     case RemainingSeatsColumn:
-        return seat ? seat->remainingSeats : 0;
+        return seat ? (seat->availabilityText.isEmpty()
+                           ? QVariant(seat->remainingSeats)
+                           : QVariant(seat->availabilityText))
+                    : QVariant(0);
     case PriceColumn:
-        return seat ? formatMoney(seat->priceCents) : QString();
+        return seat && seat->priceCents >= 0 ? formatMoney(seat->priceCents)
+                                             : QStringLiteral("—");
     default:
         return {};
     }
@@ -117,7 +127,8 @@ QVariant TrainQueryModel::headerData(int section, Qt::Orientation orientation, i
     if (orientation != Qt::Horizontal || role != Qt::DisplayRole)
         return QAbstractTableModel::headerData(section, orientation, role);
     static const QStringList headers = {
-        QStringLiteral("车次"), QStringLiteral("日期"), QStringLiteral("出发站"), QStringLiteral("到达站"),
+        QStringLiteral("车次"), QStringLiteral("日期"), QStringLiteral("始发站"), QStringLiteral("终到站"),
+        QStringLiteral("上车站"), QStringLiteral("下车站"),
         QStringLiteral("出发时间"), QStringLiteral("历时"), QStringLiteral("席别"),
         QStringLiteral("余票"), QStringLiteral("票价")};
     return section >= 0 && section < headers.size() ? headers.at(section) : QVariant{};
@@ -126,7 +137,21 @@ QVariant TrainQueryModel::headerData(int section, Qt::Orientation orientation, i
 void TrainQueryModel::setRows(QVector<TrainQueryRow> rows)
 {
     beginResetModel();
+    rows.erase(std::remove_if(rows.begin(), rows.end(), [this](const TrainQueryRow &row) {
+        return m_hiddenTrainNumbers.contains(row.trainNumber, Qt::CaseInsensitive);
+    }), rows.end());
     m_rows = std::move(rows);
+    m_selectedSeats.fill(0, m_rows.size());
+    endResetModel();
+}
+
+void TrainQueryModel::setHiddenTrainNumbers(const QStringList &trainNumbers)
+{
+    beginResetModel();
+    m_hiddenTrainNumbers = trainNumbers;
+    m_rows.erase(std::remove_if(m_rows.begin(), m_rows.end(), [this](const TrainQueryRow &row) {
+        return m_hiddenTrainNumbers.contains(row.trainNumber, Qt::CaseInsensitive);
+    }), m_rows.end());
     m_selectedSeats.fill(0, m_rows.size());
     endResetModel();
 }
@@ -147,14 +172,40 @@ const TrainSeatOption *TrainQueryModel::selectedSeatAt(int row) const
 
 void TrainQueryModel::selectSeatType(const QString &seatType, bool availableOnly)
 {
+    const QStringList defaultPriority = {QStringLiteral("二等座"),
+                                         QStringLiteral("无座"),
+                                         QStringLiteral("一等座"),
+                                         QStringLiteral("商务座")};
     for (int row = 0; row < m_rows.size(); ++row) {
         const auto &seats = m_rows.at(row).seats;
         int selected = -1;
-        for (int seatIndex = 0; seatIndex < seats.size(); ++seatIndex) {
-            if ((!seatType.isEmpty() && seats.at(seatIndex).seatType == seatType)
-                || (seatType.isEmpty() && (!availableOnly || seats.at(seatIndex).remainingSeats > 0))) {
-                selected = seatIndex;
-                break;
+        if (!seatType.isEmpty()) {
+            for (int seatIndex = 0; seatIndex < seats.size(); ++seatIndex) {
+                if (seats.at(seatIndex).seatType == seatType
+                    && (!availableOnly || seats.at(seatIndex).remainingSeats > 0)) {
+                    selected = seatIndex;
+                    break;
+                }
+            }
+        } else {
+            for (const QString &preferredType : defaultPriority) {
+                for (int seatIndex = 0; seatIndex < seats.size(); ++seatIndex) {
+                    if (seats.at(seatIndex).seatType == preferredType
+                        && (!availableOnly || seats.at(seatIndex).remainingSeats > 0)) {
+                        selected = seatIndex;
+                        break;
+                    }
+                }
+                if (selected >= 0)
+                    break;
+            }
+            if (selected < 0) {
+                for (int seatIndex = 0; seatIndex < seats.size(); ++seatIndex) {
+                    if (!availableOnly || seats.at(seatIndex).remainingSeats > 0) {
+                        selected = seatIndex;
+                        break;
+                    }
+                }
             }
         }
         if (selected < 0 || selected == m_selectedSeats.at(row))

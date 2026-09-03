@@ -27,7 +27,17 @@ void SeatTypeComboDelegate::paint(QPainter *painter, const QStyleOptionViewItem 
     style->drawControl(QStyle::CE_ItemViewItem, &baseOption, painter, baseOption.widget);
 
     const bool selected = option.state.testFlag(QStyle::State_Selected);
-    const QColor color = selected ? Qt::white : QColor(QStringLiteral("#111827"));
+    const bool hovered = option.state.testFlag(QStyle::State_MouseOver);
+    if (hovered && !selected) {
+        painter->save();
+        painter->setPen(Qt::NoPen);
+        painter->setBrush(QColor(QStringLiteral("#EAF3FF")));
+        painter->drawRoundedRect(option.rect.adjusted(3, 3, -3, -3), 4, 4);
+        painter->restore();
+    }
+    const QColor color = selected ? Qt::white
+                                  : hovered ? QColor(QStringLiteral("#0071E3"))
+                                            : QColor(QStringLiteral("#111827"));
     const QRect contentRect = option.rect.adjusted(8, 0, -24, 0);
 
     painter->save();
@@ -51,32 +61,6 @@ QWidget *SeatTypeComboDelegate::createEditor(QWidget *parent, const QStyleOption
 {
     auto *combo = new QComboBox(parent);
     combo->addItems(index.data(TrainQueryModel::SeatOptionsRole).toStringList());
-    combo->setStyleSheet(QStringLiteral(R"(
-QComboBox {
-    color: #111827;
-    background-color: #FFFFFF;
-    border: 1px solid #1683FF;
-    border-radius: 3px;
-    padding: 2px 20px 2px 8px;
-}
-QComboBox::drop-down {
-    border: none;
-    width: 18px;
-}
-QComboBox::down-arrow {
-    image: url(:/icons/chevron-down.svg);
-    width: 10px;
-    height: 10px;
-}
-QComboBox QAbstractItemView {
-    color: #111827;
-    background-color: #FFFFFF;
-    selection-color: #FFFFFF;
-    selection-background-color: #1683FF;
-    border: 1px solid #D7DEE8;
-    outline: 0;
-}
-)"));
     auto *delegate = const_cast<SeatTypeComboDelegate *>(this);
     connect(combo, &QComboBox::activated, delegate, [delegate, combo]() {
         emit delegate->commitData(combo);
@@ -106,5 +90,5 @@ void SeatTypeComboDelegate::setModelData(QWidget *editor, QAbstractItemModel *mo
 void SeatTypeComboDelegate::updateEditorGeometry(QWidget *editor, const QStyleOptionViewItem &option,
                                                  const QModelIndex &) const
 {
-    editor->setGeometry(option.rect.adjusted(3, 2, -3, -2));
+    editor->setGeometry(option.rect.adjusted(1, 1, -1, -1));
 }

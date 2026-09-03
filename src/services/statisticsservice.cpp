@@ -19,9 +19,7 @@ const domain::Train *findTrain(const domain::AppData &data, const domain::Ticket
 {
     const auto it = std::find_if(data.trains.cbegin(), data.trains.cend(),
                                  [&ticket](const domain::Train &train) {
-                                     return train.number == ticket.trainNumber
-                                         && (!ticket.serviceDate.isValid()
-                                             || train.serviceDate == ticket.serviceDate);
+                                     return train.number == ticket.trainNumber;
                                  });
     return it == data.trains.cend() ? nullptr : &*it;
 }
@@ -73,8 +71,7 @@ StatisticsSummary StatisticsService::summarize(const StatisticsFilter &filter) c
     int remainingTotal = 0;
     int capacityTotal = 0;
     for (const domain::Train &train : data.trains) {
-        if (!train.enabled || !dateInRange(train.serviceDate, filter)
-            || (!filter.trainNumber.isEmpty() && train.number != filter.trainNumber)
+        if ((!filter.trainNumber.isEmpty() && train.number != filter.trainNumber)
             || !stationMatches(train, filter.stationCode)) {
             continue;
         }
@@ -90,9 +87,7 @@ StatisticsSummary StatisticsService::summarize(const StatisticsFilter &filter) c
 
     for (const domain::Ticket &ticket : data.tickets) {
         const domain::Train *train = findTrain(data, ticket);
-        const QDate serviceDate = ticket.serviceDate.isValid()
-                                      ? ticket.serviceDate
-                                      : (train ? train->serviceDate : QDate());
+        const QDate serviceDate = ticket.serviceDate;
         if (!train || !dateInRange(serviceDate, filter)
             || (!filter.trainNumber.isEmpty() && ticket.trainNumber != filter.trainNumber)
             || (!filter.seatType.isEmpty() && ticket.seatType != filter.seatType)

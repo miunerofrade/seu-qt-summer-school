@@ -21,6 +21,9 @@ public:
                        QPushButton *openDirectoryButton,
                        QPushButton *saveButton,
                        QPushButton *reloadButton,
+                       QLabel *backupNoteLabel,
+                       QPushButton *createBackupButton,
+                       QPushButton *restoreBackupButton,
                        QObject *parent = nullptr);
 
 private:
@@ -28,6 +31,8 @@ private:
     void openDataDirectory();
     void saveNow();
     void reloadData();
+    void createBackup();
+    void restoreBackup();
 
     DataStore *m_dataStore;
     QWidget *m_dialogParent;
@@ -37,6 +42,9 @@ private:
     QLabel *m_lastSavedLabel;
     QLabel *m_autoLoadLabel;
     QPushButton *m_saveButton;
+    QLabel *m_backupNoteLabel;
+    QPushButton *m_createBackupButton;
+    QPushButton *m_restoreBackupButton;
 };
 
 #endif // SETTINGSCONTROLLER_H

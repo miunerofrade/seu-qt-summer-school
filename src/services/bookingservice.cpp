@@ -56,7 +56,7 @@ OperationResult BookingService::book(const BookingRequest &request, BookingRecei
     int trainIndex = -1;
     for (int i = 0; i < candidate.trains.size(); ++i) {
         const domain::Train &train = candidate.trains.at(i);
-        if (train.number == request.trainNumber && train.serviceDate == request.serviceDate) {
+        if (train.number == request.trainNumber) {
             trainIndex = i;
             break;
         }
@@ -65,8 +65,6 @@ OperationResult BookingService::book(const BookingRequest &request, BookingRecei
         return OperationResult::failure(QStringLiteral("车次不存在或日期已变化，请重新查询。"));
 
     domain::Train &train = candidate.trains[trainIndex];
-    if (!train.enabled || !train.saleOpen)
-        return OperationResult::failure(QStringLiteral("该车次已停用或暂未开售。"));
     const int fromIndex = findStop(train.stops, request.departureStationCode);
     const int toIndex = findStop(train.stops, request.arrivalStationCode);
     if (fromIndex < 0 || toIndex <= fromIndex)
@@ -120,7 +118,7 @@ OperationResult BookingService::book(const BookingRequest &request, BookingRecei
         ticket.seatType = seat.seatType;
         ticket.priceCents = unitPriceCents;
         ticket.status = domain::TicketStatus::Issued;
-        ticket.serviceDate = train.serviceDate;
+        ticket.serviceDate = request.serviceDate;
         candidate.tickets.push_back(ticket);
         order.ticketIds.push_back(ticket.id);
     }
@@ -135,4 +133,79 @@ OperationResult BookingService::book(const BookingRequest &request, BookingRecei
         receipt->totalAmountCents = order.totalAmountCents;
     }
     return OperationResult::ok();
+}
+
+OperationResult BookingService::bookDemo(const BookingRequest &request,
+                                         const DemoTrainSnapshot &snapshot,
+                                         BookingReceipt *receipt)
+{
+    if (!m_dataStore || snapshot.departureStationName.isEmpty()
+        || snapshot.arrivalStationName.isEmpty() || !snapshot.departureTime.isValid()
+        || !snapshot.arrivalTime.isValid() || snapshot.priceCents < 0
+        || snapshot.remainingSeats <= 0 || request.trainNumber.trimmed().isEmpty()
+        || !request.serviceDate.isValid() || request.departureStationCode.isEmpty()
+        || request.arrivalStationCode.isEmpty()
+        || request.departureStationCode == request.arrivalStationCode
+        || request.seatType.trimmed().isEmpty() || request.passengerIds.isEmpty())
+        return OperationResult::failure(QStringLiteral("该席别缺少票价或余票，无法生成演示订单。"));
+
+    domain::AppData candidate = m_dataStore->data();
+    QStringList passengerIds;
+    for (const QString &passengerId : request.passengerIds) {
+        if (passengerId.isEmpty() || passengerIds.contains(passengerId))
+            return OperationResult::failure(QStringLiteral("乘车人选择重复或无效。"));
+        const bool exists = std::any_of(candidate.passengers.cbegin(), candidate.passengers.cend(),
+                                        [&passengerId](const domain::Passenger &passenger) {
+            return passenger.id == passengerId;
+        });
+        if (!exists)
+            return OperationResult::failure(QStringLiteral("乘车人信息已变化，请重新选择。"));
+        passengerIds.push_back(passengerId);
+    }
+    if (passengerIds.size() > snapshot.remainingSeats)
+        return OperationResult::failure(QStringLiteral("余票不足，未生成订单。"));
+
+    const auto ensureStation = [&candidate](const QString &code, const QString &name) {
+        const auto it = std::find_if(candidate.stations.begin(), candidate.stations.end(),
+                                     [&code](const domain::Station &station) {
+            return station.code == code;
+        });
+        if (it == candidate.stations.end())
+            candidate.stations.push_back({code, name, name, true});
+        else {
+            it->name = name;
+            it->enabled = true;
+        }
+    };
+    ensureStation(request.departureStationCode, snapshot.departureStationName);
+    ensureStation(request.arrivalStationCode, snapshot.arrivalStationName);
+
+    domain::Train imported;
+    imported.number = request.trainNumber;
+    imported.stops = {{request.departureStationCode,
+                       0,
+                       {},
+                       snapshot.departureTime,
+                       snapshot.departureDayOffset},
+                      {request.arrivalStationCode,
+                       1,
+                       snapshot.arrivalTime,
+                       {},
+                       snapshot.arrivalDayOffset}};
+    imported.seats = {{request.seatType,
+                       {{snapshot.priceCents,
+                         snapshot.remainingSeats,
+                         snapshot.remainingSeats}}}};
+
+    const auto trainIt = std::find_if(candidate.trains.begin(), candidate.trains.end(),
+                                      [&request](const domain::Train &train) {
+        return train.number == request.trainNumber;
+    });
+    if (trainIt == candidate.trains.end())
+        candidate.trains.push_back(std::move(imported));
+    else
+        *trainIt = std::move(imported);
+
+    const OperationResult importedResult = m_dataStore->commit(std::move(candidate));
+    return importedResult ? book(request, receipt) : importedResult;
 }

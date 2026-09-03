@@ -54,6 +54,10 @@ void BookingController::bookSelected()
     const TrainSeatOption *seat = model->selectedSeatAt(sourceIndex.row());
     if (!row || !seat)
         return;
+    if (seat->priceCents < 0) {
+        QMessageBox::information(m_table, tr("购票"), tr("该席别没有可用票价，请切换其他席别。"));
+        return;
+    }
 
     QDialog dialog(m_table);
     dialog.setWindowTitle(tr("确认购票"));
@@ -70,7 +74,8 @@ void BookingController::bookSelected()
                  QStringLiteral("%1小时%2分").arg(row->durationMinutes / 60).arg(row->durationMinutes % 60, 2, 10, QLatin1Char('0')),
                  seat->seatType,
                  formatMoney(seat->priceCents),
-                 QString::number(seat->remainingSeats)),
+                 seat->availabilityText.isEmpty() ? QString::number(seat->remainingSeats)
+                                                  : seat->availabilityText),
         &dialog);
     summary->setWordWrap(true);
     layout->addWidget(summary);
@@ -92,10 +97,18 @@ void BookingController::bookSelected()
     layout->addWidget(totalLabel);
 
     auto *buttons = new QDialogButtonBox(QDialogButtonBox::Cancel, &dialog);
-    QPushButton *confirmButton = buttons->addButton(tr("确认支付并出票"), QDialogButtonBox::AcceptRole);
+    QPushButton *confirmButton = buttons->addButton(tr("生成演示订单"), QDialogButtonBox::AcceptRole);
     confirmButton->setDefault(true);
     confirmButton->setEnabled(false);
     layout->addWidget(buttons);
+
+    auto *disclaimer = new QLabel(
+        tr("数据来自中国铁路12306；本页面购票仅用于课程演示，不能用于真实购票。"),
+        &dialog);
+    disclaimer->setWordWrap(true);
+    disclaimer->setAlignment(Qt::AlignCenter);
+    disclaimer->setStyleSheet(QStringLiteral("color: #8E8E93; font-size: 12px; padding: 6px 0 2px 0;"));
+    layout->addWidget(disclaimer);
 
     connect(passengers, &QListWidget::itemChanged, &dialog, [=]() {
         int selected = 0;
@@ -113,14 +126,26 @@ void BookingController::bookSelected()
             if (passengers->item(i)->checkState() == Qt::Checked)
                 passengerIds.push_back(passengers->item(i)->data(Qt::UserRole).toString());
         }
-        const OperationResult result = BookingService(m_dataStore).book(
-            {row->trainNumber,
-             row->serviceDate,
-             row->departureStationCode,
-             row->arrivalStationCode,
-             seat->seatType,
-             passengerIds},
-            &receipt);
+        const BookingRequest request{row->trainNumber,
+                                     row->serviceDate,
+                                     row->departureStationCode,
+                                     row->arrivalStationCode,
+                                     seat->seatType,
+                                     passengerIds};
+        BookingService service(m_dataStore);
+        const OperationResult result = row->bookable
+            ? service.book(request, &receipt)
+            : service.bookDemo(request,
+                               {row->departureStationName,
+                                row->arrivalStationName,
+                                row->departureTime,
+                                row->arrivalTime,
+                                row->departureDayOffset,
+                                row->arrivalDayOffset,
+                                seat->priceCents,
+                                seat->availabilityText == QStringLiteral("有")
+                                    ? 99 : seat->remainingSeats},
+                               &receipt);
         if (!result) {
             QMessageBox::warning(&dialog, tr("购票失败"), result.error);
             return;
@@ -132,7 +157,7 @@ void BookingController::bookSelected()
     if (bookingSucceeded) {
         QMessageBox::information(m_table,
                                  tr("购票成功"),
-                                 tr("订单已生成：%1\n共出票 %2 张，合计 %3。")
+                                 tr("本地演示订单已生成：%1\n共出票 %2 张，合计 %3。")
                                      .arg(receipt.orderId)
                                      .arg(receipt.ticketIds.size())
                                      .arg(formatMoney(receipt.totalAmountCents)));

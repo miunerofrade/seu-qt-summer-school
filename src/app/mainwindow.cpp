@@ -35,6 +35,8 @@ MainWindow::MainWindow(QWidget *parent)
                                      .filePath(QStringLiteral("app-data.json"));
     m_dataStore = new DataStore(std::make_unique<JsonRepository>(dataFilePath), this);
     const OperationResult initialization = m_dataStore->initialize();
+    if (initialization)
+        m_dataStore->ensureBackup();
 
     // 统一主界面操作按钮：常规按钮使用 88 × 28，长文案只按内容扩宽。
     constexpr int standardButtonWidth = 88;
@@ -92,10 +94,12 @@ MainWindow::MainWindow(QWidget *parent)
                          ui->btnManageTrains,
                          ui->btnManageSchedules,
                          ui->btnManageSeats,
+                         ui->btnResetAdminData,
                          ui->labelStationAdminData,
                          ui->labelTrainAdminData,
                          ui->labelScheduleAdminData,
-                         ui->labelSeatAdminData},
+                         ui->labelSeatAdminData,
+                         ui->labelAdminBackupData},
                         this);
     new StatisticsController(m_dataStore,
                              ui->statisticsFilterCard,
@@ -135,6 +139,9 @@ MainWindow::MainWindow(QWidget *parent)
                            ui->btnOpenDataDirectory,
                            ui->btnSaveDataNow,
                            ui->btnReloadData,
+                           ui->labelSettingsBackupNote,
+                           ui->btnCreateBackup,
+                           ui->btnRestoreBackup,
                            this);
 
     setupMenuBar();

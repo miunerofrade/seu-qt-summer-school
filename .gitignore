@@ -97,3 +97,6 @@ CMakeUserPresets.json
 
 # Runtime business data
 /data/app-data.json
+/data/railway-cache.json
+/data/app-data.backup.json
+/data/backups/

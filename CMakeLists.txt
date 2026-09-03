@@ -15,8 +15,8 @@ if(WIN32 AND NOT CMAKE_PREFIX_PATH AND EXISTS "D:/Qt/Qt/6.11.2/mingw_64")
     set(CMAKE_PREFIX_PATH "D:/Qt/Qt/6.11.2/mingw_64" CACHE PATH "Qt installation prefix")
 endif()
 
-find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Widgets LinguistTools)
-find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets LinguistTools)
+find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Widgets Network LinguistTools)
+find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets Network LinguistTools)
 
 set(TS_FILES untitled_zh_CN.ts)
 
@@ -67,6 +67,8 @@ set(PROJECT_SOURCES
         src/services/passengerservice.h
         src/services/queryservice.cpp
         src/services/queryservice.h
+        src/services/railwayqueryservice.cpp
+        src/services/railwayqueryservice.h
         src/services/orderservice.cpp
         src/services/orderservice.h
         src/services/refundservice.cpp
@@ -122,7 +124,7 @@ else()
     qt5_create_translation(QM_FILES ${CMAKE_SOURCE_DIR} ${TS_FILES})
 endif()
 
-target_link_libraries(untitled PRIVATE Qt${QT_VERSION_MAJOR}::Widgets)
+target_link_libraries(untitled PRIVATE Qt${QT_VERSION_MAJOR}::Widgets Qt${QT_VERSION_MAJOR}::Network)
 target_include_directories(untitled PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/src
 )
@@ -212,9 +214,11 @@ if(BUILD_TESTING)
         src/models/trainquerymodel.h
         src/services/queryservice.cpp
         src/services/queryservice.h
+        src/services/railwayqueryservice.cpp
+        src/services/railwayqueryservice.h
     )
     target_include_directories(phase3_tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
-    target_link_libraries(phase3_tests PRIVATE Qt${QT_VERSION_MAJOR}::Test)
+    target_link_libraries(phase3_tests PRIVATE Qt${QT_VERSION_MAJOR}::Test Qt${QT_VERSION_MAJOR}::Network)
     add_test(NAME phase3_tests COMMAND phase3_tests)
 
     add_executable(phase4_tests

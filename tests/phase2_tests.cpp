@@ -134,8 +134,14 @@ void PhaseTwoTests::stationAndTrainCodesAreUnique()
 
     QVERIFY(!service.addStation({QStringLiteral("njn"), QStringLiteral("重复南京南"), QStringLiteral("南京"), true}));
     QVERIFY(service.addStation({QStringLiteral("WXH"), QStringLiteral("无锡东"), QStringLiteral("无锡"), true}));
-    QVERIFY(!service.addTrain({QStringLiteral("g101"), QDate::currentDate(), true, true, {}, {}}));
-    QVERIFY(service.addTrain({QStringLiteral("G999"), QDate::currentDate(), true, true, {}, {}}));
+    domain::Train duplicate;
+    duplicate.number = QStringLiteral("g101");
+    duplicate.stops = store->data().trains.first().stops;
+    QVERIFY(!service.addTrain(duplicate));
+    domain::Train added;
+    added.number = QStringLiteral("G999");
+    added.stops = store->data().trains.first().stops;
+    QVERIFY(service.addTrain(added));
 }
 
 void PhaseTwoTests::scheduleValidationAndSeatReset()
@@ -191,7 +197,8 @@ void PhaseTwoTests::referencedBaseDataCannotBeDeleted()
                               15000,
                               domain::TicketStatus::Completed});
     QVERIFY(store->commit(candidate));
-    QVERIFY(!service.removeTrain(QStringLiteral("G101")));
+    QVERIFY(service.removeTrain(QStringLiteral("G101")));
+    QVERIFY(store->data().hiddenTrainNumbers.contains(QStringLiteral("G101")));
     QVERIFY(service.updateStation(QStringLiteral("NJN"), QStringLiteral("南京南"), QStringLiteral("南京"), false));
 }
 

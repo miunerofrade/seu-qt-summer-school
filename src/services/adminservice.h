@@ -19,11 +19,7 @@ public:
     OperationResult removeStation(const QString &code);
 
     OperationResult addTrain(const domain::Train &train);
-    OperationResult updateTrain(const QString &number,
-                                const QDate &serviceDate,
-                                bool enabled,
-                                bool saleOpen);
-    OperationResult removeTrain(const QString &number);
+    OperationResult removeTrain(const QString &number, bool knownFromRailwayCache = false);
     OperationResult replaceStops(const QString &trainNumber,
                                  const QVector<domain::TrainStop> &stops);
     OperationResult replaceSeats(const QString &trainNumber,

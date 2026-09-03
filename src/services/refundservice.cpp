@@ -25,18 +25,19 @@ int findTrain(const domain::AppData &data, const domain::Ticket &ticket)
 {
     for (int i = 0; i < data.trains.size(); ++i) {
         const domain::Train &train = data.trains.at(i);
-        if (train.number == ticket.trainNumber
-            && (!ticket.serviceDate.isValid() || train.serviceDate == ticket.serviceDate)) {
+        if (train.number == ticket.trainNumber) {
             return i;
         }
     }
     return -1;
 }
 
-QDateTime departureDateTime(const domain::Train &train, const domain::TrainStop &stop)
+QDateTime departureDateTime(const domain::Train &train,
+                            const domain::TrainStop &stop,
+                            const QDate &serviceDate)
 {
     const QTime time = stop.departureTime.isValid() ? stop.departureTime : stop.arrivalTime;
-    return time.isValid() ? QDateTime(train.serviceDate.addDays(stop.dayOffset), time) : QDateTime();
+    return time.isValid() ? QDateTime(serviceDate.addDays(stop.dayOffset), time) : QDateTime();
 }
 
 int refundRate(qint64 secondsBeforeDeparture)
@@ -83,7 +84,9 @@ OperationResult buildQuote(const domain::AppData &data,
     const int toIndex = findStop(train.stops, ticketIt->toStationCode);
     if (fromIndex < 0 || toIndex <= fromIndex)
         return OperationResult::failure(QStringLiteral("车票乘车区间无效。"));
-    const QDateTime departureAt = departureDateTime(train, train.stops.at(fromIndex));
+    const QDateTime departureAt = departureDateTime(train,
+                                                    train.stops.at(fromIndex),
+                                                    ticketIt->serviceDate);
     if (!departureAt.isValid())
         return OperationResult::failure(QStringLiteral("车次开车时间无效。"));
     const qint64 secondsBeforeDeparture = now.secsTo(departureAt);
