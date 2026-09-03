@@ -12,11 +12,13 @@
 #include <QComboBox>
 #include <QCompleter>
 #include <QDateEdit>
+#include <QEvent>
 #include <QHeaderView>
 #include <QMessageBox>
 #include <QPushButton>
 #include <QSignalBlocker>
 #include <QTableView>
+#include <QTimer>
 
 #include <algorithm>
 
@@ -26,6 +28,13 @@ QString selectedStationCode(const QComboBox *combo)
     if (!combo)
         return {};
     const QString text = combo->currentText().trimmed();
+    // Prefer the data of the actually selected item.  Looking up by name is
+    // ambiguous because the local demo data and 12306 can contain stations
+    // with the same display name but different codes.
+    const int currentIndex = combo->currentIndex();
+    if (currentIndex >= 0 && combo->itemText(currentIndex).trimmed() == text)
+        return combo->itemData(currentIndex).toString();
+
     const int nameIndex = combo->findText(text, Qt::MatchFixedString);
     if (nameIndex >= 0)
         return combo->itemData(nameIndex).toString();
@@ -72,24 +81,32 @@ QueryController::QueryController(DataStore *dataStore,
     m_table->setItemDelegateForColumn(TrainQueryModel::SeatTypeColumn,
                                       new SeatTypeComboDelegate(m_table));
     QHeaderView *header = m_table->horizontalHeader();
-    header->setSectionResizeMode(QHeaderView::ResizeToContents);
-    header->setSectionResizeMode(TrainQueryModel::OriginStationColumn, QHeaderView::Stretch);
-    header->setSectionResizeMode(TrainQueryModel::TerminalStationColumn, QHeaderView::Stretch);
-    header->setSectionResizeMode(TrainQueryModel::DepartureStationColumn, QHeaderView::Stretch);
-    header->setSectionResizeMode(TrainQueryModel::ArrivalStationColumn, QHeaderView::Stretch);
-    header->setSectionResizeMode(TrainQueryModel::SeatTypeColumn, QHeaderView::Fixed);
-    header->resizeSection(TrainQueryModel::SeatTypeColumn, 84);
+    header->setSectionResizeMode(QHeaderView::Interactive);
+    header->setStretchLastSection(false);
+    header->setMinimumSectionSize(56);
+
+    // Content-oriented minimums keep every column readable while Interactive
+    // mode leaves all widths user-adjustable instead of locking a ratio.
+    m_minimumColumnWidths = {
+        64, 60, 90, 90, 90, 90, 72, 80, 84, 56, 72
+    };
+    for (int column = 0; column < m_minimumColumnWidths.size(); ++column)
+        header->resizeSection(column, m_minimumColumnWidths.at(column));
+    connect(header, &QHeaderView::sectionResized, this,
+            [this, header](int logicalIndex, int, int newSize) {
+        if (logicalIndex >= 0 && logicalIndex < m_minimumColumnWidths.size()
+            && newSize < m_minimumColumnWidths.at(logicalIndex)) {
+            header->resizeSection(logicalIndex, m_minimumColumnWidths.at(logicalIndex));
+        }
+    });
+    m_table->viewport()->installEventFilter(this);
     m_table->verticalHeader()->setVisible(false);
 
     m_travelDate->setDate(QDate::currentDate());
-    QVector<RailwayStation> stations = m_railwayService->cachedStations();
-    if (stations.isEmpty()) {
-        stations = {{QStringLiteral("南京南"), QStringLiteral("NKH")},
-                    {QStringLiteral("上海虹桥"), QStringLiteral("AOH")},
-                    {QStringLiteral("苏州北"), QStringLiteral("OHH")},
-                    {QStringLiteral("杭州东"), QStringLiteral("HGH")}};
-    }
+    const QVector<RailwayStation> stations = m_railwayService->cachedStations();
+    m_officialStationsReady = !stations.isEmpty();
     loadStations(stations);
+    m_searchButton->setEnabled(m_officialStationsReady);
 
     connect(searchButton, &QPushButton::clicked, this, [this]() { executeQuery(); });
     connect(m_departureStation, qOverload<int>(&QComboBox::currentIndexChanged), this, [this]() {
@@ -111,8 +128,14 @@ QueryController::QueryController(DataStore *dataStore,
     showCachedTrains();
     m_railwayService->refreshStations([this](QVector<RailwayStation> refreshed,
                                              const QString &error) {
-        if (error.isEmpty() && !refreshed.isEmpty())
+        if (error.isEmpty() && !refreshed.isEmpty()) {
+            m_officialStationsReady = true;
             loadStations(refreshed);
+        } else if (!m_officialStationsReady) {
+            // The local data can still be queried when the live catalog is
+            // temporarily unavailable, but do not leave the button disabled.
+            m_searchButton->setEnabled(true);
+        }
     });
 }
 
@@ -131,7 +154,8 @@ void QueryController::loadStations(const QVector<RailwayStation> &stations)
     QVector<RailwayStation> merged = stations;
     for (const domain::Station &station : m_dataStore->data().stations) {
         const bool exists = std::any_of(merged.cbegin(), merged.cend(), [&station](const RailwayStation &item) {
-            return item.code.compare(station.code, Qt::CaseInsensitive) == 0;
+            return item.code.compare(station.code, Qt::CaseInsensitive) == 0
+                || item.name.compare(station.name, Qt::CaseInsensitive) == 0;
         });
         if (!exists && station.enabled)
             merged.append({station.name, station.code});
@@ -287,4 +311,50 @@ void QueryController::applyFilters()
     m_proxy->setSeatTypeFilter(m_seatFilter->currentData().toString());
     m_proxy->setAvailableOnly(m_availableOnly->isChecked());
     m_proxy->setSortByPrice(m_sortCombo->currentData().toBool());
+    QTimer::singleShot(0, this, [this]() { resizeColumnsToViewport(); });
+}
+
+bool QueryController::eventFilter(QObject *watched, QEvent *event)
+{
+    if (watched == m_table->viewport() && event->type() == QEvent::Resize)
+        QTimer::singleShot(0, this, [this]() { resizeColumnsToViewport(); });
+    return QObject::eventFilter(watched, event);
+}
+
+void QueryController::resizeColumnsToViewport()
+{
+    if (m_resizingColumns || !m_table || !m_table->model())
+        return;
+
+    const int columnCount = m_table->model()->columnCount();
+    const int availableWidth = m_table->viewport()->width();
+    if (columnCount <= 0 || availableWidth <= 0
+        || m_minimumColumnWidths.size() < columnCount)
+        return;
+
+    QVector<int> widths(columnCount);
+    int totalWidth = 0;
+    QHeaderView *header = m_table->horizontalHeader();
+    for (int column = 0; column < columnCount; ++column) {
+        const int contentWidth = header->sectionSizeHint(column);
+        widths[column] = std::max(m_minimumColumnWidths.at(column), contentWidth);
+        totalWidth += widths.at(column);
+    }
+
+    if (availableWidth > totalWidth && totalWidth > 0) {
+        const int extraWidth = availableWidth - totalWidth;
+        int distributed = 0;
+        for (int column = 0; column < columnCount; ++column) {
+            const int addition = column == columnCount - 1
+                                     ? extraWidth - distributed
+                                     : (extraWidth * widths.at(column)) / totalWidth;
+            widths[column] += addition;
+            distributed += addition;
+        }
+    }
+
+    m_resizingColumns = true;
+    for (int column = 0; column < columnCount; ++column)
+        header->resizeSection(column, widths.at(column));
+    m_resizingColumns = false;
 }

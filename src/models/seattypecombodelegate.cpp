@@ -26,31 +26,27 @@ void SeatTypeComboDelegate::paint(QPainter *painter, const QStyleOptionViewItem 
     QStyle *style = baseOption.widget ? baseOption.widget->style() : QApplication::style();
     style->drawControl(QStyle::CE_ItemViewItem, &baseOption, painter, baseOption.widget);
 
-    const bool selected = option.state.testFlag(QStyle::State_Selected);
-    const bool hovered = option.state.testFlag(QStyle::State_MouseOver);
-    if (hovered && !selected) {
-        painter->save();
-        painter->setPen(Qt::NoPen);
-        painter->setBrush(QColor(QStringLiteral("#EAF3FF")));
-        painter->drawRoundedRect(option.rect.adjusted(3, 3, -3, -3), 4, 4);
-        painter->restore();
-    }
-    const QColor color = selected ? Qt::white
-                                  : hovered ? QColor(QStringLiteral("#0071E3"))
-                                            : QColor(QStringLiteral("#111827"));
-    const QRect contentRect = option.rect.adjusted(8, 0, -24, 0);
-
+    // Only the display state is custom-painted. The actual editor created
+    // below remains a normal QComboBox. Match the application's other combo
+    // boxes here instead of asking the table's style to imitate one.
+    const QRect controlRect = option.rect.adjusted(2, 0, -2, 0);
     painter->save();
-    painter->setPen(color);
-    painter->drawText(contentRect, Qt::AlignCenter, index.data(Qt::DisplayRole).toString());
+    painter->setRenderHint(QPainter::Antialiasing, true);
 
-    const int arrowX = option.rect.right() - 14;
-    const int arrowY = option.rect.center().y();
+    const bool selected = option.state.testFlag(QStyle::State_Selected);
+    const QColor color = selected ? option.palette.color(QPalette::HighlightedText)
+                                  : QColor(QStringLiteral("#2F3033"));
+    painter->setPen(color);
+    painter->drawText(controlRect.adjusted(4, 0, -4, 0),
+                      Qt::AlignCenter,
+                      index.data(Qt::DisplayRole).toString());
+
+    const int arrowX = controlRect.right() - 11;
+    const int arrowY = controlRect.center().y();
     QPainterPath arrow;
     arrow.moveTo(arrowX - 3, arrowY - 2);
     arrow.lineTo(arrowX, arrowY + 1);
     arrow.lineTo(arrowX + 3, arrowY - 2);
-    painter->setRenderHint(QPainter::Antialiasing, true);
     painter->setPen(QPen(color, 1.2));
     painter->drawPath(arrow);
     painter->restore();
@@ -60,7 +56,17 @@ QWidget *SeatTypeComboDelegate::createEditor(QWidget *parent, const QStyleOption
                                               const QModelIndex &index) const
 {
     auto *combo = new QComboBox(parent);
+    combo->setFrame(false);
     combo->addItems(index.data(TrainQueryModel::SeatOptionsRole).toStringList());
+    combo->setAutoFillBackground(true);
+    QPalette editorPalette = combo->palette();
+    editorPalette.setColor(QPalette::Window, editorPalette.color(QPalette::Base));
+    combo->setPalette(editorPalette);
+    for (int item = 0; item < combo->count(); ++item) {
+        combo->setItemData(item,
+                           static_cast<int>(Qt::AlignCenter),
+                           Qt::TextAlignmentRole);
+    }
     auto *delegate = const_cast<SeatTypeComboDelegate *>(this);
     connect(combo, &QComboBox::activated, delegate, [delegate, combo]() {
         emit delegate->commitData(combo);

@@ -9,6 +9,7 @@ class DataStore;
 class QCheckBox;
 class QComboBox;
 class QDateEdit;
+class QEvent;
 class QPushButton;
 class QTableView;
 
@@ -27,6 +28,9 @@ public:
                     QComboBox *sortCombo,
                     QObject *parent = nullptr);
 
+protected:
+    bool eventFilter(QObject *watched, QEvent *event) override;
+
 private:
     void loadStations(const QVector<RailwayStation> &stations);
     bool isOfficialStation(const QString &code) const;
@@ -35,9 +39,13 @@ private:
     void showCachedTrains();
     void showRows(QVector<TrainQueryRow> rows);
     void applyFilters();
+    void resizeColumnsToViewport();
 
     DataStore *m_dataStore;
     QTableView *m_table;
+    bool m_officialStationsReady = false;
+    bool m_resizingColumns = false;
+    QVector<int> m_minimumColumnWidths;
     QComboBox *m_departureStation;
     QComboBox *m_arrivalStation;
     QDateEdit *m_travelDate;
