@@ -13,6 +13,7 @@ public:
     enum Column
     {
         TrainNumberColumn,
+        ServiceDateColumn,
         DepartureStationColumn,
         ArrivalStationColumn,
         DepartureTimeColumn,

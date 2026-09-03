@@ -4,6 +4,7 @@
 #include "domain/entities.h"
 
 #include <QDate>
+#include <QDateTime>
 #include <QTime>
 #include <QVector>
 
@@ -26,6 +27,9 @@ struct TrainSeatOption
 struct TrainQueryRow
 {
     QString trainNumber;
+    QDate serviceDate;
+    QString departureStationCode;
+    QString arrivalStationCode;
     QString departureStationName;
     QString arrivalStationName;
     QTime departureTime;
@@ -41,7 +45,9 @@ class QueryService final
 public:
     explicit QueryService(const DataStore *dataStore);
 
-    QVector<TrainQueryRow> query(const TrainQueryRequest &request) const;
+    QVector<TrainQueryRow> query(const TrainQueryRequest &request,
+                                 const QDateTime &notDepartedAfter = {}) const;
+    QVector<TrainQueryRow> available(const QDateTime &notDepartedAfter) const;
 
 private:
     const DataStore *m_dataStore;

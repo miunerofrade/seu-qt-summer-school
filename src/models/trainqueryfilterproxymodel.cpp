@@ -76,12 +76,12 @@ bool TrainQueryFilterProxyModel::lessThan(const QModelIndex &left, const QModelI
         const TrainSeatOption *rightSeat = model->selectedSeatAt(right.row());
         return leftSeat && rightSeat ? leftSeat->priceCents < rightSeat->priceCents : leftSeat != nullptr;
     }
-    const int leftTime = leftRow->departureTime.hour() * 60 + leftRow->departureTime.minute()
-                         + leftRow->departureDayOffset * 24 * 60;
-    const int rightTime = rightRow->departureTime.hour() * 60 + rightRow->departureTime.minute()
-                          + rightRow->departureDayOffset * 24 * 60;
-    if (leftTime != rightTime)
-        return leftTime < rightTime;
+    const QDateTime leftDeparture(leftRow->serviceDate.addDays(leftRow->departureDayOffset),
+                                  leftRow->departureTime);
+    const QDateTime rightDeparture(rightRow->serviceDate.addDays(rightRow->departureDayOffset),
+                                   rightRow->departureTime);
+    if (leftDeparture != rightDeparture)
+        return leftDeparture < rightDeparture;
     return leftRow->trainNumber < rightRow->trainNumber;
 }
 

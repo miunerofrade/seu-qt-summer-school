@@ -64,9 +64,6 @@ MainWindow::MainWindow(QWidget *parent)
                         this);
     new BookingController(m_dataStore,
                           ui->tableTickets,
-                          ui->comboDepartureStation,
-                          ui->comboArrivalStation,
-                          ui->dateTravel,
                           ui->btnBookTicket,
                           this);
     new OrderController(m_dataStore,

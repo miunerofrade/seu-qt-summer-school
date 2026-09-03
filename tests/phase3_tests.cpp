@@ -19,6 +19,7 @@ private slots:
     void multiSegmentQueryUsesRequestedRange();
     void disabledAndInvalidRoutesAreExcluded();
     void proxyFiltersAndSortsRows();
+    void availableQueryExcludesDepartedTrains();
 };
 
 namespace {
@@ -119,6 +120,32 @@ void PhaseThreeTests::proxyFiltersAndSortsRows()
     const QModelIndex g205Seat = model.index(1, TrainQueryModel::SeatTypeColumn);
     QVERIFY(model.setData(g205Seat, QStringLiteral("一等座")));
     QCOMPARE(model.index(1, TrainQueryModel::PriceColumn).data().toString(), QStringLiteral("¥238.00"));
+}
+
+void PhaseThreeTests::availableQueryExcludesDepartedTrains()
+{
+    QTemporaryDir directory;
+    auto store = initializedStore(directory.filePath(QStringLiteral("app.json")));
+    QVERIFY(store);
+
+    auto candidate = store->data();
+    const QDate date(2030, 1, 10);
+    candidate.trains[0].serviceDate = date;
+    candidate.trains[1].serviceDate = date.addDays(1);
+    QVERIFY(store->commit(candidate));
+
+    QueryService service(store.get());
+    const auto rows = service.available(QDateTime(date, QTime(10, 0)));
+    QCOMPARE(rows.size(), 1);
+    QCOMPARE(rows.first().trainNumber, QStringLiteral("G205"));
+    QCOMPARE(rows.first().serviceDate, date.addDays(1));
+    QCOMPARE(rows.first().departureStationCode, QStringLiteral("NJN"));
+    QCOMPARE(rows.first().arrivalStationCode, QStringLiteral("HGH"));
+
+    const auto queried = service.query(
+        {QStringLiteral("NJN"), QStringLiteral("SHH"), date},
+        QDateTime(date, QTime(10, 0)));
+    QVERIFY(queried.isEmpty());
 }
 
 QTEST_GUILESS_MAIN(PhaseThreeTests)

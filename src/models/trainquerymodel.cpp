@@ -62,6 +62,8 @@ QVariant TrainQueryModel::data(const QModelIndex &index, int role) const
     switch (index.column()) {
     case TrainNumberColumn:
         return row.trainNumber;
+    case ServiceDateColumn:
+        return row.serviceDate.toString(QStringLiteral("yyyy-MM-dd"));
     case DepartureStationColumn:
         return row.departureStationName;
     case ArrivalStationColumn:
@@ -115,7 +117,7 @@ QVariant TrainQueryModel::headerData(int section, Qt::Orientation orientation, i
     if (orientation != Qt::Horizontal || role != Qt::DisplayRole)
         return QAbstractTableModel::headerData(section, orientation, role);
     static const QStringList headers = {
-        QStringLiteral("车次"), QStringLiteral("出发站"), QStringLiteral("到达站"),
+        QStringLiteral("车次"), QStringLiteral("日期"), QStringLiteral("出发站"), QStringLiteral("到达站"),
         QStringLiteral("出发时间"), QStringLiteral("历时"), QStringLiteral("席别"),
         QStringLiteral("余票"), QStringLiteral("票价")};
     return section >= 0 && section < headers.size() ? headers.at(section) : QVariant{};

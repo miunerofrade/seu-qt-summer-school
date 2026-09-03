@@ -7,8 +7,6 @@
 #include "services/passengerservice.h"
 #include "widgets/dialogstyle.h"
 
-#include <QComboBox>
-#include <QDateEdit>
 #include <QDialog>
 #include <QDialogButtonBox>
 #include <QFormLayout>
@@ -30,17 +28,11 @@ QString formatMoney(qint64 cents)
 
 BookingController::BookingController(DataStore *dataStore,
                                      QTableView *table,
-                                     QComboBox *departureStation,
-                                     QComboBox *arrivalStation,
-                                     QDateEdit *travelDate,
                                      QPushButton *bookButton,
                                      QObject *parent)
     : QObject(parent)
     , m_dataStore(dataStore)
     , m_table(table)
-    , m_departureStation(departureStation)
-    , m_arrivalStation(arrivalStation)
-    , m_travelDate(travelDate)
 {
     connect(bookButton, &QPushButton::clicked, this, [this]() { bookSelected(); });
     connect(m_table, &QTableView::doubleClicked, this, [this](const QModelIndex &) { bookSelected(); });
@@ -69,10 +61,11 @@ void BookingController::bookSelected()
     applyStandardDialogStyle(&dialog);
     auto *layout = new QVBoxLayout(&dialog);
     auto *summary = new QLabel(
-        tr("行程：%1 → %2\n车次：%3    出发：%4    历时：%5\n席别：%6    单价：%7    余票：%8")
+        tr("行程：%1 → %2\n车次：%3    日期：%4    出发：%5    历时：%6\n席别：%7    单价：%8    余票：%9")
             .arg(row->departureStationName,
                  row->arrivalStationName,
                  row->trainNumber,
+                 row->serviceDate.toString(QStringLiteral("yyyy-MM-dd")),
                  row->departureTime.toString(QStringLiteral("HH:mm")),
                  QStringLiteral("%1小时%2分").arg(row->durationMinutes / 60).arg(row->durationMinutes % 60, 2, 10, QLatin1Char('0')),
                  seat->seatType,
@@ -122,9 +115,9 @@ void BookingController::bookSelected()
         }
         const OperationResult result = BookingService(m_dataStore).book(
             {row->trainNumber,
-             m_travelDate->date(),
-             m_departureStation->currentData().toString(),
-             m_arrivalStation->currentData().toString(),
+             row->serviceDate,
+             row->departureStationCode,
+             row->arrivalStationCode,
              seat->seatType,
              passengerIds},
             &receipt);

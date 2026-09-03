@@ -31,6 +31,7 @@ private:
     void loadStations();
     void loadFilterOptions();
     void executeQuery();
+    void showAvailableTrains();
     void applyFilters();
 
     DataStore *m_dataStore;

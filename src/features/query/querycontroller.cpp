@@ -73,10 +73,10 @@ QueryController::QueryController(DataStore *dataStore,
     connect(m_dataStore, &DataStore::dataChanged, this, [this]() {
         loadStations();
         loadFilterOptions();
-        executeQuery();
+        showAvailableTrains();
     });
 
-    executeQuery();
+    showAvailableTrains();
 }
 
 void QueryController::loadStations()
@@ -149,10 +149,16 @@ void QueryController::executeQuery()
     const TrainQueryRequest request{m_departureStation->currentData().toString(),
                                     m_arrivalStation->currentData().toString(),
                                     m_travelDate->date()};
-    m_model->setRows(m_service.query(request));
+    m_model->setRows(m_service.query(request, QDateTime::currentDateTime()));
     applyFilters();
     if (m_model->rowCount() == 0)
         QMessageBox::information(m_table, tr("查询结果"), tr("没有找到符合条件的直达车次。"));
+}
+
+void QueryController::showAvailableTrains()
+{
+    m_model->setRows(m_service.available(QDateTime::currentDateTime()));
+    applyFilters();
 }
 
 void QueryController::applyFilters()
