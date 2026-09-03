@@ -154,8 +154,7 @@ void QueryController::loadStations(const QVector<RailwayStation> &stations)
     QVector<RailwayStation> merged = stations;
     for (const domain::Station &station : m_dataStore->data().stations) {
         const bool exists = std::any_of(merged.cbegin(), merged.cend(), [&station](const RailwayStation &item) {
-            return item.code.compare(station.code, Qt::CaseInsensitive) == 0
-                || item.name.compare(station.name, Qt::CaseInsensitive) == 0;
+            return item.code.compare(station.code, Qt::CaseInsensitive) == 0;
         });
         if (!exists && station.enabled)
             merged.append({station.name, station.code});
@@ -163,9 +162,15 @@ void QueryController::loadStations(const QVector<RailwayStation> &stations)
     std::sort(merged.begin(), merged.end(), [](const RailwayStation &left, const RailwayStation &right) {
         return left.name.localeAwareCompare(right.name) < 0;
     });
+    QHash<QString, int> nameCounts;
+    for (const RailwayStation &station : merged)
+        ++nameCounts[station.name.toCaseFolded()];
     for (const RailwayStation &station : merged) {
-        m_departureStation->addItem(station.name, station.code);
-        m_arrivalStation->addItem(station.name, station.code);
+        const QString text = nameCounts.value(station.name.toCaseFolded()) > 1
+                                 ? tr("%1（%2）").arg(station.name, station.code)
+                                 : station.name;
+        m_departureStation->addItem(text, station.code);
+        m_arrivalStation->addItem(text, station.code);
     }
     m_departureStation->setEditable(true);
     m_arrivalStation->setEditable(true);

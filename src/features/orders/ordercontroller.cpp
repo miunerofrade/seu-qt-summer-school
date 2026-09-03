@@ -71,6 +71,10 @@ OrderController::OrderController(DataStore *dataStore,
     m_statusCombo->addItem(tr("已退票"), static_cast<int>(domain::TicketStatus::Refunded));
     m_statusCombo->addItem(tr("已完成"), static_cast<int>(domain::TicketStatus::Completed));
 
+    const QDate today = QDate::currentDate();
+    m_dateFrom->setDate(QDate(today.year(), today.month(), 1));
+    m_dateTo->setDate(today);
+
     m_proxy->setSourceModel(m_model);
     m_table->setModel(m_proxy);
     m_table->setSelectionBehavior(QAbstractItemView::SelectRows);

@@ -65,6 +65,33 @@ const domain::Train *trainByNumber(const domain::AppData &data, const QString &n
     return train == data.trains.cend() ? nullptr : &*train;
 }
 
+QVector<RailwayStation> availableStations(DataStore *dataStore)
+{
+    RailwayQueryService service(dataStore->dataDirectory());
+    QVector<RailwayStation> stations = service.cachedStations();
+    for (const domain::Station &station : dataStore->data().stations) {
+        if (!station.enabled)
+            continue;
+        const bool duplicate = std::any_of(stations.cbegin(), stations.cend(), [&station](const RailwayStation &item) {
+            return item.code.compare(station.code, Qt::CaseInsensitive) == 0;
+        });
+        if (!duplicate)
+            stations.append({station.name, station.code});
+    }
+    std::sort(stations.begin(), stations.end(), [](const RailwayStation &left, const RailwayStation &right) {
+        return left.name.localeAwareCompare(right.name) < 0;
+    });
+    return stations;
+}
+
+bool isOfficialStation(DataStore *dataStore, const QString &code)
+{
+    const QVector<RailwayStation> stations = RailwayQueryService(dataStore->dataDirectory()).cachedStations();
+    return std::any_of(stations.cbegin(), stations.cend(), [&code](const RailwayStation &station) {
+        return station.code.compare(code, Qt::CaseInsensitive) == 0;
+    });
+}
+
 bool editStationForm(QWidget *parent, const domain::Station *current, domain::Station *output)
 {
     QDialog dialog(parent);
@@ -94,7 +121,7 @@ bool editStationForm(QWidget *parent, const domain::Station *current, domain::St
     return true;
 }
 
-bool addTrainForm(QWidget *parent, const domain::AppData &data, domain::Train *output)
+bool addTrainForm(QWidget *parent, const QVector<RailwayStation> &stations, domain::Train *output)
 {
     QDialog dialog(parent);
     dialog.setWindowTitle(QObject::tr("新增车次"));
@@ -130,12 +157,10 @@ bool addTrainForm(QWidget *parent, const domain::AppData &data, domain::Train *o
     stopActions->addStretch();
     layout->addLayout(stopActions);
 
-    QObject::connect(addStopButton, &QPushButton::clicked, &dialog, [&dialog, &data, stops]() {
+    QObject::connect(addStopButton, &QPushButton::clicked, &dialog, [&dialog, &stations, stops]() {
         QStringList choices;
-        for (const domain::Station &station : data.stations) {
-            if (station.enabled)
-                choices.append(station.code + QStringLiteral(" - ") + station.name);
-        }
+        for (const RailwayStation &station : stations)
+            choices.append(station.code + QStringLiteral(" - ") + station.name);
         bool ok = false;
         const QString selected = QInputDialog::getItem(
             &dialog, QObject::tr("增加经停站"), QObject::tr("车站"), choices, 0, false, &ok);
@@ -202,8 +227,9 @@ public:
         setWindowTitle(tr("车站管理"));
         resize(720, 440);
         auto *layout = new QVBoxLayout(this);
-        auto *hint = new QLabel(tr("站码创建后不可修改；已被引用的车站请改为停用。"), this);
+        auto *hint = new QLabel(tr("仅维护自定义站点。不可与 12306 名称或站码重复。"), this);
         hint->setWordWrap(true);
+        hint->setStyleSheet(QStringLiteral("color: #8E8E93; font-size: 12px;"));
         layout->addWidget(hint);
         configureTable(m_table);
         m_table->setEditTriggers(QAbstractItemView::NoEditTriggers);
@@ -241,6 +267,8 @@ private:
         m_model->clear();
         m_model->setHorizontalHeaderLabels({tr("站码"), tr("车站名称"), tr("城市"), tr("状态")});
         for (const domain::Station &station : m_dataStore->data().stations) {
+            if (isOfficialStation(m_dataStore, station.code))
+                continue;
             QList<QStandardItem *> row{new QStandardItem(station.code),
                                       new QStandardItem(station.name),
                                       new QStandardItem(station.city),
@@ -314,7 +342,7 @@ public:
         layout->addWidget(m_table);
         auto *actions = new QHBoxLayout;
         auto *addButton = new QPushButton(tr("新增"), this);
-        auto *deleteButton = new QPushButton(tr("删除"), this);
+        auto *deleteButton = new QPushButton(tr("删除 / 隐藏"), this);
         auto *closeButton = new QPushButton(tr("关闭"), this);
         actions->addWidget(addButton);
         actions->addWidget(deleteButton);
@@ -343,6 +371,8 @@ private:
             {tr("车次"), tr("来源"), tr("区间"), tr("发车"), tr("到达"), tr("历时"), tr("席别")});
         QStringList visibleNumbers;
         for (const domain::Train &train : m_dataStore->data().trains) {
+            if (train.railwayServiceDate.isValid())
+                continue;
             if (m_dataStore->data().hiddenTrainNumbers.contains(train.number, Qt::CaseInsensitive))
                 continue;
             const QString origin = train.stops.isEmpty() ? tr("未配置") : train.stops.first().stationCode;
@@ -391,7 +421,8 @@ private:
     void addTrain()
     {
         domain::Train train;
-        if (addTrainForm(this, m_dataStore->data(), &train))
+        const QVector<RailwayStation> stations = availableStations(m_dataStore);
+        if (addTrainForm(this, stations, &train))
             reportResult(this, m_service.addTrain(train), {});
     }
 
@@ -472,7 +503,8 @@ private:
     {
         m_trainCombo->clear();
         for (const domain::Train &train : m_dataStore->data().trains) {
-            if (!m_dataStore->data().hiddenTrainNumbers.contains(train.number, Qt::CaseInsensitive))
+            if (!train.railwayServiceDate.isValid()
+                && !m_dataStore->data().hiddenTrainNumbers.contains(train.number, Qt::CaseInsensitive))
                 m_trainCombo->addItem(train.number, train.number);
         }
         refreshRows();
@@ -500,10 +532,8 @@ private:
     void addStop()
     {
         QStringList stations;
-        for (const domain::Station &station : m_dataStore->data().stations) {
-            if (station.enabled)
-                stations.append(station.code + QStringLiteral(" - ") + station.name);
-        }
+        for (const RailwayStation &station : availableStations(m_dataStore))
+            stations.append(station.code + QStringLiteral(" - ") + station.name);
         bool ok = false;
         const QString selected = QInputDialog::getItem(this, tr("新增经停站"), tr("车站"), stations, 0, false, &ok);
         if (!ok || selected.isEmpty())
@@ -617,7 +647,8 @@ private:
     {
         m_trainCombo->clear();
         for (const domain::Train &train : m_dataStore->data().trains) {
-            if (!m_dataStore->data().hiddenTrainNumbers.contains(train.number, Qt::CaseInsensitive))
+            if (!train.railwayServiceDate.isValid()
+                && !m_dataStore->data().hiddenTrainNumbers.contains(train.number, Qt::CaseInsensitive))
                 m_trainCombo->addItem(train.number, train.number);
         }
         refreshRows();

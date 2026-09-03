@@ -6,6 +6,10 @@
 #include "services/passengerservice.h"
 
 #include <QTemporaryDir>
+#include <QFile>
+#include <QJsonArray>
+#include <QJsonDocument>
+#include <QJsonObject>
 #include <QtTest>
 
 #include <algorithm>
@@ -23,6 +27,7 @@ private slots:
     void scheduleValidationAndSeatReset();
     void seatInventoryValidation();
     void referencedBaseDataCannotBeDeleted();
+    void officialStationsCannotBeDuplicatedByCodeOrName();
 };
 
 namespace {
@@ -109,8 +114,8 @@ void PhaseTwoTests::activeTicketPreventsPassengerDeletion()
     candidate.tickets.append({QStringLiteral("ticket-1"),
                               passengerId,
                               QStringLiteral("G101"),
-                              QStringLiteral("NJN"),
-                              QStringLiteral("SHH"),
+                              QStringLiteral("NKH"),
+                              QStringLiteral("AOH"),
                               QStringLiteral("二等座"),
                               15000,
                               domain::TicketStatus::Issued});
@@ -132,7 +137,7 @@ void PhaseTwoTests::stationAndTrainCodesAreUnique()
     QVERIFY(store);
     AdminService service(store.get());
 
-    QVERIFY(!service.addStation({QStringLiteral("njn"), QStringLiteral("重复南京南"), QStringLiteral("南京"), true}));
+    QVERIFY(!service.addStation({QStringLiteral("nkh"), QStringLiteral("重复南京南"), QStringLiteral("南京"), true}));
     QVERIFY(service.addStation({QStringLiteral("WXH"), QStringLiteral("无锡东"), QStringLiteral("无锡"), true}));
     domain::Train duplicate;
     duplicate.number = QStringLiteral("g101");
@@ -152,13 +157,13 @@ void PhaseTwoTests::scheduleValidationAndSeatReset()
     AdminService service(store.get());
 
     QVector<domain::TrainStop> duplicateStops{
-        {QStringLiteral("NJN"), 0, {}, QTime(8, 0), 0},
-        {QStringLiteral("NJN"), 1, QTime(9, 0), {}, 0}};
+        {QStringLiteral("NKH"), 0, {}, QTime(8, 0), 0},
+        {QStringLiteral("NKH"), 1, QTime(9, 0), {}, 0}};
     QVERIFY(!service.replaceStops(QStringLiteral("G101"), duplicateStops));
 
     QVector<domain::TrainStop> validStops{
-        {QStringLiteral("NJN"), 0, {}, QTime(8, 0), 0},
-        {QStringLiteral("SHH"), 1, QTime(9, 20), {}, 0}};
+        {QStringLiteral("NKH"), 0, {}, QTime(8, 0), 0},
+        {QStringLiteral("AOH"), 1, QTime(9, 20), {}, 0}};
     QVERIFY(service.replaceStops(QStringLiteral("G101"), validStops));
     const auto &train = store->data().trains.first();
     QCOMPARE(train.stops.size(), 2);
@@ -186,20 +191,49 @@ void PhaseTwoTests::referencedBaseDataCannotBeDeleted()
     QVERIFY(store);
     AdminService service(store.get());
 
-    QVERIFY(!service.removeStation(QStringLiteral("NJN")));
+    QVERIFY(!service.removeStation(QStringLiteral("NKH")));
     domain::AppData candidate = store->data();
     candidate.tickets.append({QStringLiteral("ticket-2"),
                               candidate.passengers.first().id,
                               QStringLiteral("G101"),
-                              QStringLiteral("NJN"),
-                              QStringLiteral("SHH"),
+                              QStringLiteral("NKH"),
+                              QStringLiteral("AOH"),
                               QStringLiteral("二等座"),
                               15000,
                               domain::TicketStatus::Completed});
     QVERIFY(store->commit(candidate));
     QVERIFY(service.removeTrain(QStringLiteral("G101")));
     QVERIFY(store->data().hiddenTrainNumbers.contains(QStringLiteral("G101")));
-    QVERIFY(service.updateStation(QStringLiteral("NJN"), QStringLiteral("南京南"), QStringLiteral("南京"), false));
+    QVERIFY(service.updateStation(QStringLiteral("NKH"), QStringLiteral("南京南"), QStringLiteral("南京"), false));
+}
+
+void PhaseTwoTests::officialStationsCannotBeDuplicatedByCodeOrName()
+{
+    QTemporaryDir directory;
+    auto store = initializedStore(directory.filePath(QStringLiteral("app-data.json")));
+    QVERIFY(store);
+    QFile catalog(directory.filePath(QStringLiteral("railway-stations.json")));
+    QVERIFY(catalog.open(QIODevice::WriteOnly));
+    catalog.write(QJsonDocument(QJsonObject{
+        {QStringLiteral("stations"),
+         QJsonArray{QJsonObject{{QStringLiteral("code"), QStringLiteral("NKH")},
+                                {QStringLiteral("name"), QStringLiteral("南京南")}}}}})
+                      .toJson(QJsonDocument::Compact));
+    catalog.close();
+
+    AdminService service(store.get());
+    OperationResult result = service.addStation(
+        {QStringLiteral("NKH"), QStringLiteral("另一个名字"), QStringLiteral("南京"), true});
+    QVERIFY(!result);
+    QVERIFY(result.error.contains(QStringLiteral("不能创建")));
+    result = service.addStation(
+        {QStringLiteral("CUS"), QStringLiteral("南京南"), QStringLiteral("自定义"), true});
+    QVERIFY(!result);
+    QVERIFY(result.error.contains(QStringLiteral("NKH")));
+    QVERIFY(service.addStation(
+        {QStringLiteral("CUS"), QStringLiteral("自建站"), QStringLiteral("自定义"), true}));
+    QVERIFY(!service.updateStation(QStringLiteral("CUS"), QStringLiteral("南京南"),
+                                   QStringLiteral("自定义"), true));
 }
 
 QTEST_GUILESS_MAIN(PhaseTwoTests)

@@ -83,6 +83,7 @@ bool appendRow(const domain::Train &train,
                       toStop.dayOffset,
                       arrivalMinutes - departureMinutes,
                       {}};
+    row.railwayTrainId = train.railwayTrainId;
     for (const domain::SeatInventory &seat : train.seats) {
         if (seat.segments.size() < toIndex)
             continue;
@@ -136,6 +137,18 @@ QVector<TrainQueryRow> QueryService::query(const TrainQueryRequest &request,
     for (const domain::Train &train : data.trains) {
         if (data.hiddenTrainNumbers.contains(train.number, Qt::CaseInsensitive))
             continue;
+        if (train.railwayServiceDate.isValid() && train.railwayServiceDate != request.serviceDate)
+            continue;
+        if (!train.railwayServiceDate.isValid()) {
+            const bool hasDatedOccurrence = std::any_of(data.trains.cbegin(), data.trains.cend(),
+                                                        [&train, &request](const domain::Train &candidate) {
+                return candidate.railwayTrainId.isEmpty()
+                    && candidate.railwayServiceDate == request.serviceDate
+                    && candidate.number == train.number;
+            });
+            if (hasDatedOccurrence)
+                continue;
+        }
 
         int fromIndex = -1;
         int toIndex = -1;
@@ -168,6 +181,18 @@ QVector<TrainQueryRow> QueryService::available(const QDateTime &notDepartedAfter
         if (train.stops.size() < 2
             || data.hiddenTrainNumbers.contains(train.number, Qt::CaseInsensitive))
             continue;
+        if (train.railwayServiceDate.isValid() && train.railwayServiceDate != notDepartedAfter.date())
+            continue;
+        if (!train.railwayServiceDate.isValid()) {
+            const bool hasDatedOccurrence = std::any_of(data.trains.cbegin(), data.trains.cend(),
+                                                        [&train, &notDepartedAfter](const domain::Train &candidate) {
+                return candidate.railwayTrainId.isEmpty()
+                    && candidate.railwayServiceDate == notDepartedAfter.date()
+                    && candidate.number == train.number;
+            });
+            if (hasDatedOccurrence)
+                continue;
+        }
         const int lastIndex = train.stops.size() - 1;
         if (!isEnabledStation(stations, train.stops.first().stationCode)
             || !isEnabledStation(stations, train.stops.at(lastIndex).stationCode))

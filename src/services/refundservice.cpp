@@ -25,8 +25,21 @@ int findTrain(const domain::AppData &data, const domain::Ticket &ticket)
 {
     for (int i = 0; i < data.trains.size(); ++i) {
         const domain::Train &train = data.trains.at(i);
-        if (train.number == ticket.trainNumber) {
+        const bool identityMatches = ticket.railwayTrainId.isEmpty()
+            ? train.railwayTrainId.isEmpty()
+                && (!ticket.serviceDate.isValid() || train.railwayServiceDate == ticket.serviceDate)
+            : train.railwayTrainId == ticket.railwayTrainId
+                && train.railwayServiceDate == ticket.serviceDate;
+        if (identityMatches && (!ticket.railwayTrainId.isEmpty() || train.number == ticket.trainNumber)) {
             return i;
+        }
+    }
+    if (ticket.railwayTrainId.isEmpty()) {
+        for (int i = 0; i < data.trains.size(); ++i) {
+            const domain::Train &train = data.trains.at(i);
+            if (train.railwayTrainId.isEmpty() && !train.railwayServiceDate.isValid()
+                && train.number == ticket.trainNumber)
+                return i;
         }
     }
     return -1;

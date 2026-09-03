@@ -6,6 +6,7 @@
 #include <QDate>
 #include <QStringList>
 #include <QTime>
+#include <QVector>
 
 class DataStore;
 
@@ -17,6 +18,7 @@ struct BookingRequest
     QString arrivalStationCode;
     QString seatType;
     QStringList passengerIds;
+    QString railwayTrainId;
 };
 
 struct BookingReceipt
@@ -28,6 +30,15 @@ struct BookingReceipt
 
 struct DemoTrainSnapshot
 {
+    struct RouteStop
+    {
+        QString code;
+        QString name;
+        QTime arrivalTime;
+        QTime departureTime;
+        int dayOffset = 0;
+    };
+
     QString departureStationName;
     QString arrivalStationName;
     QTime departureTime;
@@ -36,6 +47,7 @@ struct DemoTrainSnapshot
     int arrivalDayOffset = 0;
     qint64 priceCents = 0;
     int remainingSeats = 0;
+    QVector<RouteStop> routeStops;
 };
 
 class BookingService final

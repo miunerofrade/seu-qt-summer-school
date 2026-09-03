@@ -11,10 +11,24 @@ namespace {
 const domain::Train *findTrain(const domain::AppData &data, const domain::Ticket &ticket)
 {
     const auto matches = [&ticket](const domain::Train &train) {
-        return train.number == ticket.trainNumber;
+        const bool identityMatches = ticket.railwayTrainId.isEmpty()
+            ? train.railwayTrainId.isEmpty()
+                && (!ticket.serviceDate.isValid() || train.railwayServiceDate == ticket.serviceDate)
+            : train.railwayTrainId == ticket.railwayTrainId
+                && train.railwayServiceDate == ticket.serviceDate;
+        return identityMatches && (!ticket.railwayTrainId.isEmpty() || train.number == ticket.trainNumber);
     };
     const auto it = std::find_if(data.trains.cbegin(), data.trains.cend(), matches);
-    return it == data.trains.cend() ? nullptr : &*it;
+    if (it != data.trains.cend())
+        return &*it;
+    if (ticket.railwayTrainId.isEmpty()) {
+        const auto definition = std::find_if(data.trains.cbegin(), data.trains.cend(), [&ticket](const domain::Train &train) {
+            return train.railwayTrainId.isEmpty() && !train.railwayServiceDate.isValid()
+                && train.number == ticket.trainNumber;
+        });
+        return definition == data.trains.cend() ? nullptr : &*definition;
+    }
+    return nullptr;
 }
 
 const domain::TrainStop *findStop(const domain::Train &train, const QString &stationCode)

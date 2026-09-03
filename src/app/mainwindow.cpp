@@ -95,10 +95,6 @@ MainWindow::MainWindow(QWidget *parent)
                          ui->btnManageSchedules,
                          ui->btnManageSeats,
                          ui->btnResetAdminData,
-                         ui->labelStationAdminData,
-                         ui->labelTrainAdminData,
-                         ui->labelScheduleAdminData,
-                         ui->labelSeatAdminData,
                          ui->labelAdminBackupData},
                         this);
     new StatisticsController(m_dataStore,

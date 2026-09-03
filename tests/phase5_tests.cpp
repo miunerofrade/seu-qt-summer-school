@@ -24,7 +24,7 @@ QString bookOne(DataStore *store, const QDate &serviceDate)
 {
     BookingReceipt receipt;
     const OperationResult result = BookingService(store).book(
-        {QStringLiteral("G101"), serviceDate, QStringLiteral("NJN"), QStringLiteral("SHH"),
+        {QStringLiteral("G101"), serviceDate, QStringLiteral("NKH"), QStringLiteral("AOH"),
          QStringLiteral("二等座"), {store->data().passengers.first().id}},
         &receipt);
     return result && !receipt.ticketIds.isEmpty() ? receipt.ticketIds.first() : QString();
@@ -181,8 +181,8 @@ void PhaseFiveTests::legacyTicketWithoutServiceDateRemainsReadable()
     candidate.tickets.append({QStringLiteral("legacy-ticket"),
                               candidate.passengers.first().id,
                               QStringLiteral("G101"),
-                              QStringLiteral("NJN"),
-                              QStringLiteral("SHH"),
+                              QStringLiteral("NKH"),
+                              QStringLiteral("AOH"),
                               QStringLiteral("二等座"),
                               15000,
                               domain::TicketStatus::Issued});

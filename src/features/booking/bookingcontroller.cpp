@@ -5,11 +5,13 @@
 #include "models/trainquerymodel.h"
 #include "services/bookingservice.h"
 #include "services/passengerservice.h"
+#include "services/railwayqueryservice.h"
 #include "widgets/dialogstyle.h"
 
 #include <QDialog>
 #include <QDialogButtonBox>
 #include <QFormLayout>
+#include <QEventLoop>
 #include <QLabel>
 #include <QListWidget>
 #include <QMessageBox>
@@ -33,6 +35,8 @@ BookingController::BookingController(DataStore *dataStore,
     : QObject(parent)
     , m_dataStore(dataStore)
     , m_table(table)
+    , m_bookButton(bookButton)
+    , m_railwayService(new RailwayQueryService(dataStore->dataDirectory(), this))
 {
     connect(bookButton, &QPushButton::clicked, this, [this]() { bookSelected(); });
     connect(m_table, &QTableView::doubleClicked, this, [this](const QModelIndex &) { bookSelected(); });
@@ -57,6 +61,38 @@ void BookingController::bookSelected()
     if (seat->priceCents < 0) {
         QMessageBox::information(m_table, tr("购票"), tr("该席别没有可用票价，请切换其他席别。"));
         return;
+    }
+
+    QVector<DemoTrainSnapshot::RouteStop> routeStops;
+    if (!row->bookable) {
+        if (row->railwayTrainId.isEmpty()) {
+            QMessageBox::warning(m_table,
+                                 tr("无法安全购票"),
+                                 tr("这条旧缓存没有 12306 内部车次标识，无法取得完整经停站并进行区间扣减。请重新在线查询，或使用自定义车次完成课程演示。"));
+            return;
+        }
+        QVector<RailwayRouteStop> railwayStops;
+        QString routeError;
+        QEventLoop waitLoop;
+        m_bookButton->setEnabled(false);
+        m_bookButton->setText(tr("读取经停站…"));
+        m_railwayService->queryRoute(*row, [&](QVector<RailwayRouteStop> stops, const QString &error) {
+            railwayStops = std::move(stops);
+            routeError = error;
+            waitLoop.quit();
+        });
+        waitLoop.exec();
+        m_bookButton->setText(tr("购票"));
+        m_bookButton->setEnabled(true);
+        if (!routeError.isEmpty() || railwayStops.size() < 2) {
+            QMessageBox::warning(m_table,
+                                 tr("无法安全购票"),
+                                 routeError.isEmpty() ? tr("没有取得完整经停站，已取消本次演示购票以避免错误扣减。")
+                                                      : routeError);
+            return;
+        }
+        for (const RailwayRouteStop &stop : railwayStops)
+            routeStops.append({stop.code, stop.name, stop.arrivalTime, stop.departureTime, stop.dayOffset});
     }
 
     QDialog dialog(m_table);
@@ -131,7 +167,8 @@ void BookingController::bookSelected()
                                      row->departureStationCode,
                                      row->arrivalStationCode,
                                      seat->seatType,
-                                     passengerIds};
+                                     passengerIds,
+                                     row->railwayTrainId};
         BookingService service(m_dataStore);
         const OperationResult result = row->bookable
             ? service.book(request, &receipt)
@@ -144,7 +181,8 @@ void BookingController::bookSelected()
                                 row->arrivalDayOffset,
                                 seat->priceCents,
                                 seat->availabilityText == QStringLiteral("有")
-                                    ? 99 : seat->remainingSeats},
+                                    ? 50 : seat->remainingSeats,
+                                routeStops},
                                &receipt);
         if (!result) {
             QMessageBox::warning(&dialog, tr("购票失败"), result.error);

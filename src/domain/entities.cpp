@@ -58,18 +58,18 @@ AppData createDemoData()
 {
     AppData data;
     data.stations = {
-        {QStringLiteral("NJN"), QStringLiteral("南京南"), QStringLiteral("南京"), true},
-        {QStringLiteral("SZB"), QStringLiteral("苏州北"), QStringLiteral("苏州"), true},
-        {QStringLiteral("SHH"), QStringLiteral("上海虹桥"), QStringLiteral("上海"), true},
+        {QStringLiteral("NKH"), QStringLiteral("南京南"), QStringLiteral("南京"), true},
+        {QStringLiteral("OHH"), QStringLiteral("苏州北"), QStringLiteral("苏州"), true},
+        {QStringLiteral("AOH"), QStringLiteral("上海虹桥"), QStringLiteral("上海"), true},
         {QStringLiteral("HGH"), QStringLiteral("杭州东"), QStringLiteral("杭州"), true}
     };
 
     Train morning;
     morning.number = QStringLiteral("G101");
     morning.stops = {
-        stop(QStringLiteral("NJN"), 0, {}, QTime(8, 0)),
-        stop(QStringLiteral("SZB"), 1, QTime(8, 45), QTime(8, 47)),
-        stop(QStringLiteral("SHH"), 2, QTime(9, 20), {})
+        stop(QStringLiteral("NKH"), 0, {}, QTime(8, 0)),
+        stop(QStringLiteral("OHH"), 1, QTime(8, 45), QTime(8, 47)),
+        stop(QStringLiteral("AOH"), 2, QTime(9, 20), {})
     };
     morning.seats = {
         seat(QStringLiteral("二等座"), {{8500, 100, 40}, {6500, 100, 35}}),
@@ -79,8 +79,8 @@ AppData createDemoData()
     Train afternoon;
     afternoon.number = QStringLiteral("G205");
     afternoon.stops = {
-        stop(QStringLiteral("NJN"), 0, {}, QTime(14, 10)),
-        stop(QStringLiteral("SHH"), 1, QTime(15, 28), QTime(15, 32)),
+        stop(QStringLiteral("NKH"), 0, {}, QTime(14, 10)),
+        stop(QStringLiteral("AOH"), 1, QTime(15, 28), QTime(15, 32)),
         stop(QStringLiteral("HGH"), 2, QTime(16, 18), {})
     };
     afternoon.seats = {

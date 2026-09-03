@@ -10,7 +10,7 @@
 
 namespace domain {
 
-inline constexpr int CurrentSchemaVersion = 2;
+inline constexpr int CurrentSchemaVersion = 3;
 
 enum class TicketStatus
 {
@@ -54,6 +54,11 @@ struct Train
     QString number;
     QVector<TrainStop> stops;
     QVector<SeatInventory> seats;
+    // Empty id + invalid date denotes a daily recurring custom definition.
+    // A valid date denotes one materialized service inventory; official
+    // services additionally carry the opaque 12306 id.
+    QString railwayTrainId;
+    QDate railwayServiceDate;
 };
 
 struct Passenger
@@ -83,6 +88,7 @@ struct Ticket
     qint64 priceCents = 0;
     TicketStatus status = TicketStatus::Issued;
     QDate serviceDate;
+    QString railwayTrainId;
 };
 
 struct RefundRecord

@@ -102,9 +102,14 @@ QJsonObject trainToJson(const Train &train)
     QJsonArray seats;
     for (const SeatInventory &seat : train.seats)
         seats.append(seatToJson(seat));
-    return {{QStringLiteral("number"), train.number},
-            {QStringLiteral("stops"), stops},
-            {QStringLiteral("seats"), seats}};
+    QJsonObject object{{QStringLiteral("number"), train.number},
+                       {QStringLiteral("stops"), stops},
+                       {QStringLiteral("seats"), seats}};
+    if (!train.railwayTrainId.isEmpty())
+        object.insert(QStringLiteral("railwayTrainId"), train.railwayTrainId);
+    if (train.railwayServiceDate.isValid())
+        object.insert(QStringLiteral("railwayServiceDate"), train.railwayServiceDate.toString(Qt::ISODate));
+    return object;
 }
 
 QJsonObject passengerToJson(const Passenger &passenger)
@@ -138,6 +143,8 @@ QJsonObject ticketToJson(const Ticket &ticket)
                        {QStringLiteral("status"), ticketStatusKey(ticket.status)}};
     if (ticket.serviceDate.isValid())
         object.insert(QStringLiteral("serviceDate"), ticket.serviceDate.toString(Qt::ISODate));
+    if (!ticket.railwayTrainId.isEmpty())
+        object.insert(QStringLiteral("railwayTrainId"), ticket.railwayTrainId);
     return object;
 }
 
@@ -287,6 +294,15 @@ bool parseTrain(const QJsonValue &value, Train *train, QString *error)
         || !readArray(object, "seats", &seats, error)) {
         return false;
     }
+    train->railwayTrainId = object.value(QStringLiteral("railwayTrainId")).toString();
+    const QString railwayDate = object.value(QStringLiteral("railwayServiceDate")).toString();
+    if (!railwayDate.isEmpty()) {
+        train->railwayServiceDate = QDate::fromString(railwayDate, Qt::ISODate);
+        if (!train->railwayServiceDate.isValid()) {
+            *error = QObject::tr("12306 车次运行日期格式错误。");
+            return false;
+        }
+    }
     for (const QJsonValue &stopValue : stops) {
         TrainStop stop;
         if (!parseStop(stopValue, &stop, error))
@@ -392,6 +408,7 @@ bool parseTicket(const QJsonValue &value, Ticket *ticket, QString *error)
             return false;
         }
     }
+    ticket->railwayTrainId = object.value(QStringLiteral("railwayTrainId")).toString();
     return true;
 }
 
@@ -439,7 +456,7 @@ bool appDataFromJson(const QJsonObject &object, AppData *data, QString *error)
     qint64 schemaVersion = 0;
     if (!readInteger(object, "schemaVersion", &schemaVersion, error))
         return false;
-    if (schemaVersion != 1 && schemaVersion != CurrentSchemaVersion) {
+    if (schemaVersion != 1 && schemaVersion != 2 && schemaVersion != CurrentSchemaVersion) {
         *error = QObject::tr("不支持的数据版本：%1，当前版本为 %2。")
                      .arg(schemaVersion)
                      .arg(CurrentSchemaVersion);
@@ -492,6 +509,11 @@ bool appDataFromJson(const QJsonObject &object, AppData *data, QString *error)
     QVector<Train> uniqueTrains;
     for (const Train &train : std::as_const(data->trains)) {
         const auto existing = std::find_if(uniqueTrains.begin(), uniqueTrains.end(), [&train](const Train &item) {
+            if (!train.railwayTrainId.isEmpty() || !item.railwayTrainId.isEmpty()
+                || train.railwayServiceDate.isValid() || item.railwayServiceDate.isValid())
+                return item.railwayTrainId == train.railwayTrainId
+                    && item.railwayServiceDate == train.railwayServiceDate
+                    && item.number.compare(train.number, Qt::CaseInsensitive) == 0;
             return item.number.compare(train.number, Qt::CaseInsensitive) == 0;
         });
         if (existing == uniqueTrains.end())

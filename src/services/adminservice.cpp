@@ -3,6 +3,11 @@
 #include "data/datastore.h"
 
 #include <QDateTime>
+#include <QFile>
+#include <QJsonDocument>
+#include <QJsonObject>
+#include <QJsonArray>
+#include <QDir>
 
 #include <algorithm>
 
@@ -31,6 +36,42 @@ OperationResult validateStation(const domain::Station &station)
         return OperationResult::failure(QObject::tr("所在城市不能为空。"));
     return OperationResult::ok();
 }
+
+struct OfficialStationMatch
+{
+    QString code;
+    QString name;
+};
+
+OfficialStationMatch officialStationMatch(const DataStore *dataStore,
+                                          const QString &code,
+                                          const QString &name = {})
+{
+    QFile file(QDir(dataStore->dataDirectory()).filePath(QStringLiteral("railway-stations.json")));
+    if (!file.open(QIODevice::ReadOnly))
+        return {};
+    const QJsonDocument document = QJsonDocument::fromJson(file.readAll());
+    const QJsonArray stations = document.object().value(QStringLiteral("stations")).toArray();
+    for (const QJsonValue &value : stations) {
+        const QJsonObject station = value.toObject();
+        const QString officialCode = station.value(QStringLiteral("code")).toString();
+        const QString officialName = station.value(QStringLiteral("name")).toString();
+        if ((!code.isEmpty() && officialCode.compare(code, Qt::CaseInsensitive) == 0)
+            || (!name.isEmpty() && officialName.compare(name, Qt::CaseInsensitive) == 0))
+            return {officialCode, officialName};
+    }
+    return {};
+}
+
+QString officialStationName(const DataStore *dataStore, const QString &code)
+{
+    return officialStationMatch(dataStore, code).name;
+}
+
+bool isOfficialStation(const DataStore *dataStore, const QString &code)
+{
+    return !officialStationName(dataStore, code).isEmpty();
+}
 } // namespace
 
 AdminService::AdminService(DataStore *dataStore)
@@ -47,6 +88,13 @@ OperationResult AdminService::addStation(const domain::Station &station)
     const OperationResult validation = validateStation(normalized);
     if (!validation)
         return validation;
+    const OfficialStationMatch official = officialStationMatch(m_dataStore,
+                                                                normalized.code,
+                                                                normalized.name);
+    if (!official.code.isEmpty())
+        return OperationResult::failure(
+            QObject::tr("不能创建：与 12306 官方站点“%1”（站码 %2）重复。官方站点只读且已自动参与查询。")
+                .arg(official.name, official.code));
 
     domain::AppData candidate = m_dataStore->data();
     if (findStation(candidate, normalized.code) != candidate.stations.end())
@@ -64,6 +112,13 @@ OperationResult AdminService::updateStation(const QString &code,
     const OperationResult validation = validateStation(normalized);
     if (!validation)
         return validation;
+    const OfficialStationMatch official = officialStationMatch(m_dataStore,
+                                                                normalized.code,
+                                                                normalized.name);
+    if (!official.code.isEmpty())
+        return OperationResult::failure(
+            QObject::tr("不能保存：与 12306 官方站点“%1”（站码 %2）重复。")
+                .arg(official.name, official.code));
 
     domain::AppData candidate = m_dataStore->data();
     const auto station = findStation(candidate, normalized.code);
@@ -77,21 +132,24 @@ OperationResult AdminService::updateStation(const QString &code,
 
 OperationResult AdminService::removeStation(const QString &code)
 {
+    const QString normalized = code.trimmed().toUpper();
+    if (isOfficialStation(m_dataStore, normalized))
+        return OperationResult::failure(QObject::tr("12306 官方站点只读，不能删除：%1").arg(normalized));
     const auto &data = m_dataStore->data();
-    const bool usedByTrain = std::any_of(data.trains.cbegin(), data.trains.cend(), [&code](const domain::Train &train) {
-        return std::any_of(train.stops.cbegin(), train.stops.cend(), [&code](const domain::TrainStop &stop) {
-            return stop.stationCode.compare(code, Qt::CaseInsensitive) == 0;
+    const bool usedByTrain = std::any_of(data.trains.cbegin(), data.trains.cend(), [&normalized](const domain::Train &train) {
+        return std::any_of(train.stops.cbegin(), train.stops.cend(), [&normalized](const domain::TrainStop &stop) {
+            return stop.stationCode.compare(normalized, Qt::CaseInsensitive) == 0;
         });
     });
-    const bool usedByTicket = std::any_of(data.tickets.cbegin(), data.tickets.cend(), [&code](const domain::Ticket &ticket) {
-        return ticket.fromStationCode.compare(code, Qt::CaseInsensitive) == 0
-            || ticket.toStationCode.compare(code, Qt::CaseInsensitive) == 0;
+    const bool usedByTicket = std::any_of(data.tickets.cbegin(), data.tickets.cend(), [&normalized](const domain::Ticket &ticket) {
+        return ticket.fromStationCode.compare(normalized, Qt::CaseInsensitive) == 0
+            || ticket.toStationCode.compare(normalized, Qt::CaseInsensitive) == 0;
     });
     if (usedByTrain || usedByTicket)
         return OperationResult::failure(QObject::tr("该车站已被车次或车票引用，请改为停用。"));
 
     domain::AppData candidate = data;
-    const auto station = findStation(candidate, code);
+    const auto station = findStation(candidate, normalized);
     if (station == candidate.stations.end())
         return OperationResult::failure(QObject::tr("所选车站已不存在。"));
     candidate.stations.erase(station);
@@ -113,8 +171,14 @@ OperationResult AdminService::addTrain(const domain::Train &train)
         domain::TrainStop &stop = normalized.stops[index];
         stop.stationCode = stop.stationCode.trimmed().toUpper();
         stop.sequence = index;
-        if (findStation(candidate, stop.stationCode) == candidate.stations.end())
-            return OperationResult::failure(QObject::tr("经停站 %1 不存在。").arg(stop.stationCode));
+        if (findStation(candidate, stop.stationCode) == candidate.stations.end()) {
+            const QString officialName = officialStationName(m_dataStore, stop.stationCode);
+            if (officialName.isEmpty())
+                return OperationResult::failure(QObject::tr("经停站 %1 不存在。").arg(stop.stationCode));
+            // Keep a read-only local mirror so the existing query and order
+            // services can resolve official station names and enabled state.
+            candidate.stations.append({stop.stationCode, officialName, officialName, true});
+        }
         if (stationCodes.contains(stop.stationCode, Qt::CaseInsensitive))
             return OperationResult::failure(QObject::tr("同一车次不能重复经过车站 %1。").arg(stop.stationCode));
         stationCodes.append(stop.stationCode);
@@ -134,6 +198,8 @@ OperationResult AdminService::addTrain(const domain::Train &train)
 OperationResult AdminService::removeTrain(const QString &number, bool knownFromRailwayCache)
 {
     const QString normalized = number.trimmed().toUpper();
+    if (normalized.isEmpty())
+        return OperationResult::failure(QObject::tr("车次号不能为空。"));
     domain::AppData candidate = m_dataStore->data();
     const auto train = findTrain(candidate, normalized);
     if (train == candidate.trains.end() && !knownFromRailwayCache)
@@ -157,7 +223,7 @@ OperationResult AdminService::replaceStops(const QString &trainNumber,
         const auto station = std::find_if(data.stations.cbegin(), data.stations.cend(), [&stop](const domain::Station &item) {
             return item.code.compare(stop.stationCode, Qt::CaseInsensitive) == 0;
         });
-        if (station == data.stations.cend())
+        if (station == data.stations.cend() && !isOfficialStation(m_dataStore, stop.stationCode))
             return OperationResult::failure(QObject::tr("经停站 %1 不存在。").arg(stop.stationCode));
         if (stationCodes.contains(stop.stationCode, Qt::CaseInsensitive))
             return OperationResult::failure(QObject::tr("同一车次不能重复经过车站 %1。").arg(stop.stationCode));
@@ -182,6 +248,13 @@ OperationResult AdminService::replaceStops(const QString &trainNumber,
     }
 
     domain::AppData candidate = data;
+    for (const domain::TrainStop &stop : stops) {
+        if (findStation(candidate, stop.stationCode) != candidate.stations.end())
+            continue;
+        const QString officialName = officialStationName(m_dataStore, stop.stationCode);
+        if (!officialName.isEmpty())
+            candidate.stations.append({stop.stationCode, officialName, officialName, true});
+    }
     const auto train = findTrain(candidate, trainNumber);
     if (train == candidate.trains.end())
         return OperationResult::failure(QObject::tr("所选车次已不存在。"));

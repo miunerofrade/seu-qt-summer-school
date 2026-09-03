@@ -874,6 +874,19 @@ QLabel#labelSort {
           </property>
          </widget>
         </item>
+        <item>
+         <widget class="QLabel" name="labelQueryInventoryHint">
+          <property name="text">
+           <string>说明：“有”按 50 张演示。</string>
+          </property>
+          <property name="styleSheet">
+           <string notr="true">color: #8E8E93; font-size: 12px;</string>
+          </property>
+          <property name="wordWrap">
+           <bool>true</bool>
+          </property>
+         </widget>
+        </item>
        </layout>
       </widget>
       <widget class="QWidget" name="pagePassenger">
@@ -1195,8 +1208,8 @@ QLabel#labelAdminTitle {
 }
 
 QLabel#labelAdminSubtitle {
-    color: #6E6E73;
-    font-size: 13px;
+    color: #8E8E93;
+    font-size: 12px;
 }
 
 QFrame#adminBaseGroup,
@@ -1286,17 +1299,8 @@ QLabel#labelStationAdminDescription,
 QLabel#labelTrainAdminDescription,
 QLabel#labelScheduleAdminDescription,
 QLabel#labelSeatAdminDescription {
-    color: #6E6E73;
-    font-size: 13px;
-}
-
-QLabel#labelStationAdminData,
-QLabel#labelTrainAdminData,
-QLabel#labelScheduleAdminData,
-QLabel#labelSeatAdminData {
-    color: #515866;
+    color: #8E8E93;
     font-size: 12px;
-    padding-right: 8px;
 }
 
 QLabel#labelAdminBackupData {
@@ -1315,7 +1319,7 @@ QLabel#labelAdminBackupData {
           <property name="text"><string>运营数据管理</string></property>
          </widget>
         </item>
-        <item><widget class="QLabel" name="labelAdminSubtitle"><property name="text"><string>直接维护本地演示数据；所有修改会立即保存到 JSON</string></property></widget></item>
+        <item><widget class="QLabel" name="labelAdminSubtitle"><property name="text"><string>仅管理本地自定义数据</string></property></widget></item>
         <item>
          <widget class="QFrame" name="adminBaseGroup">
           <property name="frameShape"><enum>QFrame::Shape::StyledPanel</enum></property>
@@ -1329,9 +1333,8 @@ QLabel#labelAdminBackupData {
              <layout class="QHBoxLayout" name="horizontalLayoutStationAdmin">
               <property name="spacing"><number>12</number></property><property name="leftMargin"><number>16</number></property><property name="topMargin"><number>12</number></property><property name="rightMargin"><number>16</number></property><property name="bottomMargin"><number>12</number></property>
               <item><widget class="QLabel" name="labelStationAdminIcon"><property name="minimumSize"><size><width>44</width><height>44</height></size></property><property name="maximumSize"><size><width>44</width><height>44</height></size></property><property name="pixmap"><pixmap resource="resources.qrc">:/icons/landmark.svg</pixmap></property><property name="alignment"><set>Qt::AlignmentFlag::AlignCenter</set></property></widget></item>
-              <item><layout class="QVBoxLayout" name="verticalLayoutStationAdminText"><property name="spacing"><number>2</number></property><item><widget class="QLabel" name="labelStationAdminTitle"><property name="text"><string>车站管理</string></property></widget></item><item><widget class="QLabel" name="labelStationAdminDescription"><property name="text"><string>维护车站名称、城市和站点状态</string></property></widget></item></layout></item>
+              <item><layout class="QVBoxLayout" name="verticalLayoutStationAdminText"><property name="spacing"><number>2</number></property><item><widget class="QLabel" name="labelStationAdminTitle"><property name="text"><string>自定义车站</string></property></widget></item><item><widget class="QLabel" name="labelStationAdminDescription"><property name="text"><string>新增或维护自定义站点</string></property></widget></item></layout></item>
               <item><spacer name="horizontalSpacerStationAdmin"><property name="orientation"><enum>Qt::Orientation::Horizontal</enum></property><property name="sizeHint" stdset="0"><size><width>40</width><height>20</height></size></property></spacer></item>
-              <item><widget class="QLabel" name="labelStationAdminData"><property name="text"><string>暂无数据</string></property></widget></item>
               <item><widget class="QPushButton" name="btnManageStations"><property name="text"><string>管理车站</string></property></widget></item>
              </layout>
             </widget>
@@ -1342,9 +1345,8 @@ QLabel#labelAdminBackupData {
              <layout class="QHBoxLayout" name="horizontalLayoutTrainAdmin">
               <property name="spacing"><number>12</number></property><property name="leftMargin"><number>16</number></property><property name="topMargin"><number>12</number></property><property name="rightMargin"><number>16</number></property><property name="bottomMargin"><number>12</number></property>
               <item><widget class="QLabel" name="labelTrainAdminIcon"><property name="minimumSize"><size><width>44</width><height>44</height></size></property><property name="maximumSize"><size><width>44</width><height>44</height></size></property><property name="pixmap"><pixmap resource="resources.qrc">:/icons/train-front.svg</pixmap></property><property name="alignment"><set>Qt::AlignmentFlag::AlignCenter</set></property></widget></item>
-              <item><layout class="QVBoxLayout" name="verticalLayoutTrainAdminText"><property name="spacing"><number>2</number></property><item><widget class="QLabel" name="labelTrainAdminTitle"><property name="text"><string>车次管理</string></property></widget></item><item><widget class="QLabel" name="labelTrainAdminDescription"><property name="text"><string>新增每日运行车次，或隐藏查询中不需要的车次</string></property></widget></item></layout></item>
+              <item><layout class="QVBoxLayout" name="verticalLayoutTrainAdminText"><property name="spacing"><number>2</number></property><item><widget class="QLabel" name="labelTrainAdminTitle"><property name="text"><string>自定义车次</string></property></widget></item><item><widget class="QLabel" name="labelTrainAdminDescription"><property name="text"><string>新增车次或隐藏查询结果</string></property></widget></item></layout></item>
               <item><spacer name="horizontalSpacerTrainAdmin"><property name="orientation"><enum>Qt::Orientation::Horizontal</enum></property><property name="sizeHint" stdset="0"><size><width>40</width><height>20</height></size></property></spacer></item>
-              <item><widget class="QLabel" name="labelTrainAdminData"><property name="text"><string>暂无数据</string></property></widget></item>
               <item><widget class="QPushButton" name="btnManageTrains"><property name="text"><string>管理车次</string></property></widget></item>
              </layout>
             </widget>
@@ -1365,9 +1367,8 @@ QLabel#labelAdminBackupData {
              <layout class="QHBoxLayout" name="horizontalLayoutScheduleAdmin">
               <property name="spacing"><number>12</number></property><property name="leftMargin"><number>16</number></property><property name="topMargin"><number>12</number></property><property name="rightMargin"><number>16</number></property><property name="bottomMargin"><number>12</number></property>
               <item><widget class="QLabel" name="labelScheduleAdminIcon"><property name="minimumSize"><size><width>44</width><height>44</height></size></property><property name="maximumSize"><size><width>44</width><height>44</height></size></property><property name="pixmap"><pixmap resource="resources.qrc">:/icons/clock.svg</pixmap></property><property name="alignment"><set>Qt::AlignmentFlag::AlignCenter</set></property></widget></item>
-              <item><layout class="QVBoxLayout" name="verticalLayoutScheduleAdminText"><property name="spacing"><number>2</number></property><item><widget class="QLabel" name="labelScheduleAdminTitle"><property name="text"><string>时刻 / 经停站</string></property></widget></item><item><widget class="QLabel" name="labelScheduleAdminDescription"><property name="text"><string>维护发车时刻、到站时刻和经停站</string></property></widget></item></layout></item>
+              <item><layout class="QVBoxLayout" name="verticalLayoutScheduleAdminText"><property name="spacing"><number>2</number></property><item><widget class="QLabel" name="labelScheduleAdminTitle"><property name="text"><string>时刻 / 经停站</string></property></widget></item><item><widget class="QLabel" name="labelScheduleAdminDescription"><property name="text"><string>配置自定义车次线路</string></property></widget></item></layout></item>
               <item><spacer name="horizontalSpacerScheduleAdmin"><property name="orientation"><enum>Qt::Orientation::Horizontal</enum></property><property name="sizeHint" stdset="0"><size><width>40</width><height>20</height></size></property></spacer></item>
-              <item><widget class="QLabel" name="labelScheduleAdminData"><property name="text"><string>暂无数据</string></property></widget></item>
               <item><widget class="QPushButton" name="btnManageSchedules"><property name="text"><string>管理时刻与经停站</string></property></widget></item>
              </layout>
             </widget>
@@ -1378,9 +1379,8 @@ QLabel#labelAdminBackupData {
              <layout class="QHBoxLayout" name="horizontalLayoutSeatAdmin">
               <property name="spacing"><number>12</number></property><property name="leftMargin"><number>16</number></property><property name="topMargin"><number>12</number></property><property name="rightMargin"><number>16</number></property><property name="bottomMargin"><number>12</number></property>
               <item><widget class="QLabel" name="labelSeatAdminIcon"><property name="minimumSize"><size><width>44</width><height>44</height></size></property><property name="maximumSize"><size><width>44</width><height>44</height></size></property><property name="pixmap"><pixmap resource="resources.qrc">:/icons/badge-yen.svg</pixmap></property><property name="alignment"><set>Qt::AlignmentFlag::AlignCenter</set></property></widget></item>
-              <item><layout class="QVBoxLayout" name="verticalLayoutSeatAdminText"><property name="spacing"><number>2</number></property><item><widget class="QLabel" name="labelSeatAdminTitle"><property name="text"><string>席别 / 票价 / 余票</string></property></widget></item><item><widget class="QLabel" name="labelSeatAdminDescription"><property name="text"><string>维护席别配置、票价规则和余票数量</string></property></widget></item></layout></item>
+              <item><layout class="QVBoxLayout" name="verticalLayoutSeatAdminText"><property name="spacing"><number>2</number></property><item><widget class="QLabel" name="labelSeatAdminTitle"><property name="text"><string>席别 / 票价 / 余票</string></property></widget></item><item><widget class="QLabel" name="labelSeatAdminDescription"><property name="text"><string>配置自定义车次库存</string></property></widget></item></layout></item>
               <item><spacer name="horizontalSpacerSeatAdmin"><property name="orientation"><enum>Qt::Orientation::Horizontal</enum></property><property name="sizeHint" stdset="0"><size><width>40</width><height>20</height></size></property></spacer></item>
-              <item><widget class="QLabel" name="labelSeatAdminData"><property name="text"><string>暂无数据</string></property></widget></item>
               <item><widget class="QPushButton" name="btnManageSeats"><property name="text"><string>管理席别与票价</string></property></widget></item>
              </layout>
             </widget>
@@ -1400,7 +1400,7 @@ QLabel#labelAdminBackupData {
              <property name="minimumSize"><size><width>0</width><height>76</height></size></property>
              <layout class="QHBoxLayout" name="horizontalLayoutAdminRecovery">
               <property name="spacing"><number>12</number></property><property name="leftMargin"><number>16</number></property><property name="topMargin"><number>12</number></property><property name="rightMargin"><number>16</number></property><property name="bottomMargin"><number>12</number></property>
-              <item><layout class="QVBoxLayout" name="verticalLayoutAdminRecoveryText"><property name="spacing"><number>2</number></property><item><widget class="QLabel" name="labelAdminRecoveryTitle"><property name="text"><string>恢复初始数据</string></property><property name="styleSheet"><string notr="true">font-size: 16px; font-weight: 600; color: #1D1D1F;</string></property></widget></item><item><widget class="QLabel" name="labelAdminRecoveryDescription"><property name="text"><string>从基线备份恢复完整业务数据，恢复前自动保留当前快照</string></property><property name="styleSheet"><string notr="true">color: #6E6E73; font-size: 13px;</string></property></widget></item></layout></item>
+              <item><layout class="QVBoxLayout" name="verticalLayoutAdminRecoveryText"><property name="spacing"><number>2</number></property><item><widget class="QLabel" name="labelAdminRecoveryTitle"><property name="text"><string>恢复初始数据</string></property><property name="styleSheet"><string notr="true">font-size: 16px; font-weight: 600; color: #1D1D1F;</string></property></widget></item><item><widget class="QLabel" name="labelAdminRecoveryDescription"><property name="text"><string>从备份恢复本地数据</string></property><property name="styleSheet"><string notr="true">color: #8E8E93; font-size: 12px;</string></property></widget></item></layout></item>
               <item><spacer name="horizontalSpacerAdminRecovery"><property name="orientation"><enum>Qt::Orientation::Horizontal</enum></property><property name="sizeHint" stdset="0"><size><width>40</width><height>20</height></size></property></spacer></item>
               <item><widget class="QLabel" name="labelAdminBackupData"><property name="text"><string>正在检查备份</string></property></widget></item>
               <item><widget class="QPushButton" name="btnResetAdminData"><property name="text"><string>恢复初始数据</string></property></widget></item>

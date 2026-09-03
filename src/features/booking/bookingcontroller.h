@@ -6,6 +6,7 @@
 class DataStore;
 class QPushButton;
 class QTableView;
+class RailwayQueryService;
 
 class BookingController final : public QObject
 {
@@ -20,6 +21,8 @@ private:
 
     DataStore *m_dataStore;
     QTableView *m_table;
+    QPushButton *m_bookButton;
+    RailwayQueryService *m_railwayService;
 };
 
 #endif // BOOKINGCONTROLLER_H

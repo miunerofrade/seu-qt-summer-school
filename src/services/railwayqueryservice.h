@@ -15,11 +15,21 @@ struct RailwayStation
     QString code;
 };
 
+struct RailwayRouteStop
+{
+    QString name;
+    QString code;
+    QTime arrivalTime;
+    QTime departureTime;
+    int dayOffset = 0;
+};
+
 class RailwayQueryService final : public QObject
 {
 public:
     using QueryCallback = std::function<void(QVector<TrainQueryRow>, const QString &)>;
     using StationsCallback = std::function<void(QVector<RailwayStation>, const QString &)>;
+    using RouteCallback = std::function<void(QVector<RailwayRouteStop>, const QString &)>;
 
     explicit RailwayQueryService(const QString &cacheDirectory, QObject *parent = nullptr);
 
@@ -28,6 +38,7 @@ public:
                const QDate &date,
                QueryCallback callback);
     void refreshStations(StationsCallback callback);
+    void queryRoute(const TrainQueryRow &row, RouteCallback callback);
 
     QVector<RailwayStation> cachedStations() const;
     QVector<TrainQueryRow> cachedAll() const;
@@ -42,6 +53,10 @@ public:
                                     QVector<TrainQueryRow> *rows,
                                     QString *error);
     static QVector<RailwayStation> parseStationCatalog(const QByteArray &payload);
+    static bool parseRouteResponse(const QByteArray &payload,
+                                   const QVector<RailwayStation> &stations,
+                                   QVector<RailwayRouteStop> *stops,
+                                   QString *error);
 
 private:
     QByteArray cacheContents() const;
@@ -51,6 +66,8 @@ private:
                    const QDate &date,
                    const QVector<TrainQueryRow> &rows) const;
     void saveStations(const QVector<RailwayStation> &stations) const;
+    void saveRoute(const TrainQueryRow &row, const QVector<RailwayRouteStop> &stops) const;
+    QVector<RailwayRouteStop> cachedRoute(const TrainQueryRow &row) const;
 
     QString m_cachePath;
     QString m_stationCatalogPath;

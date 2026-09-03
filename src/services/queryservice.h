@@ -42,6 +42,9 @@ struct TrainQueryRow
     int durationMinutes = 0;
     QVector<TrainSeatOption> seats;
     bool bookable = true;
+    // 12306's opaque identifier for one concrete service.  Unlike the public
+    // train number it can be used to request the ordered stop list.
+    QString railwayTrainId;
 };
 
 class QueryService final
