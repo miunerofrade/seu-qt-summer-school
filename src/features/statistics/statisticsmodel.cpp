@@ -1,4 +1,4 @@
-#include "models/statisticsmodel.h"
+#include "features/statistics/statisticsmodel.h"
 
 #include <QStringList>
 

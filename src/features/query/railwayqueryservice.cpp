@@ -1,4 +1,4 @@
-#include "services/railwayqueryservice.h"
+#include "features/query/railwayqueryservice.h"
 
 #include <QDir>
 #include <QFile>

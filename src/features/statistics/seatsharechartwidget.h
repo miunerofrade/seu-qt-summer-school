@@ -1,7 +1,7 @@
 #ifndef SEATSHARECHARTWIDGET_H
 #define SEATSHARECHARTWIDGET_H
 
-#include "services/statisticsservice.h"
+#include "features/statistics/statisticsservice.h"
 
 #include <QWidget>
 

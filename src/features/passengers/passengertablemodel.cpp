@@ -1,7 +1,7 @@
-#include "models/passengertablemodel.h"
+#include "features/passengers/passengertablemodel.h"
 
 #include "data/datastore.h"
-#include "services/passengerservice.h"
+#include "features/passengers/passengerservice.h"
 
 PassengerTableModel::PassengerTableModel(DataStore *dataStore, QObject *parent)
     : QAbstractTableModel(parent)

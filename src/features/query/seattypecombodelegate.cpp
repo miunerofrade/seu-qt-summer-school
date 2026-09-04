@@ -1,6 +1,6 @@
-#include "models/seattypecombodelegate.h"
+#include "features/query/seattypecombodelegate.h"
 
-#include "models/trainquerymodel.h"
+#include "features/query/trainquerymodel.h"
 
 #include <QAbstractItemView>
 #include <QApplication>

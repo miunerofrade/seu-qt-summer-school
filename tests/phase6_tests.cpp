@@ -1,6 +1,6 @@
 #include "data/datastore.h"
 #include "data/jsonrepository.h"
-#include "services/statisticsservice.h"
+#include "features/statistics/statisticsservice.h"
 
 #include <QTemporaryDir>
 #include <QtTest>

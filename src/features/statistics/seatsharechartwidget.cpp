@@ -1,4 +1,4 @@
-#include "widgets/seatsharechartwidget.h"
+#include "features/statistics/seatsharechartwidget.h"
 
 #include <QPainter>
 

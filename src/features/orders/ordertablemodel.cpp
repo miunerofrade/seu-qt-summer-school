@@ -1,4 +1,4 @@
-#include "models/ordertablemodel.h"
+#include "features/orders/ordertablemodel.h"
 
 #include "data/datastore.h"
 

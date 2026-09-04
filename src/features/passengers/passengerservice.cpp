@@ -1,4 +1,4 @@
-#include "services/passengerservice.h"
+#include "features/passengers/passengerservice.h"
 
 #include "data/datastore.h"
 

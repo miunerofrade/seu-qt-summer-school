@@ -1,9 +1,9 @@
 #include "data/datastore.h"
 #include "data/jsonrepository.h"
-#include "models/trainqueryfilterproxymodel.h"
-#include "models/trainquerymodel.h"
-#include "services/railwayqueryservice.h"
-#include "services/queryservice.h"
+#include "features/query/trainqueryfilterproxymodel.h"
+#include "features/query/trainquerymodel.h"
+#include "features/query/railwayqueryservice.h"
+#include "features/query/queryservice.h"
 
 #include <QJsonArray>
 #include <QJsonDocument>

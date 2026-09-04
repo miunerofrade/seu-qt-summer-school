@@ -1,6 +1,6 @@
-#include "models/trainqueryfilterproxymodel.h"
+#include "features/query/trainqueryfilterproxymodel.h"
 
-#include "models/trainquerymodel.h"
+#include "features/query/trainquerymodel.h"
 
 #include <algorithm>
 

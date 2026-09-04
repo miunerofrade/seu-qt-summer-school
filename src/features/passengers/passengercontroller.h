@@ -1,7 +1,7 @@
 #ifndef PASSENGERCONTROLLER_H
 #define PASSENGERCONTROLLER_H
 
-#include "services/passengerservice.h"
+#include "features/passengers/passengerservice.h"
 
 #include <QObject>
 

@@ -1,8 +1,8 @@
 #include "features/admin/managementdialogs.h"
 
 #include "data/datastore.h"
-#include "services/adminservice.h"
-#include "services/railwayqueryservice.h"
+#include "features/admin/adminservice.h"
+#include "features/query/railwayqueryservice.h"
 #include "widgets/dialogstyle.h"
 
 #include <QCheckBox>

@@ -1,9 +1,9 @@
 #include "data/datastore.h"
 #include "data/idatarepository.h"
 #include "data/jsonrepository.h"
-#include "services/bookingservice.h"
-#include "services/orderservice.h"
-#include "services/refundservice.h"
+#include "features/booking/bookingservice.h"
+#include "features/orders/orderservice.h"
+#include "features/orders/refundservice.h"
 
 #include <QTemporaryDir>
 #include <QtTest>

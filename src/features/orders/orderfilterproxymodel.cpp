@@ -1,6 +1,6 @@
-#include "models/orderfilterproxymodel.h"
+#include "features/orders/orderfilterproxymodel.h"
 
-#include "models/ordertablemodel.h"
+#include "features/orders/ordertablemodel.h"
 
 OrderFilterProxyModel::OrderFilterProxyModel(QObject *parent)
     : QSortFilterProxyModel(parent)

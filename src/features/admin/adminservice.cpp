@@ -1,4 +1,4 @@
-#include "services/adminservice.h"
+#include "features/admin/adminservice.h"
 
 #include "data/datastore.h"
 

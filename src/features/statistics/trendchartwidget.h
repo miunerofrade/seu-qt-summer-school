@@ -1,7 +1,7 @@
 #ifndef TRENDCHARTWIDGET_H
 #define TRENDCHARTWIDGET_H
 
-#include "services/statisticsservice.h"
+#include "features/statistics/statisticsservice.h"
 
 #include <QWidget>
 

@@ -1,7 +1,7 @@
 #ifndef ORDERTABLEMODEL_H
 #define ORDERTABLEMODEL_H
 
-#include "services/orderservice.h"
+#include "features/orders/orderservice.h"
 
 #include <QAbstractTableModel>
 

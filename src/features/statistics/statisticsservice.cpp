@@ -1,4 +1,4 @@
-#include "services/statisticsservice.h"
+#include "features/statistics/statisticsservice.h"
 
 #include "data/datastore.h"
 

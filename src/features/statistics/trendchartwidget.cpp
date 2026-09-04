@@ -1,4 +1,4 @@
-#include "widgets/trendchartwidget.h"
+#include "features/statistics/trendchartwidget.h"
 
 #include <QFontMetrics>
 #include <QLinearGradient>

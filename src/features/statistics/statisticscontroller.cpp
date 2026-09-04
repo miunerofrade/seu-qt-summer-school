@@ -1,10 +1,10 @@
 #include "features/statistics/statisticscontroller.h"
 
 #include "data/datastore.h"
-#include "models/statisticsmodel.h"
+#include "features/statistics/statisticsmodel.h"
 #include "widgets/flowlayout.h"
-#include "widgets/seatsharechartwidget.h"
-#include "widgets/trendchartwidget.h"
+#include "features/statistics/seatsharechartwidget.h"
+#include "features/statistics/trendchartwidget.h"
 
 #include <QAbstractItemView>
 #include <QComboBox>

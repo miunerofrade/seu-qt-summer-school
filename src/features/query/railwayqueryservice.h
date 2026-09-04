@@ -1,7 +1,7 @@
 #ifndef RAILWAYQUERYSERVICE_H
 #define RAILWAYQUERYSERVICE_H
 
-#include "services/queryservice.h"
+#include "features/query/queryservice.h"
 
 #include <QObject>
 

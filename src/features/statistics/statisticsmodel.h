@@ -1,7 +1,7 @@
 #ifndef STATISTICSMODEL_H
 #define STATISTICSMODEL_H
 
-#include "services/statisticsservice.h"
+#include "features/statistics/statisticsservice.h"
 
 #include <QAbstractTableModel>
 

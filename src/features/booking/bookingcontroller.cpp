@@ -1,11 +1,11 @@
 #include "features/booking/bookingcontroller.h"
 
 #include "data/datastore.h"
-#include "models/trainqueryfilterproxymodel.h"
-#include "models/trainquerymodel.h"
-#include "services/bookingservice.h"
-#include "services/passengerservice.h"
-#include "services/railwayqueryservice.h"
+#include "features/query/trainqueryfilterproxymodel.h"
+#include "features/query/trainquerymodel.h"
+#include "features/booking/bookingservice.h"
+#include "features/passengers/passengerservice.h"
+#include "features/query/railwayqueryservice.h"
 #include "widgets/dialogstyle.h"
 
 #include <QDialog>

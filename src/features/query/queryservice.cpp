@@ -1,4 +1,4 @@
-#include "services/queryservice.h"
+#include "features/query/queryservice.h"
 
 #include "data/datastore.h"
 

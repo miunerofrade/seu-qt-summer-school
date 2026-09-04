@@ -1,6 +1,6 @@
-#include "models/passengerfilterproxymodel.h"
+#include "features/passengers/passengerfilterproxymodel.h"
 
-#include "models/passengertablemodel.h"
+#include "features/passengers/passengertablemodel.h"
 
 PassengerFilterProxyModel::PassengerFilterProxyModel(QObject *parent)
     : QSortFilterProxyModel(parent)

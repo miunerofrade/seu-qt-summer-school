@@ -1,15 +1,16 @@
 #include "app/mainwindow.h"
+#include "app/applicationcontroller.h"
 #include "data/datastore.h"
 #include "data/jsonrepository.h"
 #include "features/auth/logindialog.h"
-#include "models/passengertablemodel.h"
-#include "models/ordertablemodel.h"
-#include "services/bookingservice.h"
-#include "services/orderservice.h"
-#include "services/passengerservice.h"
-#include "services/refundservice.h"
-#include "services/railwayqueryservice.h"
-#include "services/statisticsservice.h"
+#include "features/passengers/passengertablemodel.h"
+#include "features/orders/ordertablemodel.h"
+#include "features/booking/bookingservice.h"
+#include "features/orders/orderservice.h"
+#include "features/passengers/passengerservice.h"
+#include "features/orders/refundservice.h"
+#include "features/query/railwayqueryservice.h"
+#include "features/statistics/statisticsservice.h"
 
 #include <QAction>
 #include <QDateEdit>
@@ -22,6 +23,7 @@
 #include <QLabel>
 #include <QLineEdit>
 #include <QPushButton>
+#include <QPointer>
 #include <QStackedWidget>
 #include <QTableView>
 #include <QTemporaryDir>
@@ -56,6 +58,7 @@ private slots:
     void ownersAndSharedInventory();
     void loginFormAndAnimation();
     void lastLoginPrefill();
+    void applicationSessionLifecycle();
     void loginQuitShortcut();
     void roleNavigationAndLogout();
     void startupWithFullStationCatalog();
@@ -247,6 +250,51 @@ void AuthTests::loginFormAndAnimation()
         QTest::qWait(100);
         QVERIFY(preview.grab().save(qEnvironmentVariable("QT_SYNC_AUTH_SCREENSHOT")));
     }
+}
+
+void AuthTests::applicationSessionLifecycle()
+{
+    QTemporaryDir dir;
+    QPointer<LoginDialog> login;
+    QPointer<MainWindow> window;
+    const auto mainWindow = []() -> MainWindow * {
+        for (QWidget *widget : QApplication::topLevelWidgets())
+            if (auto *candidate = qobject_cast<MainWindow *>(widget)) return candidate;
+        return nullptr;
+    };
+    {
+        ApplicationController controller(dir.filePath("app.json"));
+        controller.start();
+        for (QWidget *widget : QApplication::topLevelWidgets())
+            if (auto *candidate = qobject_cast<LoginDialog *>(widget)) login = candidate;
+        QVERIFY(login);
+        QVERIFY(login->isVisible());
+        auto *submit = login->findChild<QPushButton *>("loginSubmit");
+        QVERIFY(!submit->isEnabled());
+        QVERIFY(!QFile::exists(dir.filePath("app.json")));
+        QTRY_VERIFY(submit->isEnabled());
+        QVERIFY(QFile::exists(dir.filePath("app.json")));
+        login->findChild<QLineEdit *>("loginUsername")->setText("admin");
+        login->findChild<QLineEdit *>("loginPassword")->setText("admin");
+        submit->click();
+        QVERIFY(login->isVisible());
+        QVERIFY(!mainWindow());
+        QTRY_VERIFY(mainWindow());
+        window = mainWindow();
+        QVERIFY(window->isVisible());
+        QVERIFY(!login->isVisible());
+        window->findChild<QAction *>("actionLogout")->trigger();
+        QTRY_VERIFY(window.isNull());
+        QVERIFY(login->isVisible());
+        QVERIFY(submit->isEnabled());
+        submit->click();
+        QTRY_VERIFY(mainWindow());
+        window = mainWindow();
+        QVERIFY(!login->isVisible());
+    }
+    // Closing the controller destroys both windows before the backing data.
+    QVERIFY(window.isNull());
+    QVERIFY(login.isNull());
 }
 
 void AuthTests::lastLoginPrefill()

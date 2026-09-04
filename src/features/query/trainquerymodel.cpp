@@ -1,4 +1,4 @@
-#include "models/trainquerymodel.h"
+#include "features/query/trainquerymodel.h"
 
 #include <QStringList>
 

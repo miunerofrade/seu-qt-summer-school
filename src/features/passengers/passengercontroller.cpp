@@ -1,9 +1,9 @@
 #include "features/passengers/passengercontroller.h"
 
 #include "data/datastore.h"
-#include "models/passengerfilterproxymodel.h"
-#include "models/passengertablemodel.h"
-#include "services/passengerservice.h"
+#include "features/passengers/passengerfilterproxymodel.h"
+#include "features/passengers/passengertablemodel.h"
+#include "features/passengers/passengerservice.h"
 #include "widgets/dialogstyle.h"
 
 #include <QComboBox>

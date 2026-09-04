@@ -1,11 +1,11 @@
 #include "features/query/querycontroller.h"
 
 #include "data/datastore.h"
-#include "models/trainqueryfilterproxymodel.h"
-#include "models/trainquerymodel.h"
-#include "models/seattypecombodelegate.h"
-#include "services/railwayqueryservice.h"
-#include "services/queryservice.h"
+#include "features/query/trainqueryfilterproxymodel.h"
+#include "features/query/trainquerymodel.h"
+#include "features/query/seattypecombodelegate.h"
+#include "features/query/railwayqueryservice.h"
+#include "features/query/queryservice.h"
 
 #include <QAbstractItemView>
 #include <QAbstractListModel>

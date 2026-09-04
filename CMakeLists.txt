@@ -21,83 +21,92 @@ find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets Network LinguistT
 set(TS_FILES untitled_zh_CN.ts)
 
 set(PROJECT_SOURCES
-        src/features/auth/logindialog.cpp
-        src/features/auth/logindialog.h
-        src/main.cpp
-        src/app/mainwindow.cpp
-        src/app/mainwindow.h
-        src/app/mainwindow.ui
-        src/widgets/avatarwidget.h
-        src/widgets/dateedit.cpp
-        src/widgets/dateedit.h
-        src/widgets/dialogstyle.cpp
-        src/widgets/dialogstyle.h
-        src/widgets/flowlayout.cpp
-        src/widgets/flowlayout.h
-        src/widgets/seatsharechartwidget.cpp
-        src/widgets/seatsharechartwidget.h
-        src/widgets/trendchartwidget.cpp
-        src/widgets/trendchartwidget.h
-        src/common/result.h
-        src/domain/entities.cpp
-        src/domain/entities.h
-        src/data/datastore.cpp
-        src/data/datastore.h
-        src/data/idatarepository.h
-        src/data/jsonrepository.cpp
-        src/data/jsonrepository.h
-        src/models/passengerfilterproxymodel.cpp
-        src/models/passengerfilterproxymodel.h
-        src/models/passengertablemodel.cpp
-        src/models/passengertablemodel.h
-        src/models/orderfilterproxymodel.cpp
-        src/models/orderfilterproxymodel.h
-        src/models/orderdelegates.cpp
-        src/models/orderdelegates.h
-        src/models/ordertablemodel.cpp
-        src/models/ordertablemodel.h
-        src/models/seattypecombodelegate.cpp
-        src/models/seattypecombodelegate.h
-        src/models/statisticsmodel.cpp
-        src/models/statisticsmodel.h
-        src/models/trainqueryfilterproxymodel.cpp
-        src/models/trainqueryfilterproxymodel.h
-        src/models/trainquerymodel.cpp
-        src/models/trainquerymodel.h
-        src/services/adminservice.cpp
-        src/services/adminservice.h
-        src/services/passengerservice.cpp
-        src/services/passengerservice.h
-        src/services/queryservice.cpp
-        src/services/queryservice.h
-        src/services/railwayqueryservice.cpp
-        src/services/railwayqueryservice.h
-        src/services/orderservice.cpp
-        src/services/orderservice.h
-        src/services/refundservice.cpp
-        src/services/refundservice.h
-        src/services/statisticsservice.cpp
-        src/services/statisticsservice.h
-        src/features/admin/admincontroller.cpp
-        src/features/admin/admincontroller.h
-        src/features/admin/managementdialogs.cpp
-        src/features/admin/managementdialogs.h
-        src/features/booking/bookingcontroller.cpp
-        src/features/booking/bookingcontroller.h
-        src/features/orders/ordercontroller.cpp
-        src/features/orders/ordercontroller.h
-        src/services/bookingservice.cpp
-        src/services/bookingservice.h
-        src/features/passengers/passengercontroller.cpp
-        src/features/passengers/passengercontroller.h
-        src/features/query/querycontroller.cpp
-        src/features/query/querycontroller.h
-        src/features/settings/settingscontroller.cpp
-        src/features/settings/settingscontroller.h
-        src/features/statistics/statisticscontroller.cpp
-        src/features/statistics/statisticscontroller.h
-        resources.qrc
-        ${TS_FILES}
+    # Application
+    src/app/applicationcontroller.cpp
+    src/app/applicationcontroller.h
+    src/app/mainwindow.cpp
+    src/app/mainwindow.h
+    src/app/mainwindow.ui
+    src/main.cpp
+
+    # Shared data and widgets
+    src/common/result.h
+    src/data/datastore.cpp
+    src/data/datastore.h
+    src/data/idatarepository.h
+    src/data/jsonrepository.cpp
+    src/data/jsonrepository.h
+    src/domain/entities.cpp
+    src/domain/entities.h
+    src/widgets/avatarwidget.h
+    src/widgets/dateedit.cpp
+    src/widgets/dateedit.h
+    src/widgets/dialogstyle.cpp
+    src/widgets/dialogstyle.h
+    src/widgets/flowlayout.cpp
+    src/widgets/flowlayout.h
+
+    # Features
+    src/features/admin/admincontroller.cpp
+    src/features/admin/admincontroller.h
+    src/features/admin/adminservice.cpp
+    src/features/admin/adminservice.h
+    src/features/admin/managementdialogs.cpp
+    src/features/admin/managementdialogs.h
+    src/features/auth/logindialog.cpp
+    src/features/auth/logindialog.h
+    src/features/booking/bookingcontroller.cpp
+    src/features/booking/bookingcontroller.h
+    src/features/booking/bookingservice.cpp
+    src/features/booking/bookingservice.h
+    src/features/orders/ordercontroller.cpp
+    src/features/orders/ordercontroller.h
+    src/features/orders/orderdelegates.cpp
+    src/features/orders/orderdelegates.h
+    src/features/orders/orderfilterproxymodel.cpp
+    src/features/orders/orderfilterproxymodel.h
+    src/features/orders/orderservice.cpp
+    src/features/orders/orderservice.h
+    src/features/orders/ordertablemodel.cpp
+    src/features/orders/ordertablemodel.h
+    src/features/orders/refundservice.cpp
+    src/features/orders/refundservice.h
+    src/features/passengers/passengercontroller.cpp
+    src/features/passengers/passengercontroller.h
+    src/features/passengers/passengerfilterproxymodel.cpp
+    src/features/passengers/passengerfilterproxymodel.h
+    src/features/passengers/passengerservice.cpp
+    src/features/passengers/passengerservice.h
+    src/features/passengers/passengertablemodel.cpp
+    src/features/passengers/passengertablemodel.h
+    src/features/query/querycontroller.cpp
+    src/features/query/querycontroller.h
+    src/features/query/queryservice.cpp
+    src/features/query/queryservice.h
+    src/features/query/railwayqueryservice.cpp
+    src/features/query/railwayqueryservice.h
+    src/features/query/seattypecombodelegate.cpp
+    src/features/query/seattypecombodelegate.h
+    src/features/query/trainqueryfilterproxymodel.cpp
+    src/features/query/trainqueryfilterproxymodel.h
+    src/features/query/trainquerymodel.cpp
+    src/features/query/trainquerymodel.h
+    src/features/settings/settingscontroller.cpp
+    src/features/settings/settingscontroller.h
+    src/features/statistics/seatsharechartwidget.cpp
+    src/features/statistics/seatsharechartwidget.h
+    src/features/statistics/statisticscontroller.cpp
+    src/features/statistics/statisticscontroller.h
+    src/features/statistics/statisticsmodel.cpp
+    src/features/statistics/statisticsmodel.h
+    src/features/statistics/statisticsservice.cpp
+    src/features/statistics/statisticsservice.h
+    src/features/statistics/trendchartwidget.cpp
+    src/features/statistics/trendchartwidget.h
+
+    # Resources
+    ${TS_FILES}
+    resources.qrc
 )
 
 if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
@@ -105,10 +114,6 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
         MANUAL_FINALIZATION
         ${PROJECT_SOURCES}
     )
-# Define target properties for Android with Qt 6 as:
-#    set_property(TARGET untitled APPEND PROPERTY QT_ANDROID_PACKAGE_SOURCE_DIR
-#                 ${CMAKE_CURRENT_SOURCE_DIR}/android)
-# For more information, see https://doc.qt.io/qt-6/qt-add-executable.html#target-creation
 
     qt_create_translation(QM_FILES ${CMAKE_SOURCE_DIR} ${TS_FILES})
 else()
@@ -116,8 +121,6 @@ else()
         add_library(untitled SHARED
             ${PROJECT_SOURCES}
         )
-# Define properties for Android with Qt 5 after find_package() calls as:
-#    set(ANDROID_PACKAGE_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/android")
     else()
         add_executable(untitled
             ${PROJECT_SOURCES}
@@ -196,14 +199,14 @@ if(BUILD_TESTING)
         src/data/idatarepository.h
         src/data/jsonrepository.cpp
         src/data/jsonrepository.h
-        src/models/passengerfilterproxymodel.cpp
-        src/models/passengerfilterproxymodel.h
-        src/models/passengertablemodel.cpp
-        src/models/passengertablemodel.h
-        src/services/adminservice.cpp
-        src/services/adminservice.h
-        src/services/passengerservice.cpp
-        src/services/passengerservice.h
+        src/features/passengers/passengerfilterproxymodel.cpp
+        src/features/passengers/passengerfilterproxymodel.h
+        src/features/passengers/passengertablemodel.cpp
+        src/features/passengers/passengertablemodel.h
+        src/features/admin/adminservice.cpp
+        src/features/admin/adminservice.h
+        src/features/passengers/passengerservice.cpp
+        src/features/passengers/passengerservice.h
     )
     target_include_directories(phase2_tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
     target_link_libraries(phase2_tests PRIVATE Qt${QT_VERSION_MAJOR}::Test)
@@ -219,14 +222,14 @@ if(BUILD_TESTING)
         src/data/idatarepository.h
         src/data/jsonrepository.cpp
         src/data/jsonrepository.h
-        src/models/trainqueryfilterproxymodel.cpp
-        src/models/trainqueryfilterproxymodel.h
-        src/models/trainquerymodel.cpp
-        src/models/trainquerymodel.h
-        src/services/queryservice.cpp
-        src/services/queryservice.h
-        src/services/railwayqueryservice.cpp
-        src/services/railwayqueryservice.h
+        src/features/query/trainqueryfilterproxymodel.cpp
+        src/features/query/trainqueryfilterproxymodel.h
+        src/features/query/trainquerymodel.cpp
+        src/features/query/trainquerymodel.h
+        src/features/query/queryservice.cpp
+        src/features/query/queryservice.h
+        src/features/query/railwayqueryservice.cpp
+        src/features/query/railwayqueryservice.h
     )
     target_include_directories(phase3_tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
     target_link_libraries(phase3_tests PRIVATE Qt${QT_VERSION_MAJOR}::Test Qt${QT_VERSION_MAJOR}::Network)
@@ -242,8 +245,8 @@ if(BUILD_TESTING)
         src/data/idatarepository.h
         src/data/jsonrepository.cpp
         src/data/jsonrepository.h
-        src/services/bookingservice.cpp
-        src/services/bookingservice.h
+        src/features/booking/bookingservice.cpp
+        src/features/booking/bookingservice.h
     )
     target_include_directories(phase4_tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
     target_link_libraries(phase4_tests PRIVATE Qt${QT_VERSION_MAJOR}::Test)
@@ -259,12 +262,12 @@ if(BUILD_TESTING)
         src/data/idatarepository.h
         src/data/jsonrepository.cpp
         src/data/jsonrepository.h
-        src/services/bookingservice.cpp
-        src/services/bookingservice.h
-        src/services/orderservice.cpp
-        src/services/orderservice.h
-        src/services/refundservice.cpp
-        src/services/refundservice.h
+        src/features/booking/bookingservice.cpp
+        src/features/booking/bookingservice.h
+        src/features/orders/orderservice.cpp
+        src/features/orders/orderservice.h
+        src/features/orders/refundservice.cpp
+        src/features/orders/refundservice.h
     )
     target_include_directories(phase5_tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
     target_link_libraries(phase5_tests PRIVATE Qt${QT_VERSION_MAJOR}::Test)
@@ -280,8 +283,8 @@ if(BUILD_TESTING)
         src/data/idatarepository.h
         src/data/jsonrepository.cpp
         src/data/jsonrepository.h
-        src/services/statisticsservice.cpp
-        src/services/statisticsservice.h
+        src/features/statistics/statisticsservice.cpp
+        src/features/statistics/statisticsservice.h
     )
     target_include_directories(phase6_tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
     target_link_libraries(phase6_tests PRIVATE Qt${QT_VERSION_MAJOR}::Test)

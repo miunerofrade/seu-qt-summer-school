@@ -1,7 +1,7 @@
 #ifndef TRAINQUERYMODEL_H
 #define TRAINQUERYMODEL_H
 
-#include "services/queryservice.h"
+#include "features/query/queryservice.h"
 
 #include <QAbstractTableModel>
 #include <QStringList>

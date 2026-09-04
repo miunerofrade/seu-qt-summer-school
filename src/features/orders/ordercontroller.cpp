@@ -1,11 +1,11 @@
 #include "features/orders/ordercontroller.h"
 
 #include "data/datastore.h"
-#include "models/orderfilterproxymodel.h"
-#include "models/orderdelegates.h"
-#include "models/ordertablemodel.h"
-#include "services/orderservice.h"
-#include "services/refundservice.h"
+#include "features/orders/orderfilterproxymodel.h"
+#include "features/orders/orderdelegates.h"
+#include "features/orders/ordertablemodel.h"
+#include "features/orders/orderservice.h"
+#include "features/orders/refundservice.h"
 #include "widgets/dialogstyle.h"
 
 #include <QComboBox>

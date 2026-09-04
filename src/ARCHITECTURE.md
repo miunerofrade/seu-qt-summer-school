@@ -2,25 +2,39 @@
 
 - `app`：应用程序外壳，负责主窗口、页面导航和各功能模块的装配。
 - `widgets`：不包含业务规则的可复用 Qt 控件与布局。
-- `features`：按照用户功能划分的控制器、模型和界面代码。
+- `features`：按功能集中存放界面、控制器、业务服务、模型和专用控件。
 - `domain`：车站、车次、乘车人、订单、车票和余票等业务实体。
 - `data`：本地 JSON 数据的读取、保存、异常恢复和默认数据。
-- `models`：可供多个功能复用的 Model-View 模型与代理模型。
-- `services`：车次查询、购票、余票、退票和统计等业务规则。
+功能目录（需要修改一个功能时，先从对应目录查找）：
 
-计划划分的功能目录包括：
-
-- `query`：车票查询、筛选和排序。
+- `auth`：独立登录/注册窗口、动画、上次成功登录信息预填。
+- `query`：车票查询、筛选、排序、席别代理，以及 12306 请求和缓存服务。
 - `passengers`：乘车人信息管理。
 - `booking`：购票确认、出票和余票扣减。
 - `orders`：订单查询、订单详情和退票。
 - `admin`：车站、车次、时刻、票价和余票管理。
-- `statistics`：售票、退票、收入和余票统计。
-- `settings`：数据目录、手动保存和重新加载。
+- `statistics`：售票、退票、收入和余票统计，包含统计模型和两个专用图表。
+- `settings`：数据目录、手动保存、重新加载和备份恢复。
+
+## 文件查找与整理边界
+
+- `main.cpp`：创建 QApplication、设置字体和翻译，启动应用控制器和唯一的事件循环。
+- `app/applicationcontroller.*`：持有数据和窗口，集中管理延迟初始化、登录切换、退出登录、
+  原生登录菜单和窗口销毁；不属于主窗口内部页面。
+- `app/mainwindow.ui`：主窗口及各页面的静态布局；本轮保留原布局，不拆 UI。
+- `app/mainwindow.cpp`：组装各功能控制器、导航及菜单权限。
+- `features/<功能>/*controller.cpp`：页面交互；`*service.cpp`：业务规则；
+  `*model.cpp`、`*proxymodel.cpp`、`*delegate.cpp`：表格显示与筛选。
+- 公共控件只保留头像、日期输入、对话框样式和流式布局；统计专用图表归统计功能。
+- 服务可以被其他功能复用，例如购票调用乘车人服务和铁路查询服务；归档位置表示
+  职责归属，不增加新的调用层，也不复制实现。
+- 原 `models/`、`services/` 中的代码已归回功能目录；没有保留转发头文件或重复副本。
+- 测试保留 `auth_tests` 与 `phase1_tests` 至 `phase6_tests` 名称，避免改变现有测试入口。
+  第一轮整理仅修改文件位置、引用路径和说明；未改变 JSON 格式、账号权限、业务规则及启动时序。
 
 ## 登录与账号数据
 
-- `main` 只运行一次应用事件循环，先显示 `features/auth/LoginDialog`，150ms 后初始化
+- `ApplicationController` 先显示 `features/auth/LoginDialog`，150ms 后初始化
   `DataStore`。登录成功后先显示忙碌状态，150ms 后创建主窗口；退出登录销毁主窗口及
   控制器，清空当前账号，再显示登录页。登录和注册页均支持系统退出快捷键，macOS 有原生退出菜单。
 - JSON 第 4 版增加 `users`（`id`、`username`、明文 `password`、`role`）。首次初始化和旧版
@@ -56,10 +70,6 @@ Controller 只负责收集输入、显示结果和页面跳转。乘车人校验
 除已明确要求的圆角操作按钮等视觉规则外，下拉框、日期框、复选框、表格等优先使用
 Qt 原生控件和平台行为，不为原生控件添加额外的 QSS 外观覆盖。
 
-第二阶段已实现 `PassengerTableModel`、`PassengerFilterProxyModel`、
-`PassengerService` 和 `AdminService`。第三阶段加入 `QueryService`、
-`TrainQueryModel` 和筛选代理；第四阶段加入 `BookingService` 和购票确认流程。
-第五阶段加入 `OrderService`、`RefundService`、`OrderTableModel` 和订单筛选代理，
 订单详情按单张车票办理退票；手续费、状态更新、退票记录与区间余票恢复均在 Service
 中原子完成，保存失败不会替换内存数据。
 车站、车次、时刻/经停站、席别/票价/余票分别使用独立管理对话框，正式需求未要求的

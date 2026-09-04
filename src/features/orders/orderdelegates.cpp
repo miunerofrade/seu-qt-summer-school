@@ -1,7 +1,7 @@
-#include "models/orderdelegates.h"
+#include "features/orders/orderdelegates.h"
 
 #include "domain/entities.h"
-#include "services/orderservice.h"
+#include "features/orders/orderservice.h"
 
 QString OrderMoneyDelegate::displayText(const QVariant &value, const QLocale &locale) const
 {

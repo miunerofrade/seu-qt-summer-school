@@ -1,9 +1,9 @@
 #include "data/datastore.h"
 #include "data/jsonrepository.h"
-#include "models/passengerfilterproxymodel.h"
-#include "models/passengertablemodel.h"
-#include "services/adminservice.h"
-#include "services/passengerservice.h"
+#include "features/passengers/passengerfilterproxymodel.h"
+#include "features/passengers/passengertablemodel.h"
+#include "features/admin/adminservice.h"
+#include "features/passengers/passengerservice.h"
 
 #include <QTemporaryDir>
 #include <QFile>

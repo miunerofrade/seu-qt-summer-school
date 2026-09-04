@@ -1,7 +1,7 @@
 #ifndef STATISTICSCONTROLLER_H
 #define STATISTICSCONTROLLER_H
 
-#include "services/statisticsservice.h"
+#include "features/statistics/statisticsservice.h"
 
 #include <QObject>
 

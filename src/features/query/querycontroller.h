@@ -3,7 +3,7 @@
 
 #include <QObject>
 
-#include "services/railwayqueryservice.h"
+#include "features/query/railwayqueryservice.h"
 
 class DataStore;
 class QCheckBox;
