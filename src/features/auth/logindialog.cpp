@@ -2,6 +2,7 @@
 #include "data/datastore.h"
 
 #include <QAction>
+#include <QEasingCurve>
 #include <QHideEvent>
 #include <QLabel>
 #include <QKeySequence>
@@ -12,6 +13,7 @@
 #include <QSvgRenderer>
 #include <QVariantAnimation>
 #include <QVBoxLayout>
+#include <cmath>
 
 namespace {
 class LoginMark final : public QWidget
@@ -21,13 +23,21 @@ public:
         m_train(QStringLiteral(":/icons/login-train.svg")),
         m_ring(QStringLiteral(":/icons/login-ring.svg"))
     {
-        setFixedSize(72, 72);
+        setFixedSize(88, 88);
         setObjectName(QStringLiteral("loginMark"));
         m_rotation.setObjectName(QStringLiteral("loginRotation"));
         m_rotation.setParent(this);
         m_rotation.setStartValue(0.0);
         m_rotation.setEndValue(360.0);
-        m_rotation.setDuration(4000);
+        m_rotation.setDuration(2000);
+        QEasingCurve rotationCurve;
+        rotationCurve.setCustomType([](qreal progress) -> qreal {
+            constexpr qreal twoPi = 6.28318530717958647692;
+            // Speed varies from 0.15x to 1.85x, never stopping; both ends
+            // have matching velocity and acceleration for a seamless loop.
+            return progress - 0.85 * std::sin(twoPi * progress) / twoPi;
+        });
+        m_rotation.setEasingCurve(rotationCurve);
         m_rotation.setLoopCount(-1);
         connect(&m_rotation, &QVariantAnimation::valueChanged, this,
                 [this]() { update(); });
@@ -47,12 +57,12 @@ protected:
     {
         QPainter painter(this);
         painter.setRenderHint(QPainter::Antialiasing);
-        painter.translate(36, 36);
+        painter.translate(width() / 2.0, height() / 2.0);
         painter.save();
         painter.rotate(m_rotation.currentValue().toReal());
-        m_ring.render(&painter, QRectF(-36, -36, 72, 72));
+        m_ring.render(&painter, QRectF(-44, -44, 88, 88));
         painter.restore();
-        m_train.render(&painter, QRectF(-18, -18, 36, 36));
+        m_train.render(&painter, QRectF(-24, -25, 48, 48));
     }
 private:
     QSvgRenderer m_train;

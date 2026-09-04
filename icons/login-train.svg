@@ -1,5 +1,7 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 36 36" fill="none" stroke="#007AFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-  <rect x="8" y="4" width="20" height="25" rx="6"/>
-  <path d="M8 17h20M18 4v13M13 29l-3 4m13-4 3 4M11 33h14"/>
-  <path d="M12 23h2m8 0h2" stroke-width="3"/>
+<!-- Phosphor Icons: train-simple-duotone. MIT; see PHOSPHOR-LICENSE.txt.
+     Source: https://github.com/phosphor-icons/core/blob/main/assets/duotone/train-simple-duotone.svg
+     Adaptation: currentColor replaced with the application's blue. -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" fill="#007AFF">
+  <path d="M208,56v72H48V56A24,24,0,0,1,72,32H184A24,24,0,0,1,208,56Z" opacity="0.2"/>
+  <path d="M184,24H72A32,32,0,0,0,40,56V184a32,32,0,0,0,32,32h8L65.6,235.2a8,8,0,1,0,12.8,9.6L100,216h56l21.6,28.8a8,8,0,1,0,12.8-9.6L176,216h8a32,32,0,0,0,32-32V56A32,32,0,0,0,184,24ZM72,40H184a16,16,0,0,1,16,16v64H56V56A16,16,0,0,1,72,40ZM184,200H72a16,16,0,0,1-16-16V136H200v48A16,16,0,0,1,184,200ZM96,172a12,12,0,1,1-12-12A12,12,0,0,1,96,172Zm88,0a12,12,0,1,1-12-12A12,12,0,0,1,184,172Z"/>
 </svg>

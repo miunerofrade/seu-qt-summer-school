@@ -1,5 +1,6 @@
 <RCC>
  <qresource prefix="/icons">
+  <file alias="PHOSPHOR-LICENSE.txt">icons/PHOSPHOR-LICENSE.txt</file>
   <file alias="login-train.svg">icons/login-train.svg</file>
   <file alias="login-ring.svg">icons/login-ring.svg</file>
   <file alias="login-eye.svg">icons/login-eye.svg</file>
