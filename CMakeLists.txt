@@ -40,6 +40,7 @@ set(PROJECT_SOURCES
     src/domain/entities.cpp
     src/domain/entities.h
     src/widgets/avatarwidget.h
+    src/widgets/svgiconlabel.h
     src/widgets/dateedit.cpp
     src/widgets/dateedit.h
     src/widgets/dialogstyle.cpp

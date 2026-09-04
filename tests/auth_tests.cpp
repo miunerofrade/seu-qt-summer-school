@@ -1,4 +1,5 @@
 #include "app/mainwindow.h"
+#include "widgets/svgiconlabel.h"
 #include "app/applicationcontroller.h"
 #include "data/datastore.h"
 #include "data/jsonrepository.h"
@@ -401,6 +402,19 @@ void AuthTests::roleNavigationAndLogout()
     store.logout();
     QVERIFY(store.login("admin", "admin"));
     MainWindow admin(&store);
+    for (const char *name : {"labelStationAdminIcon", "labelTrainAdminIcon", "labelScheduleAdminIcon",
+                             "labelSeatAdminIcon", "labelRecoveryAdminIcon"}) {
+        auto *icon = admin.findChild<SvgIconLabel *>(name);
+        QVERIFY(icon);
+        QSvgRenderer renderer(icon->source());
+        QVERIFY(renderer.isValid());
+    }
+    if (!qEnvironmentVariableIsEmpty("QT_SYNC_ADMIN_SCREENSHOT")) {
+        admin.show();
+        admin.findChild<QToolButton *>("btnAdmin")->click();
+        QTest::qWait(100);
+        QVERIFY(admin.grab().save(qEnvironmentVariable("QT_SYNC_ADMIN_SCREENSHOT")));
+    }
     QVERIFY(!admin.findChild<QWidget *>("settingsDataCard")->isHidden());
     QVERIFY(!admin.findChild<QWidget *>("settingsBackupCard")->isHidden());
     QCOMPARE(admin.findChild<QStackedWidget *>("stackedWidget")->count(), 6);
