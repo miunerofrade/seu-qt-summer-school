@@ -13,6 +13,12 @@ class LoginDialog final : public QDialog
     Q_OBJECT
 public:
     explicit LoginDialog(DataStore *store, QWidget *parent = nullptr);
+    void setBusy(bool busy, const QString &message = {});
+    void resetForLogin();
+    void showError(const QString &message);
+
+signals:
+    void authenticated();
 
 private:
     void setRegistration(bool registration);
@@ -26,6 +32,7 @@ private:
     QPushButton *m_submit;
     QPushButton *m_switch;
     bool m_registration = false;
+    bool m_busy = false;
 };
 
 #endif

@@ -4,6 +4,7 @@
 #include <QAction>
 #include <QHideEvent>
 #include <QLabel>
+#include <QKeySequence>
 #include <QLineEdit>
 #include <QPainter>
 #include <QPushButton>
@@ -87,6 +88,12 @@ LoginDialog::LoginDialog(DataStore *store, QWidget *parent) : QDialog(parent), m
 {
     setObjectName(QStringLiteral("loginDialog"));
     setWindowTitle(tr("列车客运 · 登录"));
+    auto *quitAction = new QAction(tr("退出"), this);
+    quitAction->setObjectName(QStringLiteral("actionLoginQuit"));
+    quitAction->setShortcut(QKeySequence::Quit);
+    quitAction->setMenuRole(QAction::QuitRole);
+    addAction(quitAction);
+    connect(quitAction, &QAction::triggered, this, &QDialog::reject);
     resize(960, 640);
     setMinimumSize(400, 560);
     setStyleSheet(QStringLiteral(R"(
@@ -178,6 +185,7 @@ void LoginDialog::setRegistration(bool registration)
 
 void LoginDialog::submit()
 {
+    if (m_busy) return;
     m_error->clear();
     if (m_registration && m_password->text() != m_confirmation->text()) {
         m_error->setText(tr("两次输入的密码不一致。"));
@@ -196,6 +204,29 @@ void LoginDialog::submit()
         m_password->setFocus();
     } else {
         m_password->clear();
-        accept();
+        setBusy(true, tr("正在打开…"));
+        emit authenticated();
     }
+}
+
+void LoginDialog::setBusy(bool busy, const QString &message)
+{
+    m_busy = busy;
+    for (auto *edit : {m_username, m_password, m_confirmation})
+        edit->setEnabled(!busy);
+    m_submit->setEnabled(!busy);
+    m_switch->setEnabled(!busy);
+    m_submit->setText(busy ? message : (m_registration ? tr("注册") : tr("登录")));
+}
+
+void LoginDialog::resetForLogin()
+{
+    setRegistration(false);
+    setBusy(false);
+    m_username->setFocus();
+}
+
+void LoginDialog::showError(const QString &message)
+{
+    m_error->setText(message);
 }

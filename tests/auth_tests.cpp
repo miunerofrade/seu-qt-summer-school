@@ -55,6 +55,7 @@ private slots:
     void legacyMigrationAndBackup();
     void ownersAndSharedInventory();
     void loginFormAndAnimation();
+    void loginQuitShortcut();
     void roleNavigationAndLogout();
     void startupWithFullStationCatalog();
     void stationCatalogFreshness();
@@ -229,9 +230,13 @@ void AuthTests::loginFormAndAnimation()
     QCOMPARE(username->text(), QStringLiteral("demo"));
     QVERIFY(password->text().isEmpty());
     password->setText("password");
-    QSignalSpy accepted(&dialog, &QDialog::accepted);
+    QSignalSpy authenticated(&dialog, &LoginDialog::authenticated);
     QTest::keyClick(password, Qt::Key_Return);
-    QCOMPARE(accepted.count(), 1);
+    QCOMPARE(authenticated.count(), 1);
+    QVERIFY(dialog.isVisible());
+    QVERIFY(!submit->isEnabled());
+    QCOMPARE(rotation->state(), QAbstractAnimation::Running);
+    dialog.hide();
     QCOMPARE(rotation->state(), QAbstractAnimation::Stopped);
     QVERIFY(!store.isAdmin());
     // Optional artifacts for visual inspection; kept in build output only.
@@ -241,6 +246,32 @@ void AuthTests::loginFormAndAnimation()
         QTest::qWait(100);
         QVERIFY(preview.grab().save(qEnvironmentVariable("QT_SYNC_AUTH_SCREENSHOT")));
     }
+}
+
+void AuthTests::loginQuitShortcut()
+{
+    QTemporaryDir dir;
+    DataStore store(std::make_unique<JsonRepository>(dir.filePath("app.json")));
+    LoginDialog dialog(&store);
+    dialog.setBusy(true, QStringLiteral("正在准备…"));
+    dialog.show();
+    dialog.activateWindow();
+    QVERIFY(QTest::qWaitForWindowActive(&dialog));
+    QSignalSpy rejected(&dialog, &QDialog::rejected);
+    auto *quit = dialog.findChild<QAction *>("actionLoginQuit");
+    QVERIFY(quit);
+    QCOMPARE(quit->shortcut(), QKeySequence(QKeySequence::Quit));
+    QTest::keySequence(&dialog, QKeySequence(QKeySequence::Quit));
+    QTRY_COMPARE(rejected.count(), 1);
+    QVERIFY(!dialog.isVisible());
+    QVERIFY(store.initialize());
+    dialog.resetForLogin();
+    dialog.show();
+    dialog.activateWindow();
+    QVERIFY(QTest::qWaitForWindowActive(&dialog));
+    QTest::mouseClick(dialog.findChild<QPushButton *>("loginSwitch"), Qt::LeftButton);
+    QTest::keySequence(dialog.findChild<QLineEdit *>("loginUsername"), QKeySequence(QKeySequence::Quit));
+    QTRY_COMPARE(rejected.count(), 2);
 }
 
 void AuthTests::roleNavigationAndLogout()

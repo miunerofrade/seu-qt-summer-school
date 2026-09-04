@@ -20,8 +20,9 @@
 
 ## 登录与账号数据
 
-- `main` 初始化唯一的 `DataStore`，先显示 `features/auth/LoginDialog`，登录成功再创建
-  `MainWindow`；退出登录销毁主窗口及控制器，清空当前账号，再显示登录页。
+- `main` 只运行一次应用事件循环，先显示 `features/auth/LoginDialog`，150ms 后初始化
+  `DataStore`。登录成功后先显示忙碌状态，150ms 后创建主窗口；退出登录销毁主窗口及
+  控制器，清空当前账号，再显示登录页。登录和注册页均支持系统退出快捷键，macOS 有原生退出菜单。
 - JSON 第 4 版增加 `users`（`id`、`username`、明文 `password`、`role`）。首次初始化和旧版
   数据迁移提供 `admin/admin`，注册只能创建 `user`。课程演示按要求使用明文密码。
 - `DataStore` 保存内存中的当前账号 ID，并提供登录、注册、账号名称和归属判断；不引入
