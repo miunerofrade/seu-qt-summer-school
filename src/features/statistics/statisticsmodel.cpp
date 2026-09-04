@@ -1,4 +1,5 @@
 #include "features/statistics/statisticsmodel.h"
+#include "common/money.h"
 
 #include <QStringList>
 
@@ -36,7 +37,7 @@ QVariant StatisticsModel::data(const QModelIndex &index, int role) const
     case RefundedColumn:
         return row.refundedCount;
     case RevenueColumn:
-        return QStringLiteral("¥%1.%2").arg(row.netRevenueCents / 100).arg(row.netRevenueCents % 100, 2, 10, QLatin1Char('0'));
+        return common::formatMoney(row.netRevenueCents);
     case RemainingRateColumn:
         return QStringLiteral("%1%").arg(row.remainingRate * 100.0, 0, 'f', 1);
     default:

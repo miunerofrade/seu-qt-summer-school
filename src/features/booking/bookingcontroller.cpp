@@ -1,4 +1,5 @@
 #include "features/booking/bookingcontroller.h"
+#include "common/money.h"
 
 #include "data/datastore.h"
 #include "features/query/trainqueryfilterproxymodel.h"
@@ -19,15 +20,6 @@
 #include <QTableView>
 #include <QVBoxLayout>
 
-namespace {
-QString formatMoney(qint64 cents)
-{
-    return QStringLiteral("¥%1.%2")
-        .arg(cents / 100)
-        .arg(cents % 100, 2, 10, QLatin1Char('0'));
-}
-}
-
 BookingController::BookingController(DataStore *dataStore,
                                      QTableView *table,
                                      QPushButton *bookButton,
@@ -35,9 +27,13 @@ BookingController::BookingController(DataStore *dataStore,
     : QObject(parent)
     , m_dataStore(dataStore)
     , m_table(table)
+    , m_proxy(qobject_cast<TrainQueryFilterProxyModel *>(table->model()))
+    , m_model(m_proxy ? qobject_cast<TrainQueryModel *>(m_proxy->sourceModel()) : nullptr)
     , m_bookButton(bookButton)
     , m_railwayService(new RailwayQueryService(dataStore->dataDirectory(), this))
 {
+    // QueryController 会在创建此控制器前安装这些模型。
+    Q_ASSERT(m_proxy && m_model);
     connect(bookButton, &QPushButton::clicked, this, [this]() { bookSelected(); });
     connect(m_table, &QTableView::doubleClicked, this, [this](const QModelIndex &) { bookSelected(); });
 }
@@ -49,13 +45,9 @@ void BookingController::bookSelected()
         QMessageBox::information(m_table, tr("购票"), tr("请先选择一条车次席别记录。"));
         return;
     }
-    const auto *proxy = qobject_cast<const TrainQueryFilterProxyModel *>(m_table->model());
-    const auto *model = proxy ? qobject_cast<const TrainQueryModel *>(proxy->sourceModel()) : nullptr;
-    if (!proxy || !model)
-        return;
-    const QModelIndex sourceIndex = proxy->mapToSource(proxyIndex);
-    const TrainQueryRow *row = model->rowAt(sourceIndex.row());
-    const TrainSeatOption *seat = model->selectedSeatAt(sourceIndex.row());
+    const QModelIndex sourceIndex = m_proxy->mapToSource(proxyIndex);
+    const TrainQueryRow *row = m_model->rowAt(sourceIndex.row());
+    const TrainSeatOption *seat = m_model->selectedSeatAt(sourceIndex.row());
     if (!row || !seat)
         return;
     if (seat->priceCents < 0) {
@@ -109,7 +101,7 @@ void BookingController::bookSelected()
                  row->departureTime.toString(QStringLiteral("HH:mm")),
                  QStringLiteral("%1小时%2分").arg(row->durationMinutes / 60).arg(row->durationMinutes % 60, 2, 10, QLatin1Char('0')),
                  seat->seatType,
-                 formatMoney(seat->priceCents),
+                 common::formatMoney(seat->priceCents),
                  seat->availabilityText.isEmpty() ? QString::number(seat->remainingSeats)
                                                   : seat->availabilityText),
         &dialog);
@@ -153,7 +145,7 @@ void BookingController::bookSelected()
         for (int i = 0; i < passengers->count(); ++i)
             selected += passengers->item(i)->checkState() == Qt::Checked;
         confirmButton->setEnabled(selected > 0);
-        totalLabel->setText(tr("合计：%1").arg(formatMoney(seat->priceCents * selected)));
+        totalLabel->setText(tr("合计：%1").arg(common::formatMoney(seat->priceCents * selected)));
     });
     connect(buttons, &QDialogButtonBox::rejected, &dialog, &QDialog::reject);
     BookingReceipt receipt;
@@ -171,7 +163,7 @@ void BookingController::bookSelected()
                                      seat->seatType,
                                      passengerIds,
                                      row->railwayTrainId};
-        BookingService service(m_dataStore);
+        BookingService service(*m_dataStore);
         const OperationResult result = row->bookable
             ? service.book(request, &receipt)
             : service.bookDemo(request,
@@ -200,6 +192,6 @@ void BookingController::bookSelected()
                                  tr("本地演示订单已生成：%1\n共出票 %2 张，合计 %3。")
                                      .arg(receipt.orderId)
                                      .arg(receipt.ticketIds.size())
-                                     .arg(formatMoney(receipt.totalAmountCents)));
+                                     .arg(common::formatMoney(receipt.totalAmountCents)));
     }
 }

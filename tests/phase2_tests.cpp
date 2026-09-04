@@ -38,7 +38,7 @@ std::unique_ptr<DataStore> initializedStore(const QString &path)
         return {};
     return store;
 }
-} // namespace
+} // 命名空间
 
 void PhaseTwoTests::passengerValidationMaskingAndModel()
 {

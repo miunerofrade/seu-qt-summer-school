@@ -22,16 +22,16 @@ int findStop(const QVector<domain::TrainStop> &stops, const QString &stationCode
 }
 }
 
-BookingService::BookingService(DataStore *dataStore)
+BookingService::BookingService(DataStore &dataStore)
     : m_dataStore(dataStore)
 {
 }
 
-OperationResult BookingService::book(const BookingRequest &request, BookingReceipt *receipt)
+OperationResult BookingService::validateRequest(const BookingRequest &request) const
 {
-    if (!m_dataStore || m_dataStore->currentUserId().isEmpty())
+    if (m_dataStore.currentUserId().isEmpty())
         return OperationResult::failure(QStringLiteral("请先登录。"));
-    if (!m_dataStore || request.trainNumber.trimmed().isEmpty() || !request.serviceDate.isValid()
+    if (request.trainNumber.trimmed().isEmpty() || !request.serviceDate.isValid()
         || request.departureStationCode.isEmpty() || request.arrivalStationCode.isEmpty()
         || request.departureStationCode == request.arrivalStationCode || request.seatType.trimmed().isEmpty()
         || request.passengerIds.isEmpty())
@@ -44,7 +44,27 @@ OperationResult BookingService::book(const BookingRequest &request, BookingRecei
         passengerIds.push_back(id);
     }
 
-    domain::AppData candidate = m_dataStore->data();
+    for (const QString &passengerId : passengerIds) {
+        const auto it = std::find_if(m_dataStore.data().passengers.cbegin(), m_dataStore.data().passengers.cend(),
+                                     [&passengerId](const domain::Passenger &passenger) {
+                                         return passenger.id == passengerId;
+                                     });
+        if (it == m_dataStore.data().passengers.cend())
+            return OperationResult::failure(QStringLiteral("乘车人信息已变化，请重新选择。"));
+        if (!m_dataStore.canAccessOwner(it->ownerUserId))
+            return OperationResult::failure(QStringLiteral("无权使用该乘车人。"));
+    }
+    return OperationResult::ok();
+}
+
+OperationResult BookingService::book(const BookingRequest &request, BookingReceipt *receipt)
+{
+    const auto validated = validateRequest(request);
+    if (!validated)
+        return validated;
+    const QStringList &passengerIds = request.passengerIds;
+
+    domain::AppData candidate = m_dataStore.data();
     const auto stationEnabled = [&candidate](const QString &code) {
         const auto it = std::find_if(candidate.stations.cbegin(), candidate.stations.cend(),
                                      [&code](const domain::Station &station) {
@@ -111,23 +131,11 @@ OperationResult BookingService::book(const BookingRequest &request, BookingRecei
             return OperationResult::failure(QStringLiteral("余票不足，未生成订单。"));
         unitPriceCents += inventory.priceCents;
     }
-
-    for (const QString &passengerId : passengerIds) {
-        const auto it = std::find_if(candidate.passengers.cbegin(), candidate.passengers.cend(),
-                                     [&passengerId](const domain::Passenger &passenger) {
-                                         return passenger.id == passengerId;
-                                     });
-        if (it == candidate.passengers.cend())
-            return OperationResult::failure(QStringLiteral("乘车人信息已变化，请重新选择。"));
-        if (!m_dataStore->canAccessOwner(it->ownerUserId))
-            return OperationResult::failure(QStringLiteral("无权使用该乘车人。"));
-    }
-
     for (int segment = fromIndex; segment < toIndex; ++segment)
         seat.segments[segment].remainingSeats -= passengerCount;
 
     domain::Order order;
-    order.ownerUserId = m_dataStore->currentUserId();
+    order.ownerUserId = m_dataStore.currentUserId();
     order.id = newId();
     order.createdAt = QDateTime::currentDateTime();
     order.totalAmountCents = unitPriceCents * passengerCount;
@@ -148,7 +156,7 @@ OperationResult BookingService::book(const BookingRequest &request, BookingRecei
     }
     candidate.orders.push_back(order);
 
-    const OperationResult committed = m_dataStore->commit(std::move(candidate));
+    const OperationResult committed = m_dataStore.commit(std::move(candidate));
     if (!committed)
         return committed;
     if (receipt) {
@@ -163,34 +171,18 @@ OperationResult BookingService::bookDemo(const BookingRequest &request,
                                          const DemoTrainSnapshot &snapshot,
                                          BookingReceipt *receipt)
 {
-    if (!m_dataStore || m_dataStore->currentUserId().isEmpty())
-        return OperationResult::failure(QStringLiteral("请先登录。"));
-    if (!m_dataStore || snapshot.departureStationName.isEmpty()
+    const auto validated = validateRequest(request);
+    if (!validated)
+        return validated;
+    if (snapshot.departureStationName.isEmpty()
         || snapshot.arrivalStationName.isEmpty() || !snapshot.departureTime.isValid()
         || !snapshot.arrivalTime.isValid() || snapshot.priceCents < 0
-        || snapshot.remainingSeats <= 0 || request.trainNumber.trimmed().isEmpty()
-        || !request.serviceDate.isValid() || request.departureStationCode.isEmpty()
-        || request.arrivalStationCode.isEmpty()
-        || request.departureStationCode == request.arrivalStationCode
-        || request.seatType.trimmed().isEmpty() || request.passengerIds.isEmpty())
+        || snapshot.remainingSeats <= 0)
         return OperationResult::failure(QStringLiteral("该席别缺少票价或余票，无法生成演示订单。"));
-
-    domain::AppData candidate = m_dataStore->data();
-    QStringList passengerIds;
-    for (const QString &passengerId : request.passengerIds) {
-        if (passengerId.isEmpty() || passengerIds.contains(passengerId))
-            return OperationResult::failure(QStringLiteral("乘车人选择重复或无效。"));
-        const bool exists = std::any_of(candidate.passengers.cbegin(), candidate.passengers.cend(),
-                                        [this, &passengerId](const domain::Passenger &passenger) {
-            return passenger.id == passengerId && m_dataStore->canAccessOwner(passenger.ownerUserId);
-        });
-        if (!exists)
-            return OperationResult::failure(QStringLiteral("乘车人信息已变化，请重新选择。"));
-        passengerIds.push_back(passengerId);
-    }
-    if (passengerIds.size() > snapshot.remainingSeats)
+    if (request.passengerIds.size() > snapshot.remainingSeats)
         return OperationResult::failure(QStringLiteral("余票不足，未生成订单。"));
 
+    domain::AppData candidate = m_dataStore.data();
     const auto ensureStation = [&candidate](const QString &code, const QString &name) {
         const auto it = std::find_if(candidate.stations.begin(), candidate.stations.end(),
                                      [&code](const domain::Station &station) {
@@ -276,6 +268,7 @@ OperationResult BookingService::bookDemo(const BookingRequest &request,
         }
     }
 
-    const OperationResult importedResult = m_dataStore->commit(std::move(candidate));
+    const OperationResult importedResult = m_dataStore.commit(std::move(candidate));
+    // commit 会发出 dataChanged；预订前要根据结果状态重新验证。
     return importedResult ? book(request, receipt) : importedResult;
 }

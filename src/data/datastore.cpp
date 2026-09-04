@@ -192,14 +192,6 @@ OperationResult DataStore::loadFromRepository(bool createWhenMissing)
     }
 
     setReady(loaded.data);
-    if (loaded.data.schemaVersion < domain::CurrentSchemaVersion) {
-        m_data.schemaVersion = domain::CurrentSchemaVersion;
-        const OperationResult migrated = save();
-        if (!migrated) {
-            setError(migrated.error);
-            return migrated;
-        }
-    }
     m_lastSavedAt = QFileInfo(dataFilePath()).lastModified();
     emit dataChanged();
     emit statusChanged();

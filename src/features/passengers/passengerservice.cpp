@@ -30,7 +30,7 @@ bool validChineseIdCard(const QString &number)
         sum += number.at(i).digitValue() * weights[i];
     return check == QLatin1Char(checkCodes[sum % 11]);
 }
-} // namespace
+} // 命名空间
 
 bool PassengerService::isValidChineseIdCard(const QString &documentNumber)
 {

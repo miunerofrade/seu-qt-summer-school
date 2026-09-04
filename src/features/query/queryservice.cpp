@@ -110,7 +110,7 @@ bool appendRow(const domain::Train &train,
     rows->push_back(std::move(row));
     return true;
 }
-} // namespace
+} // 命名空间
 
 QueryService::QueryService(const DataStore *dataStore)
     : m_dataStore(dataStore)

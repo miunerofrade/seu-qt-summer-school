@@ -53,7 +53,7 @@ struct DemoTrainSnapshot
 class BookingService final
 {
 public:
-    explicit BookingService(DataStore *dataStore);
+    explicit BookingService(DataStore &dataStore);
 
     OperationResult book(const BookingRequest &request, BookingReceipt *receipt = nullptr);
     OperationResult bookDemo(const BookingRequest &request,
@@ -61,7 +61,8 @@ public:
                              BookingReceipt *receipt = nullptr);
 
 private:
-    DataStore *m_dataStore;
+    OperationResult validateRequest(const BookingRequest &request) const;
+    DataStore &m_dataStore;
 };
 
 #endif // BOOKINGSERVICE_H

@@ -60,7 +60,7 @@ QString routeText(const domain::AppData &data, const domain::Ticket &ticket)
         .arg(names.value(ticket.fromStationCode, ticket.fromStationCode),
              names.value(ticket.toStationCode, ticket.toStationCode));
 }
-} // namespace
+} // 命名空间
 
 StatisticsService::StatisticsService(const DataStore *dataStore)
     : m_dataStore(dataStore)

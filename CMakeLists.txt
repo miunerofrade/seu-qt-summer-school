@@ -21,7 +21,7 @@ find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets Network LinguistT
 set(TS_FILES untitled_zh_CN.ts)
 
 set(PROJECT_SOURCES
-    # Application
+    # 应用程序
     src/app/applicationcontroller.cpp
     src/app/applicationcontroller.h
     src/app/mainwindow.cpp
@@ -29,7 +29,8 @@ set(PROJECT_SOURCES
     src/app/mainwindow.ui
     src/main.cpp
 
-    # Shared data and widgets
+    # 共享数据和控件
+    src/common/money.h
     src/common/result.h
     src/data/datastore.cpp
     src/data/datastore.h
@@ -46,7 +47,7 @@ set(PROJECT_SOURCES
     src/widgets/flowlayout.cpp
     src/widgets/flowlayout.h
 
-    # Features
+    # 功能模块
     src/features/admin/admincontroller.cpp
     src/features/admin/admincontroller.h
     src/features/admin/adminservice.cpp
@@ -104,7 +105,7 @@ set(PROJECT_SOURCES
     src/features/statistics/trendchartwidget.cpp
     src/features/statistics/trendchartwidget.h
 
-    # Resources
+    # 资源
     ${TS_FILES}
     resources.qrc
 )
@@ -138,9 +139,8 @@ target_compile_definitions(untitled PRIVATE
     QT_SYNC_DATA_DIR="${QT_SYNC_DATA_DIR}"
 )
 
-# Qt for iOS sets MACOSX_BUNDLE_GUI_IDENTIFIER automatically since Qt 6.1.
-# If you are developing for iOS or macOS you should consider setting an
-# explicit, fixed bundle identifier manually though.
+# 自 Qt 6.1 起，iOS 版 Qt 会自动设置 MACOSX_BUNDLE_GUI_IDENTIFIER。
+# 但如果面向 iOS 或 macOS 开发，仍应考虑手动设置明确且固定的包标识符。
 if(${QT_VERSION} VERSION_LESS 6.1.0)
   set(BUNDLE_ID_OPTION MACOSX_BUNDLE_GUI_IDENTIFIER com.example.untitled)
 endif()

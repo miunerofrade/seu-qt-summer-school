@@ -9,7 +9,7 @@ class LoginDialog;
 class MainWindow;
 class QMenuBar;
 
-// Owns the session windows. Business rules remain in DataStore and features.
+// 负责管理会话窗口。业务规则仍保留在 DataStore 和各功能模块中。
 class ApplicationController final : public QObject
 {
 public:
@@ -22,7 +22,7 @@ private:
     void openMainWindow();
     void handleMainWindowClosed();
 
-    // Destruction order matters: windows/controllers must go before their data.
+    // 销毁顺序很重要：窗口和控制器必须先于其数据销毁。
     DataStore m_store;
     std::unique_ptr<LoginDialog> m_login;
     std::unique_ptr<QMenuBar> m_loginMenu;

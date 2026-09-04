@@ -1,4 +1,5 @@
 #include "features/statistics/statisticscontroller.h"
+#include "common/money.h"
 
 #include "data/datastore.h"
 #include "features/statistics/statisticsmodel.h"
@@ -15,13 +16,6 @@
 #include <QMessageBox>
 #include <QPushButton>
 #include <QTableView>
-
-namespace {
-QString formatMoney(qint64 cents)
-{
-    return QStringLiteral("¥%1.%2").arg(cents / 100).arg(cents % 100, 2, 10, QLatin1Char('0'));
-}
-}
 
 StatisticsController::StatisticsController(DataStore *dataStore, QWidget *filterCard, QWidget *quickFilterGroup,
                                            QWidget *dateFilterGroup, QWidget *trainFilterGroup, QWidget *stationFilterGroup,
@@ -143,7 +137,7 @@ void StatisticsController::updateMetrics(const StatisticsSummary &summary)
     const bool hasData = !summary.rows.isEmpty() || summary.soldCount > 0 || summary.refundedCount > 0;
     m_soldValue->setText(hasData ? QString::number(summary.soldCount) : QStringLiteral("--"));
     m_refundedValue->setText(hasData ? QString::number(summary.refundedCount) : QStringLiteral("--"));
-    m_revenueValue->setText(hasData ? formatMoney(summary.netRevenueCents) : QStringLiteral("--"));
+    m_revenueValue->setText(hasData ? common::formatMoney(summary.netRevenueCents) : QStringLiteral("--"));
     m_rateValue->setText(hasData || summary.averageRemainingRate > 0.0
                              ? QStringLiteral("%1%").arg(summary.averageRemainingRate * 100.0, 0, 'f', 1)
                              : QStringLiteral("--"));

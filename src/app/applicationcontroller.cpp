@@ -16,14 +16,14 @@ ApplicationController::ApplicationController(const QString &dataFilePath)
 {
     m_login->setBusy(true, QObject::tr("正在准备…"));
 #ifdef Q_OS_MAC
-    // Parentless: this is the native default menu while no main window exists.
+    // 无父对象：不存在主窗口时，这是原生默认菜单。
     m_loginMenu = std::make_unique<QMenuBar>();
     m_loginMenu->addMenu(QObject::tr("文件"))->addAction(
         m_login->findChild<QAction *>(QStringLiteral("actionLoginQuit")));
 #endif
     connect(m_login.get(), &QDialog::rejected, qApp, &QApplication::quit);
     connect(m_login.get(), &LoginDialog::authenticated, this, [this]() {
-        // Let the busy state paint before constructing widgets on the GUI thread.
+        // 在 GUI 线程上构造控件前，先让忙碌状态完成绘制。
         QTimer::singleShot(150, this, [this]() { openMainWindow(); });
     });
 }
@@ -33,7 +33,7 @@ ApplicationController::~ApplicationController() = default;
 void ApplicationController::start()
 {
     m_login->show();
-    // Show the first window and enter the event loop before doing data IO.
+    // 在进行数据 IO 前显示第一个窗口并进入事件循环。
     QTimer::singleShot(150, this, [this]() { initializeData(); });
 }
 
@@ -53,7 +53,7 @@ void ApplicationController::openMainWindow()
 {
     if (!m_login->isVisible()) return;
     m_window = std::make_unique<MainWindow>(&m_store);
-    // Defer destruction until MainWindow::closeEvent has returned.
+    // 延迟销毁，直到 MainWindow::closeEvent 返回。
     connect(m_window.get(), &MainWindow::closed, this,
             [this]() { handleMainWindowClosed(); }, Qt::QueuedConnection);
     m_window->show();

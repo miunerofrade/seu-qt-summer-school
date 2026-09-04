@@ -39,8 +39,8 @@ public:
         QEasingCurve rotationCurve;
         rotationCurve.setCustomType([](qreal progress) -> qreal {
             constexpr qreal twoPi = 6.28318530717958647692;
-            // Speed varies from 0.15x to 1.85x, never stopping; both ends
-            // have matching velocity and acceleration for a seamless loop.
+            // 速度在 0.15 倍至 1.85 倍之间变化且不会停下；两端的速度和加速度
+            // 相匹配，从而实现无缝循环。
             return progress - 0.85 * std::sin(twoPi * progress) / twoPi;
         });
         m_rotation.setEasingCurve(rotationCurve);
@@ -192,7 +192,7 @@ void LoginDialog::loadLastLogin()
 
 void LoginDialog::saveLastLogin()
 {
-    // Local demo preference, deliberately plaintext like the account data.
+    // 本地演示偏好设置，与账户数据一样特意使用明文。
     QSaveFile file(QDir(m_store->dataDirectory()).filePath(QStringLiteral("login-preferences.json")));
     const QByteArray contents = QJsonDocument(QJsonObject{
         {QStringLiteral("username"), m_username->text()},

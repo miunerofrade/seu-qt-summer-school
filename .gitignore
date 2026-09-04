@@ -1,4 +1,4 @@
-# This file is used to ignore files which are generated
+# 此文件用于忽略生成的文件
 # ----------------------------------------------------------------------------
 
 *~
@@ -36,18 +36,18 @@ Thumbs.db
 /.qmake.stash
 **/.qmlls.ini
 
-# qtcreator generated files
+# Qt Creator 生成的文件
 *.pro.user*
 *.qbs.user*
 CMakeLists.txt.user*
 
-# xemacs temporary files
+# XEmacs 临时文件
 *.flc
 
-# Vim temporary files
+# Vim 临时文件
 .*.swp
 
-# Visual Studio generated files
+# Visual Studio 生成的文件
 *.ib_pdb_index
 *.idb
 *.ilk
@@ -62,19 +62,19 @@ CMakeLists.txt.user*
 *.vcxproj
 *vcxproj.*
 
-# MinGW generated files
+# MinGW 生成的文件
 *.Debug
 *.Release
 
-# Python byte code
+# Python 字节码
 *.pyc
 
-# Binaries
+# 二进制文件
 # --------
 *.dll
 *.exe
 
-# Directories with generated files
+# 包含生成文件的目录
 .moc/
 .obj/
 .pch/
@@ -88,14 +88,14 @@ build/
 *.user
 .DS_Store
 
-# CMake and Qt Creator local build metadata
+# CMake 和 Qt Creator 的本地构建元数据
 compile_commands.json
 CMakeUserPresets.json
 .cache/
 .cmake/
 .qt/
 
-# Runtime business data
+# 运行时业务数据
 /data/login-preferences.json
 /data/app-data.json
 /data/railway-cache.json

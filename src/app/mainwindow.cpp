@@ -205,6 +205,10 @@ MainWindow::MainWindow(DataStore *dataStore, QWidget *parent)
     connect(ui->btnSettings, &QToolButton::clicked, this, [this]() {
         ui->stackedWidget->setCurrentWidget(ui->pageSettings);
     });
+
+    // 初始焦点放在窗口上，而不是第一个可编辑的车站字段。
+    // 保持输入控件的焦点策略，以支持鼠标点击和键盘导航。
+    setFocus(Qt::OtherFocusReason);
 }
 
 MainWindow::~MainWindow()

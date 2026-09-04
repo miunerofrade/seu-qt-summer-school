@@ -346,8 +346,7 @@ bool parsePassenger(const QJsonValue &value, Passenger *passenger, QString *erro
         return false;
     }
     const QJsonObject object = value.toObject();
-    if (object.contains(QStringLiteral("ownerUserId"))
-        && !readString(object, "ownerUserId", &passenger->ownerUserId, error))
+    if (!readString(object, "ownerUserId", &passenger->ownerUserId, error))
         return false;
     return readString(object, "id", &passenger->id, error)
         && readString(object, "name", &passenger->name, error)
@@ -362,8 +361,7 @@ bool parseOrder(const QJsonValue &value, Order *order, QString *error)
         return false;
     }
     const QJsonObject object = value.toObject();
-    if (object.contains(QStringLiteral("ownerUserId"))
-        && !readString(object, "ownerUserId", &order->ownerUserId, error))
+    if (!readString(object, "ownerUserId", &order->ownerUserId, error))
         return false;
     QString createdAt;
     QJsonArray ticketIds;
@@ -471,41 +469,39 @@ bool appDataFromJson(const QJsonObject &object, AppData *data, QString *error)
     qint64 schemaVersion = 0;
     if (!readInteger(object, "schemaVersion", &schemaVersion, error))
         return false;
-    if (schemaVersion < 1 || schemaVersion > CurrentSchemaVersion) {
+    if (schemaVersion != CurrentSchemaVersion) {
         *error = QObject::tr("不支持的数据版本：%1，当前版本为 %2。")
                      .arg(schemaVersion)
                      .arg(CurrentSchemaVersion);
         return false;
     }
     data->schemaVersion = static_cast<int>(schemaVersion);
-    if (schemaVersion >= 4) {
-        QJsonArray users;
-        if (!readArray(object, "users", &users, error))
+    QJsonArray users;
+    if (!readArray(object, "users", &users, error))
+        return false;
+    data->users.clear();
+    for (const auto &value : users) {
+        const QJsonObject entry = value.toObject();
+        User user;
+        if (!readString(entry, "id", &user.id, error)
+            || !readString(entry, "username", &user.username, error)
+            || !readString(entry, "password", &user.password, error)
+            || !readString(entry, "role", &user.role, error))
             return false;
-        data->users.clear();
-        for (const auto &value : users) {
-            const QJsonObject entry = value.toObject();
-            User user;
-            if (!readString(entry, "id", &user.id, error)
-                || !readString(entry, "username", &user.username, error)
-                || !readString(entry, "password", &user.password, error)
-                || !readString(entry, "role", &user.role, error))
-                return false;
-            user.username = user.username.trimmed();
-            if (user.id.isEmpty() || user.username.isEmpty() || user.password.isEmpty()
-                || (user.role != QStringLiteral("admin") && user.role != QStringLiteral("user"))) {
-                *error = QObject::tr("账号记录格式错误。");
-                return false;
-            }
-            for (const auto &existing : data->users) {
-                if (existing.id == user.id
-                    || existing.username.compare(user.username, Qt::CaseInsensitive) == 0) {
-                    *error = QObject::tr("账号或账号 ID 重复。");
-                    return false;
-                }
-            }
-            data->users.append(user);
+        user.username = user.username.trimmed();
+        if (user.id.isEmpty() || user.username.isEmpty() || user.password.isEmpty()
+            || (user.role != QStringLiteral("admin") && user.role != QStringLiteral("user"))) {
+            *error = QObject::tr("账号记录格式错误。");
+            return false;
         }
+        for (const auto &existing : data->users) {
+            if (existing.id == user.id
+                || existing.username.compare(user.username, Qt::CaseInsensitive) == 0) {
+                *error = QObject::tr("账号或账号 ID 重复。");
+                return false;
+            }
+        }
+        data->users.append(user);
     }
 
     QJsonArray stations;
@@ -566,7 +562,7 @@ bool appDataFromJson(const QJsonObject &object, AppData *data, QString *error)
     data->trains = std::move(uniqueTrains);
     return true;
 }
-} // namespace
+} // 命名空间
 
 JsonRepository::JsonRepository(QString filePath)
     : m_filePath(QDir::cleanPath(std::move(filePath)))

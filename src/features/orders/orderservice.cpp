@@ -67,7 +67,7 @@ domain::TicketStatus aggregateStatus(const QVector<const domain::Ticket *> &tick
     // 一张订单中可能有的票已退、其余票已完成；此时已不存在有效待出行车票。
     return domain::TicketStatus::Completed;
 }
-} // namespace
+} // 命名空间
 
 OrderService::OrderService(DataStore *dataStore)
     : m_dataStore(dataStore)

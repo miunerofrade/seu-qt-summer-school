@@ -62,9 +62,8 @@ struct Train
     QString number;
     QVector<TrainStop> stops;
     QVector<SeatInventory> seats;
-    // Empty id + invalid date denotes a daily recurring custom definition.
-    // A valid date denotes one materialized service inventory; official
-    // services additionally carry the opaque 12306 id.
+    // 空 ID 加无效日期表示每日重复的自定义定义。
+    // 有效日期表示一个已实例化的服务库存；官方服务还会携带不透明的 12306 ID。
     QString railwayTrainId;
     QDate railwayServiceDate;
 };
@@ -129,6 +128,6 @@ QString ticketStatusKey(TicketStatus status);
 bool ticketStatusFromKey(const QString &key, TicketStatus *status);
 AppData createDemoData();
 
-} // namespace domain
+} // 命名空间 domain
 
 #endif // DOMAIN_ENTITIES_H

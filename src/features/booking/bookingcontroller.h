@@ -7,6 +7,8 @@ class DataStore;
 class QPushButton;
 class QTableView;
 class RailwayQueryService;
+class TrainQueryFilterProxyModel;
+class TrainQueryModel;
 
 class BookingController final : public QObject
 {
@@ -21,6 +23,8 @@ private:
 
     DataStore *m_dataStore;
     QTableView *m_table;
+    TrainQueryFilterProxyModel *m_proxy;
+    TrainQueryModel *m_model;
     QPushButton *m_bookButton;
     RailwayQueryService *m_railwayService;
 };

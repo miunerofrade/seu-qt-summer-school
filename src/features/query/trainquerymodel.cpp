@@ -1,22 +1,17 @@
 #include "features/query/trainquerymodel.h"
+#include "common/money.h"
 
 #include <QStringList>
 
 #include <algorithm>
 
 namespace {
-QString formatMoney(qint64 cents)
-{
-    return QStringLiteral("¥%1.%2")
-        .arg(cents / 100)
-        .arg(cents % 100, 2, 10, QLatin1Char('0'));
-}
 
 QString formatDuration(int minutes)
 {
     return QStringLiteral("%1小时%2分").arg(minutes / 60).arg(minutes % 60, 2, 10, QLatin1Char('0'));
 }
-} // namespace
+} // 命名空间
 
 TrainQueryModel::TrainQueryModel(QObject *parent)
     : QAbstractTableModel(parent)
@@ -86,7 +81,7 @@ QVariant TrainQueryModel::data(const QModelIndex &index, int role) const
                            : QVariant(seat->availabilityText))
                     : QVariant(0);
     case PriceColumn:
-        return seat && seat->priceCents >= 0 ? formatMoney(seat->priceCents)
+        return seat && seat->priceCents >= 0 ? common::formatMoney(seat->priceCents)
                                              : QStringLiteral("—");
     default:
         return {};

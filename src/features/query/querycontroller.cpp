@@ -26,8 +26,8 @@
 
 #include <algorithm>
 
-// Both station selectors share one read-only model. Replacing its data emits a
-// single reset instead of thousands of individual row insertion notifications.
+// 两个车站选择器共享一个只读模型。替换其数据只会发出一次重置通知，
+// 不会产生数千次逐行插入通知。
 class StationListModel final : public QAbstractListModel
 {
 public:
@@ -59,9 +59,8 @@ QString selectedStationCode(const QComboBox *combo)
     if (!combo)
         return {};
     const QString text = combo->currentText().trimmed();
-    // Prefer the data of the actually selected item.  Looking up by name is
-    // ambiguous because the local demo data and 12306 can contain stations
-    // with the same display name but different codes.
+    // 优先使用实际选中项的数据。按名称查找存在歧义，因为本地演示数据和 12306
+    // 可能包含显示名称相同但代码不同的车站。
     const int currentIndex = combo->currentIndex();
     if (currentIndex >= 0 && combo->itemText(currentIndex).trimmed() == text)
         return combo->itemData(currentIndex).toString();
@@ -72,7 +71,7 @@ QString selectedStationCode(const QComboBox *combo)
     const int codeIndex = combo->findData(text.toUpper(), Qt::UserRole, Qt::MatchFixedString);
     return codeIndex >= 0 ? combo->itemData(codeIndex).toString() : QString();
 }
-} // namespace
+} // 命名空间
 
 QueryController::QueryController(DataStore *dataStore,
                                  QTableView *table,
@@ -135,8 +134,8 @@ QueryController::QueryController(DataStore *dataStore,
     header->setStretchLastSection(false);
     header->setMinimumSectionSize(56);
 
-    // Content-oriented minimums keep every column readable while Interactive
-    // mode leaves all widths user-adjustable instead of locking a ratio.
+    // 以内容为导向的最小宽度可保证每列可读；Interactive 模式允许用户调整所有宽度，
+    // 而不是锁定比例。
     m_minimumColumnWidths = {
         64, 60, 90, 90, 90, 90, 72, 80, 84, 56, 72
     };
@@ -180,8 +179,8 @@ QueryController::QueryController(DataStore *dataStore,
     showCachedTrains();
     report("cached trains");
     if (!m_officialStationsReady || m_railwayService->stationCatalogNeedsRefresh()) {
-        // Let the first frame render before HTTPS initialization; reuse a fresh
-        // catalog across logins instead of starting a network session every time.
+        // 让首帧先完成渲染再初始化 HTTPS；在登录间复用新鲜目录，
+        // 不必每次都启动网络会话。
         QTimer::singleShot(300, this, [this]() {
             m_railwayService->refreshStations([this](QVector<RailwayStation> refreshed,
                                                      const QString &error) {
@@ -192,7 +191,7 @@ QueryController::QueryController(DataStore *dataStore,
                     m_officialStations = std::move(refreshed);
                     loadStations(m_officialStations);
                 } else if (!m_officialStationsReady) {
-                    // Custom stations remain usable if the online catalog fails.
+                    // 即使在线目录失败，自定义车站仍可使用。
                     m_searchButton->setEnabled(true);
                 }
             });

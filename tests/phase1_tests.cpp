@@ -2,6 +2,7 @@
 #include "data/idatarepository.h"
 #include "data/jsonrepository.h"
 #include "domain/entities.h"
+#include "common/money.h"
 
 #include <QFile>
 #include <QTemporaryDir>
@@ -42,6 +43,7 @@ class PhaseOneTests final : public QObject
 
 private slots:
     void missingFileCreatesDemoData();
+    void moneyFormatting();
     void jsonRoundTripPreservesDomainData();
     void corruptJsonIsNotOverwritten();
     void unsupportedVersionIsRejected();
@@ -63,6 +65,33 @@ void PhaseOneTests::missingFileCreatesDemoData()
     QVERIFY(store.data().stations.size() >= 3);
     QVERIFY(store.data().trains.size() >= 2);
     QVERIFY(!store.data().passengers.isEmpty());
+    QCOMPARE(store.data().users.size(), 1);
+    QVERIFY(store.login(QStringLiteral("admin"), QStringLiteral("admin")));
+    QVERIFY(store.isAdmin());
+    QSet<QString> passengerIds;
+    for (const auto &passenger : store.data().passengers) {
+        QCOMPARE(passenger.ownerUserId, store.currentUserId());
+        QVERIFY(!passenger.id.isEmpty());
+        QVERIFY(!passenger.name.isEmpty());
+        QVERIFY(!passengerIds.contains(passenger.id));
+        passengerIds.insert(passenger.id);
+    }
+    const auto originalIds = passengerIds;
+    DataStore restarted(std::make_unique<JsonRepository>(path));
+    QVERIFY(restarted.initialize());
+    QVERIFY(restarted.login(QStringLiteral("admin"), QStringLiteral("admin")));
+    passengerIds.clear();
+    for (const auto &passenger : restarted.data().passengers)
+        passengerIds.insert(passenger.id);
+    QCOMPARE(passengerIds, originalIds);
+    QCOMPARE(restarted.data().users.size(), 1);
+}
+
+void PhaseOneTests::moneyFormatting()
+{
+    QCOMPARE(common::formatMoney(0), QStringLiteral("¥0.00"));
+    QCOMPARE(common::formatMoney(5), QStringLiteral("¥0.05"));
+    QCOMPARE(common::formatMoney(12345), QStringLiteral("¥123.45"));
 }
 
 void PhaseOneTests::jsonRoundTripPreservesDomainData()

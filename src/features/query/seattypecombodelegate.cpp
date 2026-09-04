@@ -26,9 +26,8 @@ void SeatTypeComboDelegate::paint(QPainter *painter, const QStyleOptionViewItem 
     QStyle *style = baseOption.widget ? baseOption.widget->style() : QApplication::style();
     style->drawControl(QStyle::CE_ItemViewItem, &baseOption, painter, baseOption.widget);
 
-    // Only the display state is custom-painted. The actual editor created
-    // below remains a normal QComboBox. Match the application's other combo
-    // boxes here instead of asking the table's style to imitate one.
+    // 仅自定义绘制显示状态。下面创建的实际编辑器仍是普通 QComboBox。
+    // 此处与应用中的其他组合框保持一致，而不是让表格样式去模拟组合框。
     const QRect controlRect = option.rect.adjusted(2, 0, -2, 0);
     painter->save();
     painter->setRenderHint(QPainter::Antialiasing, true);

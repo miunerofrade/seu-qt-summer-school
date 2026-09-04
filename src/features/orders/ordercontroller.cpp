@@ -1,4 +1,5 @@
 #include "features/orders/ordercontroller.h"
+#include "common/money.h"
 
 #include "data/datastore.h"
 #include "features/orders/orderfilterproxymodel.h"
@@ -23,12 +24,6 @@
 #include <QVBoxLayout>
 
 namespace {
-QString formatMoney(qint64 cents)
-{
-    return QStringLiteral("¥%1.%2")
-        .arg(cents / 100)
-        .arg(cents % 100, 2, 10, QLatin1Char('0'));
-}
 
 QStandardItem *detailItem(const QString &text, const QString &ticketId = {})
 {
@@ -39,7 +34,7 @@ QStandardItem *detailItem(const QString &text, const QString &ticketId = {})
         item->setData(ticketId, Qt::UserRole);
     return item;
 }
-} // namespace
+} // 命名空间
 
 OrderController::OrderController(DataStore *dataStore,
                                  QWidget *dialogParent,
@@ -193,7 +188,7 @@ QString OrderController::showOrderDetails(const QString &orderId, bool refundMod
                                      ticket.serviceDate.toString(QStringLiteral("yyyy-MM-dd")),
                                      ticket.departureAt.time().toString(QStringLiteral("HH:mm"))))
               << detailItem(ticket.seatType)
-              << detailItem(formatMoney(ticket.priceCents))
+              << detailItem(common::formatMoney(ticket.priceCents))
               << detailItem(OrderService::statusText(ticket.status));
         model->appendRow(items);
     }
@@ -230,9 +225,9 @@ QString OrderController::showOrderDetails(const QString &orderId, bool refundMod
             ticketId, QDateTime::currentDateTime(), &quote);
         selectRefund->setEnabled(result.success);
         hint->setText(result ? tr("可退金额：%1（手续费 %2%，%3）")
-                                   .arg(formatMoney(quote.refundAmountCents))
+                                   .arg(common::formatMoney(quote.refundAmountCents))
                                    .arg(quote.ratePercent)
-                                   .arg(formatMoney(quote.feeCents))
+                                   .arg(common::formatMoney(quote.feeCents))
                              : result.error);
     };
     connect(table->selectionModel(), &QItemSelectionModel::selectionChanged,
@@ -264,8 +259,8 @@ void OrderController::confirmRefund(const QString &ticketId)
     }
     const QString message = tr("确定退票吗？\n\n手续费率：%1%\n手续费：%2\n退款金额：%3")
                                 .arg(quote.ratePercent)
-                                .arg(formatMoney(quote.feeCents))
-                                .arg(formatMoney(quote.refundAmountCents));
+                                .arg(common::formatMoney(quote.feeCents))
+                                .arg(common::formatMoney(quote.refundAmountCents));
     if (QMessageBox::question(m_dialogParent,
                               tr("确认退票"),
                               message,
@@ -283,8 +278,8 @@ void OrderController::confirmRefund(const QString &ticketId)
     QMessageBox::information(m_dialogParent,
                              tr("退票成功"),
                              tr("退款 %1，手续费 %2。")
-                                 .arg(formatMoney(receipt.refundAmountCents),
-                                      formatMoney(receipt.feeCents)));
+                                 .arg(common::formatMoney(receipt.refundAmountCents),
+                                      common::formatMoney(receipt.feeCents)));
 }
 
 void OrderController::updateActionButtons()

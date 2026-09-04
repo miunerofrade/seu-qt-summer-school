@@ -750,7 +750,7 @@ private:
     QTableView *m_table;
     QStandardItemModel *m_model;
 };
-} // namespace
+} // 命名空间
 
 void showStationManagementDialog(QWidget *parent, DataStore *dataStore)
 {

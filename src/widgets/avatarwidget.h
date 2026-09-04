@@ -15,7 +15,7 @@ public:
 protected:
     void paintEvent(QPaintEvent *) override
     {
-        // Render vectors on the widget's paint device, preserving the screen DPR.
+        // 在控件的绘制设备上渲染矢量图，并保留屏幕 DPR。
         QPainter painter(this);
         painter.setRenderHint(QPainter::Antialiasing);
         m_renderer.render(&painter, QRectF(rect()));

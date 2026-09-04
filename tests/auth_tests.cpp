@@ -54,7 +54,8 @@ class AuthTests final : public QObject
     Q_OBJECT
 private slots:
     void registrationPersistenceAndFailure();
-    void legacyMigrationAndBackup();
+    void currentDataAndBackup();
+    void oldVersionIsRejectedWithoutOverwrite();
     void ownersAndSharedInventory();
     void loginFormAndAnimation();
     void lastLoginPrefill();
@@ -101,7 +102,24 @@ void AuthTests::registrationPersistenceAndFailure()
     QVERIFY(!failing.login("new", "password"));
 }
 
-void AuthTests::legacyMigrationAndBackup()
+void AuthTests::currentDataAndBackup()
+{
+    QTemporaryDir dir;
+    const QString path = dir.filePath("app.json");
+    DataStore store(std::make_unique<JsonRepository>(path));
+    QVERIFY(store.initialize());
+    QCOMPARE(store.data().schemaVersion, domain::CurrentSchemaVersion);
+    QVERIFY(store.login("admin", "admin"));
+    QCOMPARE(store.data().passengers.first().ownerUserId, store.currentUserId());
+    QVERIFY(store.createBackup());
+    QVERIFY(store.registerUser("Alice", "password"));
+    QVERIFY(store.restoreBackup());
+    QCOMPARE(store.data().users.size(), 2);
+    QVERIFY(store.login("Alice", "password"));
+    QVERIFY(OrderService(&store).summaries().isEmpty());
+}
+
+void AuthTests::oldVersionIsRejectedWithoutOverwrite()
 {
     QTemporaryDir dir;
     const QString path = dir.filePath("app.json");
@@ -112,36 +130,15 @@ void AuthTests::legacyMigrationAndBackup()
     file.close();
     json.insert("schemaVersion", 3);
     json.remove("users");
-    QJsonArray passengers;
-    for (const auto &entry : json.value("passengers").toArray()) {
-        auto passenger = entry.toObject();
-        passenger.remove("ownerUserId");
-        passengers.append(passenger);
-    }
-    json.insert("passengers", passengers);
-    json.insert("orders", QJsonArray{QJsonObject{{"id", "legacy-order"},
-        {"createdAt", QDateTime::currentDateTime().toString(Qt::ISODate)},
-        {"ticketIds", QJsonArray{}}, {"totalAmountCents", 0}}});
     const QByteArray legacy = QJsonDocument(json).toJson();
     QVERIFY(file.open(QIODevice::WriteOnly | QIODevice::Truncate));
     QCOMPARE(file.write(legacy), legacy.size());
     file.close();
     DataStore store(std::make_unique<JsonRepository>(path));
-    QVERIFY(store.initialize());
-    QCOMPARE(store.data().schemaVersion, 4);
-    QCOMPARE(JsonRepository(path).load().data.schemaVersion, 4);
-    QVERIFY(store.login("admin", "admin"));
-    QCOMPARE(store.data().passengers.first().ownerUserId, store.currentUserId());
-    QCOMPARE(store.data().orders.first().ownerUserId, store.currentUserId());
-    QFile backup(store.backupFilePath());
-    QVERIFY(backup.open(QIODevice::WriteOnly));
-    QCOMPARE(backup.write(legacy), legacy.size());
-    backup.close();
-    QVERIFY(store.registerUser("Alice", "password"));
-    QVERIFY(store.restoreBackup());
-    QCOMPARE(store.data().users.size(), 2);
-    QVERIFY(store.login("Alice", "password"));
-    QVERIFY(OrderService(&store).summaries().isEmpty());
+    QVERIFY(!store.initialize());
+    QVERIFY(!store.isWritable());
+    QVERIFY(file.open(QIODevice::ReadOnly));
+    QCOMPARE(file.readAll(), legacy);
 }
 
 void AuthTests::ownersAndSharedInventory()
@@ -158,7 +155,7 @@ void AuthTests::ownersAndSharedInventory()
     QVERIFY(passengers.addPassenger("Alice", "护照", "P001", &alicePassenger));
     QVERIFY(!passengers.addPassenger("Duplicate", "护照", "P001"));
     BookingReceipt aliceOrder;
-    QVERIFY(BookingService(&store).book(requestFor(alicePassenger), &aliceOrder));
+    QVERIFY(BookingService(store).book(requestFor(alicePassenger), &aliceOrder));
     QCOMPARE(store.data().orders.last().ownerUserId, alice);
     QCOMPARE(OrderService(&store).summaries().size(), 1);
     QVERIFY(store.login("bob", "b"));
@@ -166,7 +163,7 @@ void AuthTests::ownersAndSharedInventory()
     QVERIFY(OrderService(&store).details(aliceOrder.orderId).isEmpty());
     QVERIFY(!passengers.updatePassenger(alicePassenger, "Hacked", "护照", "OTHER"));
     QVERIFY(!passengers.removePassenger(alicePassenger));
-    QVERIFY(!BookingService(&store).book(requestFor(alicePassenger)));
+    QVERIFY(!BookingService(store).book(requestFor(alicePassenger)));
     RefundQuote quote;
     QVERIFY(!RefundService(&store).quote(aliceOrder.ticketIds.first(), QDateTime::currentDateTime(), &quote));
     QVERIFY(!RefundService(&store).refund(aliceOrder.ticketIds.first(), QDateTime::currentDateTime()));
@@ -176,7 +173,7 @@ void AuthTests::ownersAndSharedInventory()
     QCOMPARE(model.rowCount(), 1);
     QCOMPARE(model.passengerAt(0)->id, bobPassenger);
     BookingReceipt bobOrder;
-    QVERIFY(BookingService(&store).book(requestFor(bobPassenger), &bobOrder));
+    QVERIFY(BookingService(store).book(requestFor(bobPassenger), &bobOrder));
     QCOMPARE(OrderService(&store).summaries().size(), 1);
     for (const auto &train : store.data().trains) {
         if (train.number == "G101" && train.railwayServiceDate == requestFor(bobPassenger).serviceDate) {
@@ -196,7 +193,7 @@ void AuthTests::ownersAndSharedInventory()
     store.logout();
     QCOMPARE(model.rowCount(), 0);
     QCOMPARE(orders.rowCount(), 0);
-    QVERIFY(!BookingService(&store).book(requestFor(bobPassenger)));
+    QVERIFY(!BookingService(store).book(requestFor(bobPassenger)));
 }
 
 void AuthTests::loginFormAndAnimation()
@@ -243,7 +240,7 @@ void AuthTests::loginFormAndAnimation()
     dialog.hide();
     QCOMPARE(rotation->state(), QAbstractAnimation::Stopped);
     QVERIFY(!store.isAdmin());
-    // Optional artifacts for visual inspection; kept in build output only.
+    // 可选的视觉检查产物；仅保留在构建输出中。
     if (!qEnvironmentVariableIsEmpty("QT_SYNC_AUTH_SCREENSHOT")) {
         LoginDialog preview(&store);
         preview.show();
@@ -283,6 +280,14 @@ void AuthTests::applicationSessionLifecycle()
         window = mainWindow();
         QVERIFY(window->isVisible());
         QVERIFY(!login->isVisible());
+        auto *departure = window->findChild<QComboBox *>("comboDepartureStation");
+        QVERIFY(window->focusWidget() != departure);
+        QVERIFY(window->focusWidget() != departure->lineEdit());
+        departure->setFocus();
+        QVERIFY(window->focusWidget() == departure || window->focusWidget() == departure->lineEdit());
+        QTest::keyClick(departure->lineEdit(), Qt::Key_Tab);
+        QVERIFY(window->focusWidget() != departure);
+        QVERIFY(window->focusWidget() != departure->lineEdit());
         window->findChild<QAction *>("actionLogout")->trigger();
         QTRY_VERIFY(window.isNull());
         QVERIFY(login->isVisible());
@@ -292,7 +297,7 @@ void AuthTests::applicationSessionLifecycle()
         window = mainWindow();
         QVERIFY(!login->isVisible());
     }
-    // Closing the controller destroys both windows before the backing data.
+    // 关闭控制器会在销毁后端数据前先销毁两个窗口。
     QVERIFY(window.isNull());
     QVERIFY(login.isNull());
 }
@@ -320,7 +325,7 @@ void AuthTests::lastLoginPrefill()
     QCOMPARE(password->text(), QStringLiteral("admin"));
     QVERIFY(store.currentUserId().isEmpty());
 
-    // A fresh store/dialog restores the form without authenticating.
+    // 新建存储库和对话框可在不认证的情况下恢复表单。
     DataStore restarted(std::make_unique<JsonRepository>(dir.filePath("app.json")));
     LoginDialog fresh(&restarted);
     QCOMPARE(fresh.findChild<QLineEdit *>("loginUsername")->text(), QStringLiteral("admin"));
@@ -361,7 +366,7 @@ void AuthTests::loginQuitShortcut()
 void AuthTests::roleNavigationAndLogout()
 {
     QTemporaryDir dir;
-    // Temporary storage keeps background station refreshes away from real user data.
+    // 临时存储可避免后台车站刷新影响真实用户数据。
     DataStore store(std::make_unique<JsonRepository>(dir.filePath("app.json")));
     QVERIFY(store.initialize());
     QVERIFY(store.registerUser("user", "pass"));

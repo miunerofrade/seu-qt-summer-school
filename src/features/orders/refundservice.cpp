@@ -113,7 +113,7 @@ OperationResult buildQuote(const domain::AppData &data,
     result->refundAmountCents = ticketIt->priceCents - result->feeCents;
     return OperationResult::ok();
 }
-} // namespace
+} // 命名空间
 
 RefundService::RefundService(DataStore *dataStore)
     : m_dataStore(dataStore)

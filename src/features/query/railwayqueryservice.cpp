@@ -77,8 +77,7 @@ void applySeatPriceFallbacks(QVector<TrainSeatOption> *seats)
     if (hardSeat == seats->cend())
         return;
     for (TrainSeatOption &seat : *seats) {
-        // 12306 commonly omits a separate W price entry.  On conventional
-        // trains standing tickets use the hard-seat fare for the same range.
+        // 12306 通常不会单独提供 W 价格项。在普速列车上，无座票使用同区间的硬座票价。
         if (seat.seatType == QObject::tr("无座") && seat.priceCents < 0)
             seat.priceCents = hardSeat->priceCents;
     }
@@ -194,7 +193,7 @@ bool rowFromJson(const QJsonObject &object, TrainQueryRow *row)
            && !row->originStationName.isEmpty() && !row->terminalStationName.isEmpty()
            && row->departureTime.isValid() && row->arrivalTime.isValid();
 }
-} // namespace
+} // 命名空间
 
 RailwayQueryService::RailwayQueryService(const QString &cacheDirectory, QObject *parent)
     : QObject(parent)
@@ -384,9 +383,8 @@ bool RailwayQueryService::parseTicketResponse(const QByteArray &payload,
         row.arrivalDayOffset = (departureMinute + row.durationMinutes) / (24 * 60);
         row.bookable = false;
         QHash<QChar, qint64> prices;
-        // Different generations of the page have placed fare groups in
-        // yp_info, yp_ex or yp_info_new. Prefer the newest field, then fill
-        // missing conventional-seat codes from the older representations.
+        // 不同版本的页面会将票价组放在 yp_info、yp_ex 或 yp_info_new 中。
+        // 优先使用最新字段，再从较旧表示中补齐缺失的普速座席代码。
         mergeSeatPrices(fields, 39, &prices);
         mergeSeatPrices(fields, 34, &prices);
         mergeSeatPrices(fields, 12, &prices);
@@ -636,7 +634,7 @@ bool RailwayQueryService::stationCatalogNeedsRefresh(const QDateTime &now) const
         fetchedAt = QDateTime::fromString(cache.value(QStringLiteral("stationsFetchedAt")).toString(), Qt::ISODate);
     else
         fetchedAt = QFileInfo(m_stationCatalogPath).lastModified();
-    // The station catalog changes infrequently. Ticket/price queries remain live.
+    // 车站目录变化不频繁；车票和价格查询仍保持实时。
     return !fetchedAt.isValid() || fetchedAt > now || fetchedAt.secsTo(now) >= 24 * 60 * 60;
 }
 

@@ -72,7 +72,7 @@ bool isOfficialStation(const DataStore *dataStore, const QString &code)
 {
     return !officialStationName(dataStore, code).isEmpty();
 }
-} // namespace
+} // 命名空间
 
 AdminService::AdminService(DataStore *dataStore)
     : m_dataStore(dataStore)
@@ -175,8 +175,7 @@ OperationResult AdminService::addTrain(const domain::Train &train)
             const QString officialName = officialStationName(m_dataStore, stop.stationCode);
             if (officialName.isEmpty())
                 return OperationResult::failure(QObject::tr("经停站 %1 不存在。").arg(stop.stationCode));
-            // Keep a read-only local mirror so the existing query and order
-            // services can resolve official station names and enabled state.
+            // 保留一个只读本地镜像，使现有查询和订单服务能够解析官方车站名称及启用状态。
             candidate.stations.append({stop.stationCode, officialName, officialName, true});
         }
         if (stationCodes.contains(stop.stationCode, Qt::CaseInsensitive))

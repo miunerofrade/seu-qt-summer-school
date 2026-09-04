@@ -24,7 +24,7 @@ SeatInventory seat(const QString &name,
 {
     return {name, QVector<SegmentInventory>(segments)};
 }
-} // namespace
+} // 命名空间
 
 QString ticketStatusKey(TicketStatus status)
 {
@@ -104,4 +104,4 @@ AppData createDemoData()
     return data;
 }
 
-} // namespace domain
+} // 命名空间 domain

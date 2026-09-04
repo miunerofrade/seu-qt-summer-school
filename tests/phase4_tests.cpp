@@ -51,6 +51,8 @@ private slots:
     void fourStationSegmentPurchasesBlockLongRoute();
     void railwayIdentitySharesSegmentsAcrossDisplayNumberChange();
     void recurringCustomTrainHasIndependentDailyInventory();
+    void bothBookingPathsRejectInvalidPassengersBeforeSaving();
+    void demoRevalidatesAfterImportNotification();
 };
 
 void PhaseFourTests::successfulBookingCreatesOrderTicketsAndDeductsSegments()
@@ -60,7 +62,7 @@ void PhaseFourTests::successfulBookingCreatesOrderTicketsAndDeductsSegments()
     QVERIFY(store);
     const QString passengerId = store->data().passengers.first().id;
     BookingReceipt receipt;
-    const OperationResult result = BookingService(store.get()).book(
+    const OperationResult result = BookingService(*store).book(
         {QStringLiteral("G101"), QDate::currentDate(), QStringLiteral("NKH"), QStringLiteral("AOH"),
          QStringLiteral("二等座"), {passengerId}},
         &receipt);
@@ -101,7 +103,7 @@ void PhaseFourTests::insufficientSeatsLeavesEverythingUnchanged()
     candidate.trains[0].seats[0].segments[1].remainingSeats = 1;
     QVERIFY(store->commit(candidate));
 
-    const OperationResult result = BookingService(store.get()).book(
+    const OperationResult result = BookingService(*store).book(
         {QStringLiteral("G101"), QDate::currentDate(), QStringLiteral("NKH"), QStringLiteral("AOH"),
          QStringLiteral("二等座"), {firstPassenger, second.id}});
     QVERIFY(!result);
@@ -117,7 +119,7 @@ void PhaseFourTests::duplicatePassengersAreRejected()
     auto store = initializedStore(directory.filePath(QStringLiteral("app.json")));
     QVERIFY(store);
     const QString passengerId = store->data().passengers.first().id;
-    const OperationResult result = BookingService(store.get()).book(
+    const OperationResult result = BookingService(*store).book(
         {QStringLiteral("G101"), QDate::currentDate(), QStringLiteral("NKH"), QStringLiteral("AOH"),
          QStringLiteral("二等座"), {passengerId, passengerId}});
     QVERIFY(!result);
@@ -133,7 +135,7 @@ void PhaseFourTests::saveFailureRollsBackMemoryState()
     QVERIFY(store.initialize());
     QVERIFY(store.login(QStringLiteral("admin"), QStringLiteral("admin")));
     const int remainingBefore = store.data().trains.first().seats.first().segments.first().remainingSeats;
-    const OperationResult result = BookingService(&store).book(
+    const OperationResult result = BookingService(store).book(
         {QStringLiteral("G101"), QDate::currentDate(), QStringLiteral("NKH"), QStringLiteral("AOH"),
          QStringLiteral("二等座"), {passengerId}});
     QVERIFY(!result);
@@ -151,7 +153,7 @@ void PhaseFourTests::demoBookingImportsOnlineTrainAndCreatesOrder()
     const QDate date = QDate::currentDate().addDays(1);
     BookingReceipt receipt;
 
-    const OperationResult result = BookingService(store.get()).bookDemo(
+    const OperationResult result = BookingService(*store).bookDemo(
         {QStringLiteral("G999"), date, QStringLiteral("NKH"), QStringLiteral("AOH"),
          QStringLiteral("二等座"), {passengerId}},
         {QStringLiteral("南京南"), QStringLiteral("上海虹桥"), QTime(10, 0), QTime(11, 20),
@@ -195,16 +197,16 @@ void PhaseFourTests::fourStationSegmentPurchasesBlockLongRoute()
     QVERIFY(store->commit(candidate));
     const QString p1 = store->data().passengers.at(0).id;
     const QString p2 = store->data().passengers.at(1).id;
-    QVERIFY(BookingService(store.get()).book(
+    QVERIFY(BookingService(*store).book(
         {QStringLiteral("T4"), QDate::currentDate(), QStringLiteral("S1"), QStringLiteral("S2"),
          QStringLiteral("二等座"), {p1}}));
-    QVERIFY(BookingService(store.get()).book(
+    QVERIFY(BookingService(*store).book(
         {QStringLiteral("T4"), QDate::currentDate(), QStringLiteral("S3"), QStringLiteral("S4"),
          QStringLiteral("二等座"), {p2}}));
     QCOMPARE(store->data().trains.last().seats.first().segments.at(0).remainingSeats, 0);
     QCOMPARE(store->data().trains.last().seats.first().segments.at(1).remainingSeats, 1);
     QCOMPARE(store->data().trains.last().seats.first().segments.at(2).remainingSeats, 0);
-    QVERIFY(!BookingService(store.get()).book(
+    QVERIFY(!BookingService(*store).book(
         {QStringLiteral("T4"), QDate::currentDate(), QStringLiteral("S1"), QStringLiteral("S4"),
          QStringLiteral("二等座"), {store->data().passengers.at(2).id}}));
     QCOMPARE(store->data().orders.size(), 2);
@@ -223,12 +225,12 @@ void PhaseFourTests::railwayIdentitySharesSegmentsAcrossDisplayNumberChange()
                                 {QStringLiteral("S3"), QStringLiteral("丙站"), QTime(10, 0), QTime(10, 5), 0},
                                 {QStringLiteral("S4"), QStringLiteral("丁站"), QTime(11, 0), {}, 0}}};
     const QString serviceId = QStringLiteral("opaque-service-id");
-    QVERIFY(BookingService(store.get()).bookDemo(
+    QVERIFY(BookingService(*store).bookDemo(
         {QStringLiteral("G100"), date, QStringLiteral("S1"), QStringLiteral("S2"),
          QStringLiteral("二等座"), {store->data().passengers.at(0).id}, serviceId}, snapshot));
     snapshot.departureStationName = QStringLiteral("丙站");
     snapshot.departureTime = QTime(10, 5);
-    QVERIFY(BookingService(store.get()).bookDemo(
+    QVERIFY(BookingService(*store).bookDemo(
         {QStringLiteral("G101"), date, QStringLiteral("S3"), QStringLiteral("S4"),
          QStringLiteral("二等座"), {store->data().passengers.at(1).id}, serviceId}, snapshot));
 
@@ -241,7 +243,7 @@ void PhaseFourTests::railwayIdentitySharesSegmentsAcrossDisplayNumberChange()
     QCOMPARE(service->seats.first().segments.at(1).remainingSeats, 1);
     QCOMPARE(service->seats.first().segments.at(2).remainingSeats, 0);
     QCOMPARE(store->data().tickets.last().trainNumber, QStringLiteral("G101"));
-    QVERIFY(!BookingService(store.get()).book(
+    QVERIFY(!BookingService(*store).book(
         {QStringLiteral("G100"), date, QStringLiteral("S1"), QStringLiteral("S4"),
          QStringLiteral("二等座"), {store->data().passengers.at(2).id}, serviceId}));
 }
@@ -253,10 +255,10 @@ void PhaseFourTests::recurringCustomTrainHasIndependentDailyInventory()
     QVERIFY(store);
     const QDate firstDate = QDate::currentDate().addDays(1);
     const QDate secondDate = firstDate.addDays(1);
-    QVERIFY(BookingService(store.get()).book(
+    QVERIFY(BookingService(*store).book(
         {QStringLiteral("G101"), firstDate, QStringLiteral("NKH"), QStringLiteral("AOH"),
          QStringLiteral("二等座"), {store->data().passengers.at(0).id}}));
-    QVERIFY(BookingService(store.get()).book(
+    QVERIFY(BookingService(*store).book(
         {QStringLiteral("G101"), secondDate, QStringLiteral("NKH"), QStringLiteral("AOH"),
          QStringLiteral("二等座"), {store->data().passengers.at(1).id}}));
     const auto remainingOn = [&](const QDate &date) {
@@ -270,6 +272,61 @@ void PhaseFourTests::recurringCustomTrainHasIndependentDailyInventory()
     QCOMPARE(remainingOn(firstDate), 39);
     QCOMPARE(remainingOn(secondDate), 39);
     QCOMPARE(store->data().trains.first().seats.first().segments.first().remainingSeats, 40);
+}
+
+void PhaseFourTests::bothBookingPathsRejectInvalidPassengersBeforeSaving()
+{
+    QTemporaryDir directory;
+    auto store = initializedStore(directory.filePath(QStringLiteral("app.json")));
+    QVERIFY(store);
+    QVERIFY(store->registerUser("alice", "a"));
+    QVERIFY(store->login("alice", "a"));
+    auto data = store->data();
+    data.passengers[0].ownerUserId = store->currentUserId();
+    QVERIFY(store->commit(data));
+    const QString own = data.passengers.at(0).id;
+    const QString other = data.passengers.at(1).id;
+    const DemoTrainSnapshot snapshot{"南京南", "上海虹桥", QTime(10, 0), QTime(11, 20),
+                                      0, 0, 16200, 20};
+    BookingService service(*store);
+    QSignalSpy changed(store.get(), &DataStore::dataChanged);
+    for (const QStringList &ids : {QStringList{own, own}, QStringList{other},
+                                  QStringList{"missing"}, QStringList{}, QStringList{""}}) {
+        const BookingRequest request{"G101", QDate::currentDate(), "NKH", "AOH", "二等座", ids};
+        QVERIFY(!service.book(request));
+        QVERIFY(!service.bookDemo(request, snapshot));
+    }
+    QCOMPARE(changed.count(), 0);
+    store->logout();
+    changed.clear(); // 注销本身会发出 dataChanged，以刷新账户范围内的视图。
+    const BookingRequest request{"G101", QDate::currentDate(), "NKH", "AOH", "二等座", {own}};
+    QVERIFY(!service.book(request));
+    QVERIFY(!service.bookDemo(request, snapshot));
+    QCOMPARE(changed.count(), 0);
+    QCOMPARE(store->data().trains.size(), data.trains.size());
+    QCOMPARE(store->data().orders.size(), data.orders.size());
+    QCOMPARE(store->data().tickets.size(), data.tickets.size());
+}
+
+void PhaseFourTests::demoRevalidatesAfterImportNotification()
+{
+    QTemporaryDir directory;
+    auto store = initializedStore(directory.filePath(QStringLiteral("app.json")));
+    QVERIFY(store);
+    const QString passenger = store->data().passengers.first().id;
+    bool notified = false;
+    QObject::connect(store.get(), &DataStore::dataChanged, store.get(), [&]() {
+        if (notified) return;
+        notified = true;
+        store->logout();
+    });
+    const auto result = BookingService(*store).bookDemo(
+        {"G999", QDate::currentDate(), "NKH", "AOH", "二等座", {passenger}},
+        {"南京南", "上海虹桥", QTime(10, 0), QTime(11, 20), 0, 0, 16200, 20});
+    QVERIFY(notified);
+    QVERIFY(!result);
+    QVERIFY(store->data().orders.isEmpty());
+    QVERIFY(store->data().tickets.isEmpty());
 }
 
 QTEST_GUILESS_MAIN(PhaseFourTests)

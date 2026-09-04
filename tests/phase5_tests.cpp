@@ -24,7 +24,7 @@ std::unique_ptr<DataStore> initializedStore(const QString &path, const QDate &se
 QString bookOne(DataStore *store, const QDate &serviceDate)
 {
     BookingReceipt receipt;
-    const OperationResult result = BookingService(store).book(
+    const OperationResult result = BookingService(*store).book(
         {QStringLiteral("G101"), serviceDate, QStringLiteral("NKH"), QStringLiteral("AOH"),
          QStringLiteral("二等座"), {store->data().passengers.first().id}},
         &receipt);
@@ -49,7 +49,7 @@ public:
 private:
     domain::AppData m_data;
 };
-} // namespace
+} // 命名空间
 
 class PhaseFiveTests final : public QObject
 {

@@ -99,7 +99,7 @@ bool editPassenger(QWidget *parent,
     formData->documentNumber = documentNumberEdit->text();
     return true;
 }
-} // namespace
+} // 命名空间
 
 PassengerController::PassengerController(DataStore *dataStore,
                                          QWidget *dialogParent,
