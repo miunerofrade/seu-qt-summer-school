@@ -12,6 +12,7 @@ class DataStore;
 
 struct OrderSummary
 {
+    QString ownerUsername;
     QString orderId;
     QDateTime createdAt;
     QStringList passengerNames;

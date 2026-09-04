@@ -120,6 +120,8 @@ void BookingController::bookSelected()
     auto *passengers = new QListWidget(&dialog);
     passengers->setSelectionMode(QAbstractItemView::NoSelection);
     for (const domain::Passenger &passenger : m_dataStore->data().passengers) {
+        if (!m_dataStore->canAccessOwner(passenger.ownerUserId))
+            continue;
         auto *item = new QListWidgetItem(
             tr("%1  ·  %2").arg(passenger.name, PassengerService::maskedDocumentNumber(passenger.documentNumber)),
             passengers);

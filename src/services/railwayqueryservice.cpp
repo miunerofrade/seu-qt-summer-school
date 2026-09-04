@@ -2,6 +2,7 @@
 
 #include <QDir>
 #include <QFile>
+#include <QFileInfo>
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
@@ -625,6 +626,18 @@ QVector<RailwayStation> RailwayQueryService::cachedStations() const
             stations.push_back({name, code});
     }
     return stations;
+}
+
+bool RailwayQueryService::stationCatalogNeedsRefresh(const QDateTime &now) const
+{
+    const QJsonObject cache = QJsonDocument::fromJson(cacheContents()).object();
+    QDateTime fetchedAt;
+    if (!cache.value(QStringLiteral("stations")).toArray().isEmpty())
+        fetchedAt = QDateTime::fromString(cache.value(QStringLiteral("stationsFetchedAt")).toString(), Qt::ISODate);
+    else
+        fetchedAt = QFileInfo(m_stationCatalogPath).lastModified();
+    // The station catalog changes infrequently. Ticket/price queries remain live.
+    return !fetchedAt.isValid() || fetchedAt > now || fetchedAt.secsTo(now) >= 24 * 60 * 60;
 }
 
 QVector<TrainQueryRow> RailwayQueryService::cachedAvailable(const QDateTime &now) const

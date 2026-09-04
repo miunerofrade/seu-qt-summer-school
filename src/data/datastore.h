@@ -44,6 +44,14 @@ public:
     LoadState loadState() const;
     QString errorMessage() const;
     bool isWritable() const;
+    OperationResult login(const QString &username, const QString &password);
+    OperationResult registerUser(const QString &username, const QString &password);
+    void logout();
+    QString currentUserId() const { return m_currentUserId; }
+    QString usernameFor(const QString &id) const;
+    bool isAdmin() const;
+    bool canAccessOwner(const QString &ownerId) const;
+    bool canAccessTicket(const QString &ticketId) const;
 
 signals:
     void dataChanged();
@@ -61,6 +69,7 @@ private:
     QDateTime m_lastSavedAt;
     QString m_lastSafetyBackupPath;
     bool m_writable = false;
+    QString m_currentUserId;
 };
 
 #endif // DATASTORE_H

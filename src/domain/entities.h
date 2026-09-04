@@ -10,7 +10,15 @@
 
 namespace domain {
 
-inline constexpr int CurrentSchemaVersion = 3;
+inline constexpr int CurrentSchemaVersion = 4;
+
+struct User
+{
+    QString id;
+    QString username;
+    QString password;
+    QString role;
+};
 
 enum class TicketStatus
 {
@@ -67,6 +75,7 @@ struct Passenger
     QString name;
     QString documentType;
     QString documentNumber;
+    QString ownerUserId = QStringLiteral("user-admin");
 };
 
 struct Order
@@ -75,6 +84,7 @@ struct Order
     QDateTime createdAt;
     QStringList ticketIds;
     qint64 totalAmountCents = 0;
+    QString ownerUserId = QStringLiteral("user-admin");
 };
 
 struct Ticket
@@ -111,6 +121,8 @@ struct AppData
     QVector<Ticket> tickets;
     QVector<RefundRecord> refunds;
     QStringList hiddenTrainNumbers;
+    QVector<User> users = {{QStringLiteral("user-admin"), QStringLiteral("admin"),
+                            QStringLiteral("admin"), QStringLiteral("admin")}};
 };
 
 QString ticketStatusKey(TicketStatus status);

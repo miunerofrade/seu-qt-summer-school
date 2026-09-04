@@ -21,6 +21,7 @@ public:
         SeatTypeColumn,
         PriceColumn,
         StatusColumn,
+        OwnerColumn,
         ColumnCount
     };
 

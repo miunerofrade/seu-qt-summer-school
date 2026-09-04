@@ -13,7 +13,7 @@ namespace {
 std::unique_ptr<DataStore> initializedStore(const QString &path)
 {
     auto store = std::make_unique<DataStore>(std::make_unique<JsonRepository>(path));
-    if (!store->initialize())
+    if (!store->initialize() || !store->login(QStringLiteral("admin"), QStringLiteral("admin")))
         return {};
     return store;
 }
@@ -131,6 +131,7 @@ void PhaseFourTests::saveFailureRollsBackMemoryState()
     const QString passengerId = initial.passengers.first().id;
     DataStore store(std::make_unique<FailingRepository>(initial));
     QVERIFY(store.initialize());
+    QVERIFY(store.login(QStringLiteral("admin"), QStringLiteral("admin")));
     const int remainingBefore = store.data().trains.first().seats.first().segments.first().remainingSeats;
     const OperationResult result = BookingService(&store).book(
         {QStringLiteral("G101"), QDate::currentDate(), QStringLiteral("NKH"), QStringLiteral("AOH"),

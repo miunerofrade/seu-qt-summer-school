@@ -90,7 +90,10 @@ QVector<OrderSummary> OrderService::summaries() const
 
     result.reserve(data.orders.size());
     for (const domain::Order &order : data.orders) {
+        if (!m_dataStore->canAccessOwner(order.ownerUserId))
+            continue;
         OrderSummary row;
+        row.ownerUsername = m_dataStore->usernameFor(order.ownerUserId);
         row.orderId = order.id;
         row.createdAt = order.createdAt;
         row.totalAmountCents = order.totalAmountCents;
@@ -129,7 +132,7 @@ QVector<OrderTicketDetail> OrderService::details(const QString &orderId) const
                                       [&orderId](const domain::Order &order) {
                                           return order.id == orderId;
                                       });
-    if (orderIt == data.orders.cend())
+    if (orderIt == data.orders.cend() || !m_dataStore->canAccessOwner(orderIt->ownerUserId))
         return result;
 
     QHash<QString, QString> passengerNames;

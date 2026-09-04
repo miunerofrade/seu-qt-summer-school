@@ -41,6 +41,7 @@ public:
     void queryRoute(const TrainQueryRow &row, RouteCallback callback);
 
     QVector<RailwayStation> cachedStations() const;
+    bool stationCatalogNeedsRefresh(const QDateTime &now = QDateTime::currentDateTime()) const;
     QVector<TrainQueryRow> cachedAll() const;
     QVector<TrainQueryRow> cachedAvailable(const QDateTime &now) const;
     QVector<TrainQueryRow> cachedQuery(const QString &fromCode,

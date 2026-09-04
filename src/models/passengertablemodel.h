@@ -19,6 +19,7 @@ public:
         NameColumn,
         DocumentTypeColumn,
         DocumentNumberColumn,
+        OwnerColumn,
         ColumnCount
     };
 
@@ -38,6 +39,7 @@ private:
     void reload();
 
     DataStore *m_dataStore;
+    QVector<int> m_rows;
 };
 
 #endif // PASSENGERTABLEMODEL_H

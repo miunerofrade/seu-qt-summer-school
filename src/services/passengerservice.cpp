@@ -47,6 +47,8 @@ OperationResult PassengerService::addPassenger(const QString &name,
                                                const QString &documentNumber,
                                                QString *createdId)
 {
+    if (m_dataStore->currentUserId().isEmpty())
+        return OperationResult::failure(QObject::tr("请先登录。"));
     const QString normalizedName = name.trimmed();
     const QString normalizedType = documentType.trimmed();
     QString normalizedNumber = documentNumber.trimmed();
@@ -62,6 +64,7 @@ OperationResult PassengerService::addPassenger(const QString &name,
     passenger.name = normalizedName;
     passenger.documentType = normalizedType;
     passenger.documentNumber = normalizedNumber;
+    passenger.ownerUserId = m_dataStore->currentUserId();
     candidate.passengers.append(passenger);
 
     const OperationResult result = m_dataStore->commit(std::move(candidate));
@@ -91,6 +94,9 @@ OperationResult PassengerService::updatePassenger(const QString &id,
     if (passenger == candidate.passengers.end())
         return OperationResult::failure(QObject::tr("所选乘车人已不存在。"));
 
+    if (!m_dataStore->canAccessOwner(passenger->ownerUserId))
+        return OperationResult::failure(QObject::tr("无权操作该乘车人。"));
+
     passenger->name = normalizedName;
     passenger->documentType = normalizedType;
     passenger->documentNumber = normalizedNumber;
@@ -115,6 +121,9 @@ OperationResult PassengerService::removePassenger(const QString &id)
                                         [&id](const domain::Passenger &item) { return item.id == id; });
     if (passenger == candidate.passengers.end())
         return OperationResult::failure(QObject::tr("所选乘车人已不存在。"));
+
+    if (!m_dataStore->canAccessOwner(passenger->ownerUserId))
+        return OperationResult::failure(QObject::tr("无权操作该乘车人。"));
 
     candidate.passengers.erase(passenger);
     return m_dataStore->commit(std::move(candidate));
@@ -153,10 +162,18 @@ OperationResult PassengerService::validate(const QString &name,
         return OperationResult::failure(QObject::tr("身份证号码必须为有效的 18 位号码（含正确校验码）。"));
 
     const auto &passengers = m_dataStore->data().passengers;
+    QString owner = m_dataStore->currentUserId();
+    for (const auto &passenger : passengers) {
+        if (passenger.id == excludedId) {
+            if (!m_dataStore->canAccessOwner(passenger.ownerUserId))
+                return OperationResult::failure(QObject::tr("无权操作该乘车人。"));
+            owner = passenger.ownerUserId;
+        }
+    }
     const bool duplicate = std::any_of(passengers.cbegin(),
                                        passengers.cend(),
-                                       [&documentNumber, &excludedId](const domain::Passenger &passenger) {
-                                           return passenger.id != excludedId
+                                       [&documentNumber, &excludedId, &owner](const domain::Passenger &passenger) {
+                                           return passenger.ownerUserId == owner && passenger.id != excludedId
                                                && passenger.documentNumber.compare(
                                                       documentNumber,
                                                       Qt::CaseInsensitive)

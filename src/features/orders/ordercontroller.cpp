@@ -77,6 +77,7 @@ OrderController::OrderController(DataStore *dataStore,
 
     m_proxy->setSourceModel(m_model);
     m_table->setModel(m_proxy);
+    m_table->setColumnHidden(OrderTableModel::OwnerColumn, !m_dataStore->isAdmin());
     m_table->setSelectionBehavior(QAbstractItemView::SelectRows);
     m_table->setSelectionMode(QAbstractItemView::SingleSelection);
     m_table->setEditTriggers(QAbstractItemView::NoEditTriggers);
@@ -172,6 +173,11 @@ QString OrderController::showOrderDetails(const QString &orderId, bool refundMod
     layout->setContentsMargins(20, 18, 20, 18);
     layout->setSpacing(12);
     layout->addWidget(new QLabel(tr("订单号：%1").arg(orderId), &dialog));
+    if (m_dataStore->isAdmin()) {
+        for (const auto &order : m_dataStore->data().orders)
+            if (order.id == orderId)
+                layout->addWidget(new QLabel(tr("所属账号：%1").arg(m_dataStore->usernameFor(order.ownerUserId)), &dialog));
+    }
 
     auto *table = new QTableView(&dialog);
     auto *model = new QStandardItemModel(0, 7, table);

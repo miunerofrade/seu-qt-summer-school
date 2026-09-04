@@ -126,6 +126,8 @@ OperationResult RefundService::quote(const QString &ticketId,
 {
     if (!m_dataStore)
         return OperationResult::failure(QStringLiteral("数据服务不可用。"));
+    if (!m_dataStore->canAccessTicket(ticketId))
+        return OperationResult::failure(QStringLiteral("无权操作该车票。"));
     return buildQuote(m_dataStore->data(), ticketId, now, result);
 }
 
@@ -135,6 +137,8 @@ OperationResult RefundService::refund(const QString &ticketId,
 {
     if (!m_dataStore)
         return OperationResult::failure(QStringLiteral("数据服务不可用。"));
+    if (!m_dataStore->canAccessTicket(ticketId))
+        return OperationResult::failure(QStringLiteral("无权操作该车票。"));
     domain::AppData candidate = m_dataStore->data();
     RefundQuote quoteResult;
     const OperationResult quoted = buildQuote(candidate, ticketId, now, &quoteResult);

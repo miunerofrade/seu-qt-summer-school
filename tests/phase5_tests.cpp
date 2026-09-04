@@ -15,7 +15,8 @@ std::unique_ptr<DataStore> initializedStore(const QString &path, const QDate &se
 {
     auto store = std::make_unique<DataStore>(std::make_unique<JsonRepository>(path));
     Q_UNUSED(serviceDate);
-    if (!store->initialize() || !store->commit(domain::createDemoData()))
+    if (!store->initialize() || !store->commit(domain::createDemoData())
+        || !store->login(QStringLiteral("admin"), QStringLiteral("admin")))
         return {};
     return store;
 }
@@ -163,6 +164,7 @@ void PhaseFiveTests::saveFailureRollsBackRefundAndInventory()
 
     DataStore store(std::make_unique<FailingRepository>(initial));
     QVERIFY(store.initialize());
+    QVERIFY(store.login(QStringLiteral("admin"), QStringLiteral("admin")));
     const int remainingBefore = store.data().trains[0].seats[0].segments[0].remainingSeats;
     QVERIFY(!RefundService(&store).refund(ticketId,
                                           QDateTime(serviceDate.addDays(-9), QTime(8, 0))));

@@ -34,7 +34,7 @@ namespace {
 std::unique_ptr<DataStore> initializedStore(const QString &path)
 {
     auto store = std::make_unique<DataStore>(std::make_unique<JsonRepository>(path));
-    if (!store->initialize())
+    if (!store->initialize() || !store->login(QStringLiteral("admin"), QStringLiteral("admin")))
         return {};
     return store;
 }

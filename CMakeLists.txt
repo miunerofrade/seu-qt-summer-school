@@ -15,12 +15,14 @@ if(WIN32 AND NOT CMAKE_PREFIX_PATH AND EXISTS "D:/Qt/Qt/6.11.2/mingw_64")
     set(CMAKE_PREFIX_PATH "D:/Qt/Qt/6.11.2/mingw_64" CACHE PATH "Qt installation prefix")
 endif()
 
-find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Widgets Network LinguistTools)
-find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets Network LinguistTools)
+find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Widgets Network LinguistTools Svg)
+find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets Network LinguistTools Svg)
 
 set(TS_FILES untitled_zh_CN.ts)
 
 set(PROJECT_SOURCES
+        src/features/auth/logindialog.cpp
+        src/features/auth/logindialog.h
         src/main.cpp
         src/app/mainwindow.cpp
         src/app/mainwindow.h
@@ -124,7 +126,7 @@ else()
     qt5_create_translation(QM_FILES ${CMAKE_SOURCE_DIR} ${TS_FILES})
 endif()
 
-target_link_libraries(untitled PRIVATE Qt${QT_VERSION_MAJOR}::Widgets Qt${QT_VERSION_MAJOR}::Network)
+target_link_libraries(untitled PRIVATE Qt${QT_VERSION_MAJOR}::Widgets Qt${QT_VERSION_MAJOR}::Network Qt${QT_VERSION_MAJOR}::Svg)
 target_include_directories(untitled PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/src
 )
@@ -160,6 +162,14 @@ endif()
 include(CTest)
 if(BUILD_TESTING)
     find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Test)
+    set(AUTH_TEST_SOURCES ${PROJECT_SOURCES})
+    list(REMOVE_ITEM AUTH_TEST_SOURCES src/main.cpp ${TS_FILES})
+    add_executable(auth_tests tests/auth_tests.cpp ${AUTH_TEST_SOURCES})
+    target_include_directories(auth_tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
+    target_link_libraries(auth_tests PRIVATE Qt${QT_VERSION_MAJOR}::Test
+        Qt${QT_VERSION_MAJOR}::Widgets Qt${QT_VERSION_MAJOR}::Network Qt${QT_VERSION_MAJOR}::Svg)
+    add_test(NAME auth_tests COMMAND auth_tests)
+    set_tests_properties(auth_tests PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
     add_executable(phase1_tests
         tests/phase1_tests.cpp
         src/domain/entities.cpp

@@ -29,6 +29,8 @@ BookingService::BookingService(DataStore *dataStore)
 
 OperationResult BookingService::book(const BookingRequest &request, BookingReceipt *receipt)
 {
+    if (!m_dataStore || m_dataStore->currentUserId().isEmpty())
+        return OperationResult::failure(QStringLiteral("请先登录。"));
     if (!m_dataStore || request.trainNumber.trimmed().isEmpty() || !request.serviceDate.isValid()
         || request.departureStationCode.isEmpty() || request.arrivalStationCode.isEmpty()
         || request.departureStationCode == request.arrivalStationCode || request.seatType.trimmed().isEmpty()
@@ -117,12 +119,15 @@ OperationResult BookingService::book(const BookingRequest &request, BookingRecei
                                      });
         if (it == candidate.passengers.cend())
             return OperationResult::failure(QStringLiteral("乘车人信息已变化，请重新选择。"));
+        if (!m_dataStore->canAccessOwner(it->ownerUserId))
+            return OperationResult::failure(QStringLiteral("无权使用该乘车人。"));
     }
 
     for (int segment = fromIndex; segment < toIndex; ++segment)
         seat.segments[segment].remainingSeats -= passengerCount;
 
     domain::Order order;
+    order.ownerUserId = m_dataStore->currentUserId();
     order.id = newId();
     order.createdAt = QDateTime::currentDateTime();
     order.totalAmountCents = unitPriceCents * passengerCount;
@@ -158,6 +163,8 @@ OperationResult BookingService::bookDemo(const BookingRequest &request,
                                          const DemoTrainSnapshot &snapshot,
                                          BookingReceipt *receipt)
 {
+    if (!m_dataStore || m_dataStore->currentUserId().isEmpty())
+        return OperationResult::failure(QStringLiteral("请先登录。"));
     if (!m_dataStore || snapshot.departureStationName.isEmpty()
         || snapshot.arrivalStationName.isEmpty() || !snapshot.departureTime.isValid()
         || !snapshot.arrivalTime.isValid() || snapshot.priceCents < 0
@@ -174,8 +181,8 @@ OperationResult BookingService::bookDemo(const BookingRequest &request,
         if (passengerId.isEmpty() || passengerIds.contains(passengerId))
             return OperationResult::failure(QStringLiteral("乘车人选择重复或无效。"));
         const bool exists = std::any_of(candidate.passengers.cbegin(), candidate.passengers.cend(),
-                                        [&passengerId](const domain::Passenger &passenger) {
-            return passenger.id == passengerId;
+                                        [this, &passengerId](const domain::Passenger &passenger) {
+            return passenger.id == passengerId && m_dataStore->canAccessOwner(passenger.ownerUserId);
         });
         if (!exists)
             return OperationResult::failure(QStringLiteral("乘车人信息已变化，请重新选择。"));

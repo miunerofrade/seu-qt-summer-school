@@ -55,6 +55,8 @@ QVariant OrderTableModel::data(const QModelIndex &index, int role) const
         return row->totalAmountCents;
     case StatusColumn:
         return static_cast<int>(row->status);
+    case OwnerColumn:
+        return row->ownerUsername;
     default:
         return {};
     }
@@ -70,7 +72,7 @@ QVariant OrderTableModel::headerData(int section, Qt::Orientation orientation, i
                                         QStringLiteral("出发日期"),
                                         QStringLiteral("席别"),
                                         QStringLiteral("票价"),
-                                        QStringLiteral("状态")};
+                                        QStringLiteral("状态"), QStringLiteral("所属账号")};
     return section >= 0 && section < headers.size() ? headers.at(section) : QVariant{};
 }
 
@@ -83,6 +85,7 @@ QString OrderTableModel::searchableText(int row) const
 {
     const OrderSummary *summary = rowAt(row);
     return summary ? summary->orderId + QLatin1Char('\n')
+                         + summary->ownerUsername + QLatin1Char('\n')
                          + summary->passengerNames.join(QLatin1Char('\n'))
                          + QLatin1Char('\n') + summary->trainNumbers.join(QLatin1Char('\n'))
                    : QString();

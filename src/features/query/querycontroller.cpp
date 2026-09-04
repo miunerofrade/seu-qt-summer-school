@@ -8,11 +8,15 @@
 #include "services/queryservice.h"
 
 #include <QAbstractItemView>
+#include <QAbstractListModel>
+#include <QCollator>
 #include <QCheckBox>
 #include <QComboBox>
 #include <QCompleter>
 #include <QDateEdit>
 #include <QEvent>
+#include <QElapsedTimer>
+#include <QDebug>
 #include <QHeaderView>
 #include <QMessageBox>
 #include <QPushButton>
@@ -21,6 +25,33 @@
 #include <QTimer>
 
 #include <algorithm>
+
+// Both station selectors share one read-only model. Replacing its data emits a
+// single reset instead of thousands of individual row insertion notifications.
+class StationListModel final : public QAbstractListModel
+{
+public:
+    explicit StationListModel(QObject *parent) : QAbstractListModel(parent) {}
+    int rowCount(const QModelIndex &parent = {}) const override
+    { return parent.isValid() ? 0 : m_stations.size(); }
+    QVariant data(const QModelIndex &index, int role) const override
+    {
+        if (!index.isValid() || index.row() < 0 || index.row() >= m_stations.size())
+            return {};
+        const auto &station = m_stations.at(index.row());
+        if (role == Qt::UserRole) return station.code;
+        if (role == Qt::DisplayRole || role == Qt::EditRole) return station.name;
+        return {};
+    }
+    void replace(QVector<RailwayStation> stations)
+    {
+        beginResetModel();
+        m_stations = std::move(stations);
+        endResetModel();
+    }
+private:
+    QVector<RailwayStation> m_stations;
+};
 
 namespace {
 QString selectedStationCode(const QComboBox *combo)
@@ -68,7 +99,26 @@ QueryController::QueryController(DataStore *dataStore,
     , m_model(new TrainQueryModel(this))
     , m_proxy(new TrainQueryFilterProxyModel(this))
     , m_railwayService(new RailwayQueryService(dataStore->dataDirectory(), this))
+    , m_stationModel(new StationListModel(this))
 {
+    QElapsedTimer timer;
+    timer.start();
+    const auto report = [&timer](const char *stage) {
+        const auto elapsed = timer.restart();
+        if (qEnvironmentVariableIsSet("QT_SYNC_PROFILE_STARTUP"))
+            qInfo("QueryController %s: %lld ms", stage, elapsed);
+    };
+    for (QComboBox *combo : {m_departureStation, m_arrivalStation}) {
+        combo->setSizeAdjustPolicy(QComboBox::AdjustToMinimumContentsLengthWithIcon);
+        combo->setMinimumContentsLength(10);
+        combo->setEditable(true);
+        combo->setInsertPolicy(QComboBox::NoInsert);
+        combo->setModel(m_stationModel);
+        combo->completer()->setCaseSensitivity(Qt::CaseInsensitive);
+        combo->completer()->setCompletionMode(QCompleter::PopupCompletion);
+        combo->completer()->setFilterMode(Qt::MatchContains);
+    }
+    report("station widgets");
     m_proxy->setSourceModel(m_model);
     m_model->setHiddenTrainNumbers(m_dataStore->data().hiddenTrainNumbers);
     m_proxy->sort(0, Qt::AscendingOrder);
@@ -101,12 +151,14 @@ QueryController::QueryController(DataStore *dataStore,
     });
     m_table->viewport()->installEventFilter(this);
     m_table->verticalHeader()->setVisible(false);
+    report("table");
 
     m_travelDate->setDate(QDate::currentDate());
-    const QVector<RailwayStation> stations = m_railwayService->cachedStations();
-    m_officialStationsReady = !stations.isEmpty();
-    loadStations(stations);
+    m_officialStations = m_railwayService->cachedStations();
+    m_officialStationsReady = !m_officialStations.isEmpty();
+    loadStations(m_officialStations);
     m_searchButton->setEnabled(m_officialStationsReady);
+    report("station model");
 
     connect(searchButton, &QPushButton::clicked, this, [this]() { executeQuery(); });
     connect(m_departureStation, qOverload<int>(&QComboBox::currentIndexChanged), this, [this]() {
@@ -123,24 +175,43 @@ QueryController::QueryController(DataStore *dataStore,
     connect(m_sortCombo, qOverload<int>(&QComboBox::currentIndexChanged), this, [this]() { applyFilters(); });
     connect(m_dataStore, &DataStore::dataChanged, this, [this]() {
         m_model->setHiddenTrainNumbers(m_dataStore->data().hiddenTrainNumbers);
-        loadStations(m_railwayService->cachedStations());
+        loadStations(m_officialStations);
     });
     showCachedTrains();
-    m_railwayService->refreshStations([this](QVector<RailwayStation> refreshed,
-                                             const QString &error) {
-        if (error.isEmpty() && !refreshed.isEmpty()) {
-            m_officialStationsReady = true;
-            loadStations(refreshed);
-        } else if (!m_officialStationsReady) {
-            // The local data can still be queried when the live catalog is
-            // temporarily unavailable, but do not leave the button disabled.
-            m_searchButton->setEnabled(true);
-        }
-    });
+    report("cached trains");
+    if (!m_officialStationsReady || m_railwayService->stationCatalogNeedsRefresh()) {
+        // Let the first frame render before HTTPS initialization; reuse a fresh
+        // catalog across logins instead of starting a network session every time.
+        QTimer::singleShot(300, this, [this]() {
+            m_railwayService->refreshStations([this](QVector<RailwayStation> refreshed,
+                                                     const QString &error) {
+                if (error.isEmpty() && !refreshed.isEmpty()) {
+                    if (!m_officialStationsReady)
+                        m_searchButton->setEnabled(true);
+                    m_officialStationsReady = true;
+                    m_officialStations = std::move(refreshed);
+                    loadStations(m_officialStations);
+                } else if (!m_officialStationsReady) {
+                    // Custom stations remain usable if the online catalog fails.
+                    m_searchButton->setEnabled(true);
+                }
+            });
+        });
+    }
+    report("station freshness check");
 }
 
 void QueryController::loadStations(const QVector<RailwayStation> &stations)
 {
+    QHash<QString, QString> namesByCode;
+    for (const auto &station : stations)
+        namesByCode.insert(station.code.toUpper(), station.name);
+    for (const auto &station : m_dataStore->data().stations)
+        if (station.enabled && !namesByCode.contains(station.code.toUpper()))
+            namesByCode.insert(station.code.toUpper(), station.name);
+    if (namesByCode == m_stationNamesByCode)
+        return;
+    m_stationNamesByCode = namesByCode;
     const QString departureCode = m_departureStation->currentData().toString().isEmpty()
                                       ? QStringLiteral("NKH")
                                       : m_departureStation->currentData().toString();
@@ -149,38 +220,24 @@ void QueryController::loadStations(const QVector<RailwayStation> &stations)
                                     : m_arrivalStation->currentData().toString();
     const QSignalBlocker departureBlocker(m_departureStation);
     const QSignalBlocker arrivalBlocker(m_arrivalStation);
-    m_departureStation->clear();
-    m_arrivalStation->clear();
-    QVector<RailwayStation> merged = stations;
-    for (const domain::Station &station : m_dataStore->data().stations) {
-        const bool exists = std::any_of(merged.cbegin(), merged.cend(), [&station](const RailwayStation &item) {
-            return item.code.compare(station.code, Qt::CaseInsensitive) == 0;
-        });
-        if (!exists && station.enabled)
-            merged.append({station.name, station.code});
-    }
-    std::sort(merged.begin(), merged.end(), [](const RailwayStation &left, const RailwayStation &right) {
-        return left.name.localeAwareCompare(right.name) < 0;
+    QVector<RailwayStation> merged;
+    merged.reserve(namesByCode.size());
+    for (auto it = namesByCode.cbegin(); it != namesByCode.cend(); ++it)
+        merged.append({it.value(), it.key()});
+    const QCollator collator;
+    std::sort(merged.begin(), merged.end(), [&collator](const RailwayStation &left, const RailwayStation &right) {
+        const int comparison = collator.compare(left.name, right.name);
+        return comparison == 0 ? left.code < right.code : comparison < 0;
     });
     QHash<QString, int> nameCounts;
     for (const RailwayStation &station : merged)
         ++nameCounts[station.name.toCaseFolded()];
-    for (const RailwayStation &station : merged) {
-        const QString text = nameCounts.value(station.name.toCaseFolded()) > 1
+    for (RailwayStation &station : merged) {
+        station.name = nameCounts.value(station.name.toCaseFolded()) > 1
                                  ? tr("%1（%2）").arg(station.name, station.code)
                                  : station.name;
-        m_departureStation->addItem(text, station.code);
-        m_arrivalStation->addItem(text, station.code);
     }
-    m_departureStation->setEditable(true);
-    m_arrivalStation->setEditable(true);
-    m_departureStation->setInsertPolicy(QComboBox::NoInsert);
-    m_arrivalStation->setInsertPolicy(QComboBox::NoInsert);
-    for (QComboBox *combo : {m_departureStation, m_arrivalStation}) {
-        combo->completer()->setCaseSensitivity(Qt::CaseInsensitive);
-        combo->completer()->setCompletionMode(QCompleter::PopupCompletion);
-        combo->completer()->setFilterMode(Qt::MatchContains);
-    }
+    m_stationModel->replace(std::move(merged));
     auto restore = [](QComboBox *combo, const QString &code, int fallback) {
         const int index = combo->findData(code);
         combo->setCurrentIndex(index >= 0 ? index : std::max(0, std::min(fallback, combo->count() - 1)));
@@ -191,14 +248,16 @@ void QueryController::loadStations(const QVector<RailwayStation> &stations)
 
 bool QueryController::isOfficialStation(const QString &code) const
 {
-    const QVector<RailwayStation> stations = m_railwayService->cachedStations();
-    return std::any_of(stations.cbegin(), stations.cend(), [&code](const RailwayStation &station) {
+    return std::any_of(m_officialStations.cbegin(), m_officialStations.cend(), [&code](const RailwayStation &station) {
         return station.code.compare(code, Qt::CaseInsensitive) == 0;
     });
 }
 
 void QueryController::loadFilterOptions(const QVector<TrainQueryRow> &rows)
 {
+    const QSignalBlocker trainBlocker(m_trainFilter);
+    const QSignalBlocker seatBlocker(m_seatFilter);
+    const QSignalBlocker sortBlocker(m_sortCombo);
     const QString trainNumber = m_trainFilter->currentData().toString();
     const QString seatType = m_seatFilter->currentData().toString();
     m_trainFilter->clear();

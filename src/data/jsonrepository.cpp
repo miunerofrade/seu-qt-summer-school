@@ -115,6 +115,7 @@ QJsonObject trainToJson(const Train &train)
 QJsonObject passengerToJson(const Passenger &passenger)
 {
     return {{QStringLiteral("id"), passenger.id},
+            {QStringLiteral("ownerUserId"), passenger.ownerUserId},
             {QStringLiteral("name"), passenger.name},
             {QStringLiteral("documentType"), passenger.documentType},
             {QStringLiteral("documentNumber"), passenger.documentNumber}};
@@ -126,6 +127,7 @@ QJsonObject orderToJson(const Order &order)
     for (const QString &ticketId : order.ticketIds)
         ticketIds.append(ticketId);
     return {{QStringLiteral("id"), order.id},
+            {QStringLiteral("ownerUserId"), order.ownerUserId},
             {QStringLiteral("createdAt"), order.createdAt.toString(Qt::ISODate)},
             {QStringLiteral("ticketIds"), ticketIds},
             {QStringLiteral("totalAmountCents"), static_cast<double>(order.totalAmountCents)}};
@@ -160,6 +162,12 @@ QJsonObject refundToJson(const RefundRecord &refund)
 
 QJsonObject appDataToJson(const AppData &data)
 {
+    QJsonArray users;
+    for (const User &user : data.users)
+        users.append(QJsonObject{{QStringLiteral("id"), user.id},
+                                 {QStringLiteral("username"), user.username},
+                                 {QStringLiteral("password"), user.password},
+                                 {QStringLiteral("role"), user.role}});
     QJsonArray stations;
     for (const Station &station : data.stations)
         stations.append(stationToJson(station));
@@ -183,6 +191,7 @@ QJsonObject appDataToJson(const AppData &data)
         hiddenTrainNumbers.append(number);
 
     return {{QStringLiteral("schemaVersion"), data.schemaVersion},
+            {QStringLiteral("users"), users},
             {QStringLiteral("stations"), stations},
             {QStringLiteral("trains"), trains},
             {QStringLiteral("passengers"), passengers},
@@ -337,6 +346,9 @@ bool parsePassenger(const QJsonValue &value, Passenger *passenger, QString *erro
         return false;
     }
     const QJsonObject object = value.toObject();
+    if (object.contains(QStringLiteral("ownerUserId"))
+        && !readString(object, "ownerUserId", &passenger->ownerUserId, error))
+        return false;
     return readString(object, "id", &passenger->id, error)
         && readString(object, "name", &passenger->name, error)
         && readString(object, "documentType", &passenger->documentType, error)
@@ -350,6 +362,9 @@ bool parseOrder(const QJsonValue &value, Order *order, QString *error)
         return false;
     }
     const QJsonObject object = value.toObject();
+    if (object.contains(QStringLiteral("ownerUserId"))
+        && !readString(object, "ownerUserId", &order->ownerUserId, error))
+        return false;
     QString createdAt;
     QJsonArray ticketIds;
     if (!readString(object, "id", &order->id, error)
@@ -456,13 +471,42 @@ bool appDataFromJson(const QJsonObject &object, AppData *data, QString *error)
     qint64 schemaVersion = 0;
     if (!readInteger(object, "schemaVersion", &schemaVersion, error))
         return false;
-    if (schemaVersion != 1 && schemaVersion != 2 && schemaVersion != CurrentSchemaVersion) {
+    if (schemaVersion < 1 || schemaVersion > CurrentSchemaVersion) {
         *error = QObject::tr("不支持的数据版本：%1，当前版本为 %2。")
                      .arg(schemaVersion)
                      .arg(CurrentSchemaVersion);
         return false;
     }
     data->schemaVersion = static_cast<int>(schemaVersion);
+    if (schemaVersion >= 4) {
+        QJsonArray users;
+        if (!readArray(object, "users", &users, error))
+            return false;
+        data->users.clear();
+        for (const auto &value : users) {
+            const QJsonObject entry = value.toObject();
+            User user;
+            if (!readString(entry, "id", &user.id, error)
+                || !readString(entry, "username", &user.username, error)
+                || !readString(entry, "password", &user.password, error)
+                || !readString(entry, "role", &user.role, error))
+                return false;
+            user.username = user.username.trimmed();
+            if (user.id.isEmpty() || user.username.isEmpty() || user.password.isEmpty()
+                || (user.role != QStringLiteral("admin") && user.role != QStringLiteral("user"))) {
+                *error = QObject::tr("账号记录格式错误。");
+                return false;
+            }
+            for (const auto &existing : data->users) {
+                if (existing.id == user.id
+                    || existing.username.compare(user.username, Qt::CaseInsensitive) == 0) {
+                    *error = QObject::tr("账号或账号 ID 重复。");
+                    return false;
+                }
+            }
+            data->users.append(user);
+        }
+    }
 
     QJsonArray stations;
     QJsonArray trains;
@@ -495,8 +539,6 @@ bool appDataFromJson(const QJsonObject &object, AppData *data, QString *error)
                 data->hiddenTrainNumbers.append(number);
         }
     }
-    data->schemaVersion = CurrentSchemaVersion;
-
     const bool parsed = parseList(stations, &data->stations, parseStation, error)
         && parseList(trains, &data->trains, parseTrain, error)
         && parseList(passengers, &data->passengers, parsePassenger, error)

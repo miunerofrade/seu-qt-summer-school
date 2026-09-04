@@ -5,6 +5,7 @@
 
 #include <QDir>
 #include <QFileInfo>
+#include <QUuid>
 
 DataStore::DataStore(std::unique_ptr<IDataRepository> repository, QObject *parent)
     : QObject(parent)
@@ -107,7 +108,9 @@ OperationResult DataStore::restoreBackup()
     if (!safetyResult)
         return OperationResult::failure(tr("重置前快照创建失败，未修改当前数据：%1").arg(safetyResult.error));
 
-    const OperationResult result = commit(backup.data);
+    domain::AppData restored = backup.data;
+    restored.users = m_data.users;
+    const OperationResult result = commit(std::move(restored));
     if (!result)
         return result;
     m_lastSafetyBackupPath = safetyPath;
@@ -189,6 +192,14 @@ OperationResult DataStore::loadFromRepository(bool createWhenMissing)
     }
 
     setReady(loaded.data);
+    if (loaded.data.schemaVersion < domain::CurrentSchemaVersion) {
+        m_data.schemaVersion = domain::CurrentSchemaVersion;
+        const OperationResult migrated = save();
+        if (!migrated) {
+            setError(migrated.error);
+            return migrated;
+        }
+    }
     m_lastSavedAt = QFileInfo(dataFilePath()).lastModified();
     emit dataChanged();
     emit statusChanged();
@@ -209,4 +220,70 @@ void DataStore::setReady(const domain::AppData &data)
     m_loadState = LoadState::Ready;
     m_errorMessage.clear();
     m_writable = true;
+}
+
+OperationResult DataStore::login(const QString &username, const QString &password)
+{
+    logout();
+    if (m_loadState != LoadState::Ready)
+        return OperationResult::failure(tr("数据尚未加载。"));
+    for (const auto &user : m_data.users) {
+        if (user.username.compare(username.trimmed(), Qt::CaseInsensitive) == 0
+            && user.password == password) {
+            m_currentUserId = user.id;
+            emit dataChanged();
+            return OperationResult::ok();
+        }
+    }
+    return OperationResult::failure(tr("账号或密码错误。"));
+}
+
+OperationResult DataStore::registerUser(const QString &username, const QString &password)
+{
+    const QString name = username.trimmed();
+    if (name.isEmpty() || password.isEmpty())
+        return OperationResult::failure(tr("账号和密码不能为空。"));
+    for (const auto &user : m_data.users) {
+        if (user.username.compare(name, Qt::CaseInsensitive) == 0)
+            return OperationResult::failure(tr("该账号已存在。"));
+    }
+    auto candidate = m_data;
+    candidate.users.append({QUuid::createUuid().toString(QUuid::WithoutBraces),
+                            name, password, QStringLiteral("user")});
+    return commit(std::move(candidate));
+}
+
+void DataStore::logout()
+{
+    m_currentUserId.clear();
+    emit dataChanged();
+}
+
+QString DataStore::usernameFor(const QString &id) const
+{
+    for (const auto &user : m_data.users)
+        if (user.id == id)
+            return user.username;
+    return id;
+}
+
+bool DataStore::isAdmin() const
+{
+    for (const auto &user : m_data.users)
+        if (user.id == m_currentUserId)
+            return user.role == QStringLiteral("admin");
+    return false;
+}
+
+bool DataStore::canAccessOwner(const QString &ownerId) const
+{
+    return !m_currentUserId.isEmpty() && (isAdmin() || ownerId == m_currentUserId);
+}
+
+bool DataStore::canAccessTicket(const QString &ticketId) const
+{
+    for (const auto &order : m_data.orders)
+        if (order.ticketIds.contains(ticketId) && canAccessOwner(order.ownerUserId))
+            return true;
+    return false;
 }

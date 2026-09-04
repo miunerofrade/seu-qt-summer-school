@@ -120,6 +120,7 @@ PassengerController::PassengerController(DataStore *dataStore,
 {
     m_proxy->setSourceModel(m_model);
     m_table->setModel(m_proxy);
+    m_table->setColumnHidden(PassengerTableModel::OwnerColumn, !dataStore->isAdmin());
     m_table->setSelectionBehavior(QAbstractItemView::SelectRows);
     m_table->setSelectionMode(QAbstractItemView::SingleSelection);
     m_table->setEditTriggers(QAbstractItemView::NoEditTriggers);

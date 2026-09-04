@@ -12,6 +12,7 @@ class QDateEdit;
 class QEvent;
 class QPushButton;
 class QTableView;
+class StationListModel;
 
 class QueryController final : public QObject
 {
@@ -57,6 +58,9 @@ private:
     class TrainQueryModel *m_model;
     class TrainQueryFilterProxyModel *m_proxy;
     RailwayQueryService *m_railwayService;
+    StationListModel *m_stationModel;
+    QVector<RailwayStation> m_officialStations;
+    QHash<QString, QString> m_stationNamesByCode;
 };
 
 #endif // QUERYCONTROLLER_H
