@@ -55,6 +55,7 @@ private slots:
     void legacyMigrationAndBackup();
     void ownersAndSharedInventory();
     void loginFormAndAnimation();
+    void lastLoginPrefill();
     void loginQuitShortcut();
     void roleNavigationAndLogout();
     void startupWithFullStationCatalog();
@@ -246,6 +247,41 @@ void AuthTests::loginFormAndAnimation()
         QTest::qWait(100);
         QVERIFY(preview.grab().save(qEnvironmentVariable("QT_SYNC_AUTH_SCREENSHOT")));
     }
+}
+
+void AuthTests::lastLoginPrefill()
+{
+    QTemporaryDir dir;
+    DataStore store(std::make_unique<JsonRepository>(dir.filePath("app.json")));
+    QVERIFY(store.initialize());
+    LoginDialog dialog(&store);
+    auto *username = dialog.findChild<QLineEdit *>("loginUsername");
+    auto *password = dialog.findChild<QLineEdit *>("loginPassword");
+    auto *submit = dialog.findChild<QPushButton *>("loginSubmit");
+    QVERIFY(username->text().isEmpty());
+    username->setText(" admin ");
+    password->setText("wrong");
+    submit->click();
+    QVERIFY(!QFile::exists(dir.filePath("login-preferences.json")));
+    password->setText("admin");
+    submit->click();
+    QVERIFY(QFile::exists(dir.filePath("login-preferences.json")));
+    store.logout();
+    dialog.resetForLogin();
+    QCOMPARE(username->text(), QStringLiteral("admin"));
+    QCOMPARE(password->text(), QStringLiteral("admin"));
+    QVERIFY(store.currentUserId().isEmpty());
+
+    // A fresh store/dialog restores the form without authenticating.
+    DataStore restarted(std::make_unique<JsonRepository>(dir.filePath("app.json")));
+    LoginDialog fresh(&restarted);
+    QCOMPARE(fresh.findChild<QLineEdit *>("loginUsername")->text(), QStringLiteral("admin"));
+    auto *restoredPassword = fresh.findChild<QLineEdit *>("loginPassword");
+    QCOMPARE(restoredPassword->text(), QStringLiteral("admin"));
+    QCOMPARE(restoredPassword->echoMode(), QLineEdit::Password);
+    QVERIFY(restarted.currentUserId().isEmpty());
+    fresh.findChild<QPushButton *>("loginSwitch")->click();
+    QVERIFY(restoredPassword->text().isEmpty());
 }
 
 void AuthTests::loginQuitShortcut()

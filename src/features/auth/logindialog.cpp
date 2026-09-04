@@ -2,6 +2,12 @@
 #include "data/datastore.h"
 
 #include <QAction>
+#include <QDir>
+#include <QFile>
+#include <QJsonDocument>
+#include <QJsonObject>
+#include <QSaveFile>
+#include <QDebug>
 #include <QEasingCurve>
 #include <QHideEvent>
 #include <QLabel>
@@ -172,6 +178,29 @@ LoginDialog::LoginDialog(DataStore *store, QWidget *parent) : QDialog(parent), m
     setTabOrder(m_confirmation, m_submit);
     setTabOrder(m_submit, m_switch);
     setRegistration(false);
+    loadLastLogin();
+}
+
+void LoginDialog::loadLastLogin()
+{
+    QFile file(QDir(m_store->dataDirectory()).filePath(QStringLiteral("login-preferences.json")));
+    if (!file.open(QIODevice::ReadOnly)) return;
+    const auto object = QJsonDocument::fromJson(file.readAll()).object();
+    m_username->setText(object.value(QStringLiteral("username")).toString());
+    m_password->setText(object.value(QStringLiteral("password")).toString());
+}
+
+void LoginDialog::saveLastLogin()
+{
+    // Local demo preference, deliberately plaintext like the account data.
+    QSaveFile file(QDir(m_store->dataDirectory()).filePath(QStringLiteral("login-preferences.json")));
+    const QByteArray contents = QJsonDocument(QJsonObject{
+        {QStringLiteral("username"), m_username->text()},
+        {QStringLiteral("password"), m_password->text()}
+    }).toJson();
+    if (!file.open(QIODevice::WriteOnly)
+        || file.write(contents) != contents.size() || !file.commit())
+        qWarning("Could not save login preferences; login remains available.");
 }
 
 void LoginDialog::setRegistration(bool registration)
@@ -213,6 +242,7 @@ void LoginDialog::submit()
         setRegistration(false);
         m_password->setFocus();
     } else {
+        saveLastLogin();
         m_password->clear();
         setBusy(true, tr("正在打开…"));
         emit authenticated();
@@ -232,6 +262,7 @@ void LoginDialog::setBusy(bool busy, const QString &message)
 void LoginDialog::resetForLogin()
 {
     setRegistration(false);
+    loadLastLogin();
     setBusy(false);
     m_username->setFocus();
 }

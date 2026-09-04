@@ -74,7 +74,7 @@ OperationResult DataStore::ensureBackup()
     if (QFileInfo::exists(path)) {
         const LoadResult loaded = JsonRepository(path).load();
         if (!loaded.success)
-            return OperationResult::failure(tr("基线备份不可用：%1").arg(loaded.error));
+            return OperationResult::failure(tr("备份不可用：%1").arg(loaded.error));
         return OperationResult::ok();
     }
     return createBackup();
@@ -95,9 +95,9 @@ OperationResult DataStore::restoreBackup()
 {
     const LoadResult backup = JsonRepository(backupFilePath()).load();
     if (backup.fileMissing)
-        return OperationResult::failure(tr("尚未创建基线备份。"));
+        return OperationResult::failure(tr("尚未创建备份。"));
     if (!backup.success)
-        return OperationResult::failure(tr("无法读取基线备份：%1").arg(backup.error));
+        return OperationResult::failure(tr("无法读取备份时间：%1").arg(backup.error));
 
     const QFileInfo dataFile(dataFilePath());
     const QString historyDirectory = QDir(dataFile.absolutePath()).filePath(QStringLiteral("backups"));

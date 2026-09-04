@@ -11,6 +11,7 @@
   <file alias="nav-search.svg">icons/nav-search.svg</file>
   <file alias="nav-search-white.svg">icons/nav-search-white.svg</file>
   <file alias="nav-users.svg">icons/nav-users.svg</file>
+  <file alias="avatar-placeholder.svg">icons/avatar-placeholder.svg</file>
   <file alias="nav-users-white.svg">icons/nav-users-white.svg</file>
   <file alias="nav-orders.svg">icons/nav-orders.svg</file>
   <file alias="nav-orders-white.svg">icons/nav-orders-white.svg</file>

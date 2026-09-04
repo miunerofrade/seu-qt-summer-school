@@ -27,6 +27,7 @@ set(PROJECT_SOURCES
         src/app/mainwindow.cpp
         src/app/mainwindow.h
         src/app/mainwindow.ui
+        src/widgets/avatarwidget.h
         src/widgets/dateedit.cpp
         src/widgets/dateedit.h
         src/widgets/dialogstyle.cpp

@@ -23,6 +23,8 @@ signals:
 private:
     void setRegistration(bool registration);
     void submit();
+    void loadLastLogin();
+    void saveLastLogin();
     DataStore *m_store;
     QLabel *m_title;
     QLabel *m_error;

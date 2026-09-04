@@ -72,9 +72,9 @@ void SettingsController::refresh()
     const QFileInfo backup(m_dataStore->backupFilePath());
     m_backupNoteLabel->setText(
         backup.exists()
-            ? tr("基线备份：%1（%2）")
+            ? tr("备份时间：%1（%2）")
                   .arg(backup.fileName(), backup.lastModified().toString(QStringLiteral("yyyy-MM-dd HH:mm:ss")))
-            : tr("尚未创建基线备份"));
+            : tr("尚未创建备份"));
     m_createBackupButton->setEnabled(ready);
     m_restoreBackupButton->setEnabled(ready && backup.exists());
 }
@@ -119,8 +119,8 @@ void SettingsController::createBackup()
     if (QFileInfo::exists(m_dataStore->backupFilePath())) {
         const auto answer = QMessageBox::question(
             m_dialogParent,
-            tr("更新基线备份"),
-            tr("这会用当前数据覆盖原基线，之后“恢复初始数据”将恢复到当前状态。是否继续？"),
+            tr("更新备份"),
+            tr("这会用当前数据覆盖原备份，之后“恢复备份”将恢复到当前状态。是否继续？"),
             QMessageBox::Yes | QMessageBox::No,
             QMessageBox::No);
         if (answer != QMessageBox::Yes)
@@ -132,14 +132,14 @@ void SettingsController::createBackup()
         return;
     }
     refresh();
-    QMessageBox::information(m_dialogParent, tr("备份完成"), tr("当前数据已保存为新的基线备份。"));
+    QMessageBox::information(m_dialogParent, tr("备份完成"), tr("当前数据已保存为新的备份。"));
 }
 
 void SettingsController::restoreBackup()
 {
     const auto answer = QMessageBox::warning(
         m_dialogParent,
-        tr("从基线恢复"),
+        tr("恢复备份"),
         tr("当前全部业务数据将被替换；系统会先自动保存一份重置前快照。是否继续？"),
         QMessageBox::Yes | QMessageBox::No,
         QMessageBox::No);
@@ -152,6 +152,6 @@ void SettingsController::restoreBackup()
     }
     QMessageBox::information(m_dialogParent,
                              tr("恢复完成"),
-                             tr("已恢复基线；原数据快照位于：\n%1")
+                             tr("已恢复备份；原数据快照位于：\n%1")
                                  .arg(m_dataStore->lastSafetyBackupPath()));
 }
