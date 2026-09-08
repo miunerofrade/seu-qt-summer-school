@@ -167,7 +167,22 @@ void PhaseTwoTests::scheduleValidationAndSeatReset()
     QVERIFY(service.replaceStops(QStringLiteral("G101"), validStops));
     const auto &train = store->data().trains.first();
     QCOMPARE(train.stops.size(), 2);
-    QVERIFY(train.seats.isEmpty());
+    QCOMPARE(train.seats.size(), 2);
+    QCOMPARE(train.seats.first().segments.size(), 1);
+    QCOMPARE(train.seats.first().segments.first().priceCents, qint64(15000));
+    QCOMPARE(train.seats.first().segments.first().remainingSeats, 35);
+
+    QVector<domain::TrainStop> expandedStops{
+        {QStringLiteral("NKH"), 0, {}, QTime(8, 0), 0},
+        {QStringLiteral("OHH"), 1, QTime(8, 45), QTime(8, 47), 0},
+        {QStringLiteral("AOH"), 2, QTime(9, 20), {}, 0}};
+    QVERIFY(service.replaceStops(QStringLiteral("G101"), expandedStops));
+    const auto &expandedSeat = store->data().trains.first().seats.first();
+    QCOMPARE(expandedSeat.segments.size(), 2);
+    QCOMPARE(expandedSeat.segments.at(0).priceCents + expandedSeat.segments.at(1).priceCents,
+             qint64(15000));
+    QCOMPARE(expandedSeat.segments.at(0).remainingSeats, 35);
+    QCOMPARE(expandedSeat.segments.at(1).remainingSeats, 35);
 }
 
 void PhaseTwoTests::seatInventoryValidation()
@@ -182,6 +197,16 @@ void PhaseTwoTests::seatInventoryValidation()
     QVector<domain::SeatInventory> valid{{QStringLiteral("商务座"), {{20000, 10, 8}, {18000, 10, 7}}}};
     QVERIFY(service.replaceSeats(QStringLiteral("G101"), valid));
     QCOMPARE(store->data().trains.first().seats.first().seatType, QStringLiteral("商务座"));
+    QCOMPARE(store->data().trains.first().seats.first().details.size(), 10);
+    QCOMPARE(domain::availableSeatCount(store->data().trains.first().seats.first(),
+                                        domain::segmentMask(0, 2)), 7);
+    auto details = store->data().trains.first().seats.first().details;
+    for (domain::SeatDetail &detail : details)
+        detail.occupiedMask = 0;
+    QVERIFY(service.replaceSeatDetails(QStringLiteral("G101"), QStringLiteral("商务座"), details));
+    QCOMPARE(store->data().trains.first().seats.first().segments.first().remainingSeats, 10);
+    details.first().occupiedMask = quint64(1) << 10;
+    QVERIFY(!service.replaceSeatDetails(QStringLiteral("G101"), QStringLiteral("商务座"), details));
 }
 
 void PhaseTwoTests::referencedBaseDataCannotBeDeleted()
@@ -204,6 +229,9 @@ void PhaseTwoTests::referencedBaseDataCannotBeDeleted()
     QVERIFY(store->commit(candidate));
     QVERIFY(service.removeTrain(QStringLiteral("G101")));
     QVERIFY(store->data().hiddenTrainNumbers.contains(QStringLiteral("G101")));
+    QVERIFY(service.restoreTrain(QStringLiteral("g101")));
+    QVERIFY(!store->data().hiddenTrainNumbers.contains(QStringLiteral("G101"), Qt::CaseInsensitive));
+    QVERIFY(!service.restoreTrain(QStringLiteral("G101")));
     QVERIFY(service.updateStation(QStringLiteral("NKH"), QStringLiteral("南京南"), QStringLiteral("南京"), false));
 }
 

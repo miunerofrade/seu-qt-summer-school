@@ -159,12 +159,23 @@ OperationResult RefundService::refund(const QString &ticketId,
                                });
     if (seatIt == train.seats.end() || seatIt->segments.size() < toIndex)
         return OperationResult::failure(QStringLiteral("找不到车票对应的席别区间。"));
-    for (int segment = fromIndex; segment < toIndex; ++segment) {
-        if (seatIt->segments.at(segment).remainingSeats >= seatIt->segments.at(segment).totalSeats)
-            return OperationResult::failure(QStringLiteral("区间余票数据异常，无法恢复余票。"));
+    const quint64 requestMask = domain::segmentMask(fromIndex, toIndex);
+    auto detailIt = std::find_if(seatIt->details.begin(), seatIt->details.end(),
+                                 [&ticketIt](const domain::SeatDetail &detail) {
+        return !ticketIt->seatId.isEmpty() && detail.seatId == ticketIt->seatId;
+    });
+    // 兼容旧版未记录 seatId 的有效票：仅释放一个完整占用该行程的座位。
+    if (detailIt == seatIt->details.end() && ticketIt->seatId.isEmpty()) {
+        detailIt = std::find_if(seatIt->details.begin(), seatIt->details.end(),
+                                [requestMask](const domain::SeatDetail &detail) {
+            return (detail.occupiedMask & requestMask) == requestMask;
+        });
     }
-    for (int segment = fromIndex; segment < toIndex; ++segment)
-        ++seatIt->segments[segment].remainingSeats;
+    if (requestMask == 0 || detailIt == seatIt->details.end()
+        || (detailIt->occupiedMask & requestMask) != requestMask)
+        return OperationResult::failure(QStringLiteral("座位占用数据异常，无法释放座位。"));
+    detailIt->occupiedMask &= ~requestMask;
+    domain::syncRemainingSeats(&*seatIt);
 
     ticketIt->status = domain::TicketStatus::Refunded;
     domain::RefundRecord record;

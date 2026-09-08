@@ -26,6 +26,7 @@ public:
                     QComboBox *trainFilter,
                     QComboBox *seatFilter,
                     QCheckBox *availableOnly,
+                    QCheckBox *useRailwayData,
                     QComboBox *sortCombo,
                     QObject *parent = nullptr);
 
@@ -37,6 +38,8 @@ private:
     bool isOfficialStation(const QString &code) const;
     void loadFilterOptions(const QVector<TrainQueryRow> &rows);
     void executeQuery();
+    void switchDataSource();
+    void refreshOfficialStations();
     void showCachedTrains();
     void showRows(QVector<TrainQueryRow> rows);
     void applyFilters();
@@ -54,6 +57,7 @@ private:
     QComboBox *m_trainFilter;
     QComboBox *m_seatFilter;
     QCheckBox *m_availableOnly;
+    QCheckBox *m_useRailwayData;
     QComboBox *m_sortCombo;
     class TrainQueryModel *m_model;
     class TrainQueryFilterProxyModel *m_proxy;

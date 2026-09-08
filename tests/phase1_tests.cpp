@@ -113,6 +113,14 @@ void PhaseOneTests::jsonRoundTripPreservesDomainData()
     QCOMPARE(loaded.data.trains.first().number, QStringLiteral("G101"));
     QCOMPARE(loaded.data.hiddenTrainNumbers, QStringList{QStringLiteral("G205")});
     QCOMPARE(loaded.data.trains.first().seats.first().segments.at(1).remainingSeats, 35);
+    QVERIFY(!loaded.data.trains.first().seats.first().details.isEmpty());
+    QFile jsonFile(path);
+    QVERIFY(jsonFile.open(QIODevice::ReadOnly));
+    const QJsonObject root = QJsonDocument::fromJson(jsonFile.readAll()).object();
+    const QJsonObject detail = root.value("trains").toArray().first().toObject()
+        .value("seats").toArray().first().toObject()
+        .value("details").toArray().first().toObject();
+    QVERIFY(detail.value("occupiedMask").isDouble());
 }
 
 void PhaseOneTests::corruptJsonIsNotOverwritten()

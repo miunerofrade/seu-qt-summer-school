@@ -25,6 +25,7 @@ struct BookingReceipt
 {
     QString orderId;
     QStringList ticketIds;
+    QStringList seatIds;
     qint64 totalAmountCents = 0;
 };
 

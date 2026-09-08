@@ -50,41 +50,15 @@ void BookingController::bookSelected()
     const TrainSeatOption *seat = m_model->selectedSeatAt(sourceIndex.row());
     if (!row || !seat)
         return;
+    if (!row->bookable) {
+        QMessageBox::information(m_table,
+                                 tr("外部数据只读"),
+                                 tr("12306 是可选外部查询源，不参与本地座位分配。请取消勾选“使用 12306 数据（外部）”，从本地车次完成演示购票。"));
+        return;
+    }
     if (seat->priceCents < 0) {
         QMessageBox::information(m_table, tr("购票"), tr("该席别没有可用票价，请切换其他席别。"));
         return;
-    }
-
-    QVector<DemoTrainSnapshot::RouteStop> routeStops;
-    if (!row->bookable) {
-        if (row->railwayTrainId.isEmpty()) {
-            QMessageBox::warning(m_table,
-                                 tr("无法安全购票"),
-                                 tr("这条旧缓存没有 12306 内部车次标识，无法取得完整经停站并进行区间扣减。请重新在线查询，或使用自定义车次完成课程演示。"));
-            return;
-        }
-        QVector<RailwayRouteStop> railwayStops;
-        QString routeError;
-        QEventLoop waitLoop;
-        m_bookButton->setEnabled(false);
-        m_bookButton->setText(tr("读取经停站…"));
-        m_railwayService->queryRoute(*row, [&](QVector<RailwayRouteStop> stops, const QString &error) {
-            railwayStops = std::move(stops);
-            routeError = error;
-            waitLoop.quit();
-        });
-        waitLoop.exec();
-        m_bookButton->setText(tr("购票"));
-        m_bookButton->setEnabled(true);
-        if (!routeError.isEmpty() || railwayStops.size() < 2) {
-            QMessageBox::warning(m_table,
-                                 tr("无法安全购票"),
-                                 routeError.isEmpty() ? tr("没有取得完整经停站，已取消本次演示购票以避免错误扣减。")
-                                                      : routeError);
-            return;
-        }
-        for (const RailwayRouteStop &stop : railwayStops)
-            routeStops.append({stop.code, stop.name, stop.arrivalTime, stop.departureTime, stop.dayOffset});
     }
 
     QDialog dialog(m_table);
@@ -132,9 +106,7 @@ void BookingController::bookSelected()
     confirmButton->setEnabled(false);
     layout->addWidget(buttons);
 
-    auto *disclaimer = new QLabel(
-        tr("数据来自中国铁路12306；本页面购票仅用于课程演示，不能用于真实购票。"),
-        &dialog);
+    auto *disclaimer = new QLabel(tr("当前使用本地演示数据；座位按乘车区间掩码分配。"), &dialog);
     disclaimer->setWordWrap(true);
     disclaimer->setAlignment(Qt::AlignCenter);
     disclaimer->setStyleSheet(QStringLiteral("color: #8E8E93; font-size: 12px; padding: 6px 0 2px 0;"));
@@ -164,20 +136,7 @@ void BookingController::bookSelected()
                                      passengerIds,
                                      row->railwayTrainId};
         BookingService service(*m_dataStore);
-        const OperationResult result = row->bookable
-            ? service.book(request, &receipt)
-            : service.bookDemo(request,
-                               {row->departureStationName,
-                                row->arrivalStationName,
-                                row->departureTime,
-                                row->arrivalTime,
-                                row->departureDayOffset,
-                                row->arrivalDayOffset,
-                                seat->priceCents,
-                                seat->availabilityText == QStringLiteral("有")
-                                    ? 50 : seat->remainingSeats,
-                                routeStops},
-                               &receipt);
+        const OperationResult result = service.book(request, &receipt);
         if (!result) {
             QMessageBox::warning(&dialog, tr("购票失败"), result.error);
             return;
@@ -189,8 +148,9 @@ void BookingController::bookSelected()
     if (bookingSucceeded) {
         QMessageBox::information(m_table,
                                  tr("购票成功"),
-                                 tr("本地演示订单已生成：%1\n共出票 %2 张，合计 %3。")
+                                 tr("本地演示订单已生成：%1\n座位：%2\n共出票 %3 张，合计 %4。")
                                      .arg(receipt.orderId)
+                                     .arg(receipt.seatIds.join(QStringLiteral("、")))
                                      .arg(receipt.ticketIds.size())
                                      .arg(common::formatMoney(receipt.totalAmountCents)));
     }

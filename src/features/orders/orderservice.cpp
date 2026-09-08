@@ -161,6 +161,7 @@ QVector<OrderTicketDetail> OrderService::details(const QString &orderId) const
                        train && fromStop ? stopDateTime(*train, *fromStop, ticketIt->serviceDate, true) : QDateTime(),
                        train && toStop ? stopDateTime(*train, *toStop, ticketIt->serviceDate, false) : QDateTime(),
                        ticketIt->seatType,
+                       ticketIt->seatId,
                        ticketIt->priceCents,
                        ticketIt->status});
     }

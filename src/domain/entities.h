@@ -10,7 +10,7 @@
 
 namespace domain {
 
-inline constexpr int CurrentSchemaVersion = 4;
+inline constexpr int CurrentSchemaVersion = 5;
 
 struct User
 {
@@ -51,10 +51,18 @@ struct SegmentInventory
     int remainingSeats = 0;
 };
 
+struct SeatDetail
+{
+    QString seatId;
+    quint64 occupiedMask = 0;
+};
+
 struct SeatInventory
 {
     QString seatType;
     QVector<SegmentInventory> segments;
+    // 座位级库存是真实分配依据；segments.remainingSeats 仅作为查询展示缓存。
+    QVector<SeatDetail> details;
 };
 
 struct Train
@@ -98,6 +106,7 @@ struct Ticket
     TicketStatus status = TicketStatus::Issued;
     QDate serviceDate;
     QString railwayTrainId;
+    QString seatId;
 };
 
 struct RefundRecord
@@ -126,6 +135,12 @@ struct AppData
 
 QString ticketStatusKey(TicketStatus status);
 bool ticketStatusFromKey(const QString &key, TicketStatus *status);
+quint64 segmentMask(int fromIndex, int toIndex);
+QString seatIdForIndex(const QString &seatType, int index);
+void rebuildSeatDetails(SeatInventory *inventory);
+void renumberSeatDetails(SeatInventory *inventory);
+void syncRemainingSeats(SeatInventory *inventory);
+int availableSeatCount(const SeatInventory &inventory, quint64 requestMask);
 AppData createDemoData();
 
 } // 命名空间 domain

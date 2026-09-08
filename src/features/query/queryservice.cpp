@@ -88,7 +88,10 @@ bool appendRow(const domain::Train &train,
         if (seat.segments.size() < toIndex)
             continue;
         qint64 priceCents = 0;
-        int remainingSeats = std::numeric_limits<int>::max();
+        qint64 requestMask = domain::segmentMask(fromIndex, toIndex);
+        int remainingSeats = seat.details.isEmpty()
+            ? std::numeric_limits<int>::max()
+            : domain::availableSeatCount(seat, requestMask);
         bool valid = true;
         for (int segment = fromIndex; segment < toIndex; ++segment) {
             const domain::SegmentInventory &inventory = seat.segments.at(segment);
@@ -97,7 +100,8 @@ bool appendRow(const domain::Train &train,
                 break;
             }
             priceCents += inventory.priceCents;
-            remainingSeats = std::min(remainingSeats, inventory.remainingSeats);
+            if (seat.details.isEmpty())
+                remainingSeats = std::min(remainingSeats, inventory.remainingSeats);
         }
         if (valid) {
             row.seats.append({seat.seatType,
@@ -135,6 +139,9 @@ QVector<TrainQueryRow> QueryService::query(const TrainQueryRequest &request,
         return rows;
 
     for (const domain::Train &train : data.trains) {
+        // 外部数据快照不进入本地查询主流程。
+        if (!train.railwayTrainId.isEmpty())
+            continue;
         if (data.hiddenTrainNumbers.contains(train.number, Qt::CaseInsensitive))
             continue;
         if (train.railwayServiceDate.isValid() && train.railwayServiceDate != request.serviceDate)
@@ -178,6 +185,8 @@ QVector<TrainQueryRow> QueryService::available(const QDateTime &notDepartedAfter
         stations.insert(station.code, station);
 
     for (const domain::Train &train : data.trains) {
+        if (!train.railwayTrainId.isEmpty())
+            continue;
         if (train.stops.size() < 2
             || data.hiddenTrainNumbers.contains(train.number, Qt::CaseInsensitive))
             continue;

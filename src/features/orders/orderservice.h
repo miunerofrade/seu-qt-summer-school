@@ -34,6 +34,7 @@ struct OrderTicketDetail
     QDateTime departureAt;
     QDateTime arrivalAt;
     QString seatType;
+    QString seatId;
     qint64 priceCents = 0;
     domain::TicketStatus status = domain::TicketStatus::Issued;
 };

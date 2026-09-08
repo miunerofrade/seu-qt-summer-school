@@ -2,9 +2,22 @@
 
 #include <QUuid>
 
+#include <algorithm>
+
 namespace domain {
 
 namespace {
+QString seatPositions(const QString &seatType)
+{
+    if (seatType.contains(QStringLiteral("商务")))
+        return QStringLiteral("ACF");
+    if (seatType.contains(QStringLiteral("一等")))
+        return QStringLiteral("ACDF");
+    if (seatType.contains(QStringLiteral("二等")))
+        return QStringLiteral("ABCDF");
+    return QStringLiteral("ABCDE");
+}
+
 QString newId()
 {
     return QUuid::createUuid().toString(QUuid::WithoutBraces);
@@ -22,7 +35,9 @@ TrainStop stop(const QString &stationCode,
 SeatInventory seat(const QString &name,
                    std::initializer_list<SegmentInventory> segments)
 {
-    return {name, QVector<SegmentInventory>(segments)};
+    SeatInventory inventory{name, QVector<SegmentInventory>(segments)};
+    rebuildSeatDetails(&inventory);
+    return inventory;
 }
 } // 命名空间
 
@@ -52,6 +67,85 @@ bool ticketStatusFromKey(const QString &key, TicketStatus *status)
     else
         return false;
     return true;
+}
+
+quint64 segmentMask(int fromIndex, int toIndex)
+{
+    // JSON 以十进制数保存；限制到 53 位可保证 IEEE-754 整数往返无损。
+    if (fromIndex < 0 || toIndex <= fromIndex || toIndex > 53)
+        return 0;
+    quint64 mask = 0;
+    for (int segment = fromIndex; segment < toIndex; ++segment)
+        mask |= (quint64(1) << segment);
+    return mask;
+}
+
+QString seatIdForIndex(const QString &seatType, int index)
+{
+    if (index < 0)
+        return {};
+    const QString positions = seatPositions(seatType);
+    constexpr int RowsPerCarriage = 14;
+    const int globalRow = index / positions.size();
+    const int carriage = globalRow / RowsPerCarriage + 1;
+    const int row = globalRow % RowsPerCarriage + 1;
+    const QChar position = positions.at(index % positions.size());
+    return QStringLiteral("%1车%2%3")
+        .arg(carriage, 2, 10, QLatin1Char('0'))
+        .arg(row, 2, 10, QLatin1Char('0'))
+        .arg(position);
+}
+
+void rebuildSeatDetails(SeatInventory *inventory)
+{
+    if (!inventory)
+        return;
+    int seatCount = 0;
+    for (const SegmentInventory &segment : std::as_const(inventory->segments))
+        seatCount = std::max(seatCount, segment.totalSeats);
+
+    inventory->details.clear();
+    inventory->details.reserve(seatCount);
+    for (int index = 0; index < seatCount; ++index) {
+        SeatDetail detail{seatIdForIndex(inventory->seatType, index), 0};
+        for (int segmentIndex = 0; segmentIndex < inventory->segments.size(); ++segmentIndex) {
+            const SegmentInventory &segment = inventory->segments.at(segmentIndex);
+            if (index >= segment.remainingSeats)
+                detail.occupiedMask |= (quint64(1) << segmentIndex);
+        }
+        inventory->details.append(std::move(detail));
+    }
+}
+
+void renumberSeatDetails(SeatInventory *inventory)
+{
+    if (!inventory)
+        return;
+    for (int index = 0; index < inventory->details.size(); ++index)
+        inventory->details[index].seatId = seatIdForIndex(inventory->seatType, index);
+}
+
+void syncRemainingSeats(SeatInventory *inventory)
+{
+    if (!inventory)
+        return;
+    for (int segmentIndex = 0; segmentIndex < inventory->segments.size(); ++segmentIndex) {
+        const quint64 mask = quint64(1) << segmentIndex;
+        int available = 0;
+        for (const SeatDetail &detail : std::as_const(inventory->details))
+            available += (detail.occupiedMask & mask) == 0;
+        inventory->segments[segmentIndex].remainingSeats = available;
+    }
+}
+
+int availableSeatCount(const SeatInventory &inventory, quint64 requestMask)
+{
+    if (requestMask == 0)
+        return 0;
+    return static_cast<int>(std::count_if(inventory.details.cbegin(), inventory.details.cend(),
+                                          [requestMask](const SeatDetail &detail) {
+        return (detail.occupiedMask & requestMask) == 0;
+    }));
 }
 
 AppData createDemoData()

@@ -203,6 +203,9 @@ void PhaseFourTests::fourStationSegmentPurchasesBlockLongRoute()
     QVERIFY(BookingService(*store).book(
         {QStringLiteral("T4"), QDate::currentDate(), QStringLiteral("S3"), QStringLiteral("S4"),
          QStringLiteral("二等座"), {p2}}));
+    QCOMPARE(store->data().tickets.at(0).seatId, QStringLiteral("01车01A"));
+    QCOMPARE(store->data().tickets.at(1).seatId, QStringLiteral("01车01A"));
+    QCOMPARE(store->data().trains.last().seats.first().details.first().occupiedMask, quint64(5));
     QCOMPARE(store->data().trains.last().seats.first().segments.at(0).remainingSeats, 0);
     QCOMPARE(store->data().trains.last().seats.first().segments.at(1).remainingSeats, 1);
     QCOMPARE(store->data().trains.last().seats.first().segments.at(2).remainingSeats, 0);

@@ -95,9 +95,4 @@ CMakeUserPresets.json
 .cmake/
 .qt/
 
-# 运行时业务数据
-/data/login-preferences.json
-/data/app-data.json
-/data/railway-cache.json
-/data/app-data.backup.json
-/data/backups/
+

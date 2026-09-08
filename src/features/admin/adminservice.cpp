@@ -8,6 +8,7 @@
 #include <QJsonObject>
 #include <QJsonArray>
 #include <QDir>
+#include <QSet>
 
 #include <algorithm>
 
@@ -208,6 +209,30 @@ OperationResult AdminService::removeTrain(const QString &number, bool knownFromR
     return m_dataStore->commit(std::move(candidate));
 }
 
+OperationResult AdminService::restoreTrain(const QString &number)
+{
+    const QString normalized = number.trimmed().toUpper();
+    if (normalized.isEmpty())
+        return OperationResult::failure(QObject::tr("车次号不能为空。"));
+
+    domain::AppData candidate = m_dataStore->data();
+    const auto firstHidden = std::find_if(candidate.hiddenTrainNumbers.cbegin(),
+                                          candidate.hiddenTrainNumbers.cend(),
+                                          [&normalized](const QString &hidden) {
+        return hidden.compare(normalized, Qt::CaseInsensitive) == 0;
+    });
+    if (firstHidden == candidate.hiddenTrainNumbers.cend())
+        return OperationResult::failure(QObject::tr("车次 %1 当前没有被隐藏。").arg(normalized));
+
+    candidate.hiddenTrainNumbers.erase(
+        std::remove_if(candidate.hiddenTrainNumbers.begin(), candidate.hiddenTrainNumbers.end(),
+                       [&normalized](const QString &hidden) {
+            return hidden.compare(normalized, Qt::CaseInsensitive) == 0;
+        }),
+        candidate.hiddenTrainNumbers.end());
+    return m_dataStore->commit(std::move(candidate));
+}
+
 OperationResult AdminService::replaceStops(const QString &trainNumber,
                                            const QVector<domain::TrainStop> &stops)
 {
@@ -257,10 +282,94 @@ OperationResult AdminService::replaceStops(const QString &trainNumber,
     const auto train = findTrain(candidate, trainNumber);
     if (train == candidate.trains.end())
         return OperationResult::failure(QObject::tr("所选车次已不存在。"));
+    const QVector<domain::TrainStop> oldStops = train->stops;
+    QVector<domain::SeatInventory> oldSeats = train->seats;
     train->stops = stops;
     for (int index = 0; index < train->stops.size(); ++index)
         train->stops[index].sequence = index;
-    train->seats.clear(); // 区间数量改变后必须重新配置席别票额。
+
+    const int newSegmentCount = stops.size() - 1;
+    const auto stopIndex = [](const QVector<domain::TrainStop> &items, const QString &code) {
+        for (int index = 0; index < items.size(); ++index) {
+            if (items.at(index).stationCode.compare(code, Qt::CaseInsensitive) == 0)
+                return index;
+        }
+        return -1;
+    };
+    QVector<QVector<int>> oldSources(newSegmentCount);
+    for (int newSegment = 0; newSegment < newSegmentCount; ++newSegment) {
+        const int oldFrom = stopIndex(oldStops, stops.at(newSegment).stationCode);
+        const int oldTo = stopIndex(oldStops, stops.at(newSegment + 1).stationCode);
+        if (oldFrom >= 0 && oldTo > oldFrom) {
+            for (int oldSegment = oldFrom; oldSegment < oldTo; ++oldSegment)
+                oldSources[newSegment].append(oldSegment);
+            continue;
+        }
+        // 新站插在一个旧区间内：该旧区间的库存占用映射到每个新子区间。
+        for (int oldSegment = 0; oldSegment + 1 < oldStops.size(); ++oldSegment) {
+            const int newFrom = stopIndex(stops, oldStops.at(oldSegment).stationCode);
+            const int newTo = stopIndex(stops, oldStops.at(oldSegment + 1).stationCode);
+            if (newFrom >= 0 && newTo > newFrom
+                && newSegment >= newFrom && newSegment < newTo) {
+                oldSources[newSegment].append(oldSegment);
+                break;
+            }
+        }
+    }
+
+    QVector<int> singleSourceUses(std::max(0, static_cast<int>(oldStops.size()) - 1));
+    for (const QVector<int> &sources : std::as_const(oldSources))
+        if (sources.size() == 1)
+            ++singleSourceUses[sources.first()];
+
+    train->seats.clear();
+    for (domain::SeatInventory oldSeat : std::as_const(oldSeats)) {
+        if (oldSeat.details.isEmpty())
+            domain::rebuildSeatDetails(&oldSeat);
+        domain::SeatInventory remapped;
+        remapped.seatType = oldSeat.seatType;
+        remapped.details = oldSeat.details;
+        QVector<int> occurrence(singleSourceUses.size());
+        for (int newSegment = 0; newSegment < newSegmentCount; ++newSegment) {
+            const QVector<int> &sources = oldSources.at(newSegment);
+            qint64 priceCents = 0;
+            int totalSeats = oldSeat.details.size();
+            if (!sources.isEmpty()) {
+                totalSeats = 0;
+                if (sources.size() == 1 && singleSourceUses.at(sources.first()) > 1) {
+                    const int oldSegment = sources.first();
+                    const int useCount = singleSourceUses.at(oldSegment);
+                    const int useIndex = occurrence[oldSegment]++;
+                    const qint64 oldPrice = oldSeat.segments.at(oldSegment).priceCents;
+                    priceCents = oldPrice / useCount;
+                    if (useIndex == useCount - 1)
+                        priceCents += oldPrice % useCount;
+                } else {
+                    for (const int oldSegment : sources)
+                        priceCents += oldSeat.segments.at(oldSegment).priceCents;
+                }
+                for (const int oldSegment : sources)
+                    totalSeats = std::max(totalSeats, oldSeat.segments.at(oldSegment).totalSeats);
+            }
+            remapped.segments.append({priceCents, totalSeats, totalSeats});
+        }
+        for (int detailIndex = 0; detailIndex < remapped.details.size(); ++detailIndex) {
+            const quint64 oldMask = oldSeat.details.at(detailIndex).occupiedMask;
+            quint64 newMask = 0;
+            for (int newSegment = 0; newSegment < newSegmentCount; ++newSegment) {
+                const bool occupied = std::any_of(oldSources.at(newSegment).cbegin(),
+                                                  oldSources.at(newSegment).cend(),
+                                                  [oldMask](int oldSegment) {
+                    return (oldMask & (quint64(1) << oldSegment)) != 0;
+                });
+                if (occupied)
+                    newMask |= quint64(1) << newSegment;
+            }
+            remapped.details[detailIndex].occupiedMask = newMask;
+        }
+        domain::syncRemainingSeats(&remapped);
+        train->seats.append(std::move(remapped));
+    }
     return m_dataStore->commit(std::move(candidate));
 }
 
@@ -278,6 +387,8 @@ OperationResult AdminService::replaceSeats(const QString &trainNumber,
 
     QStringList seatTypes;
     const int segmentCount = sourceTrain->stops.size() - 1;
+    if (segmentCount > 53)
+        return OperationResult::failure(QObject::tr("座位掩码最多支持 53 个相邻区间。"));
     for (const domain::SeatInventory &seat : seats) {
         const QString seatType = seat.seatType.trimmed();
         if (seatType.isEmpty())
@@ -295,8 +406,51 @@ OperationResult AdminService::replaceSeats(const QString &trainNumber,
         }
     }
 
+    QVector<domain::SeatInventory> normalizedSeats = seats;
+    for (domain::SeatInventory &seat : normalizedSeats)
+        domain::rebuildSeatDetails(&seat);
     domain::AppData candidate = data;
     const auto train = findTrain(candidate, trainNumber);
-    train->seats = seats;
+    train->seats = std::move(normalizedSeats);
+    return m_dataStore->commit(std::move(candidate));
+}
+
+OperationResult AdminService::replaceSeatDetails(
+    const QString &trainNumber,
+    const QString &seatType,
+    const QVector<domain::SeatDetail> &details)
+{
+    domain::AppData candidate = m_dataStore->data();
+    const auto train = findTrain(candidate, trainNumber);
+    if (train == candidate.trains.end())
+        return OperationResult::failure(QObject::tr("所选车次已不存在。"));
+    const auto seat = std::find_if(train->seats.begin(), train->seats.end(), [&seatType](const domain::SeatInventory &item) {
+        return item.seatType.compare(seatType, Qt::CaseInsensitive) == 0;
+    });
+    if (seat == train->seats.end())
+        return OperationResult::failure(QObject::tr("所选席别尚未保存，请先保存主表。"));
+
+    int expectedSeats = 0;
+    for (const domain::SegmentInventory &segment : std::as_const(seat->segments))
+        expectedSeats = std::max(expectedSeats, segment.totalSeats);
+    if (details.size() != expectedSeats)
+        return OperationResult::failure(QObject::tr("具体席位数量必须与总票额一致。"));
+    const quint64 validMask = domain::segmentMask(0, seat->segments.size());
+    QSet<QString> ids;
+    for (const domain::SeatDetail &detail : details) {
+        const QString id = detail.seatId.trimmed();
+        if (id.isEmpty() || ids.contains(id.toCaseFolded()))
+            return OperationResult::failure(QObject::tr("具体席位编号不能为空或重复。"));
+        if ((detail.occupiedMask & ~validMask) != 0)
+            return OperationResult::failure(QObject::tr("席位 %1 的掩码包含无效区间位。").arg(id));
+        ids.insert(id.toCaseFolded());
+    }
+    seat->details = details;
+    domain::syncRemainingSeats(&*seat);
+    for (const domain::SegmentInventory &segment : std::as_const(seat->segments)) {
+        if (segment.remainingSeats > segment.totalSeats)
+            return OperationResult::failure(
+                QObject::tr("具体席位状态产生的余票不能大于该区间总票额。"));
+    }
     return m_dataStore->commit(std::move(candidate));
 }

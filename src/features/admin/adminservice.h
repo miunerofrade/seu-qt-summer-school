@@ -20,10 +20,14 @@ public:
 
     OperationResult addTrain(const domain::Train &train);
     OperationResult removeTrain(const QString &number, bool knownFromRailwayCache = false);
+    OperationResult restoreTrain(const QString &number);
     OperationResult replaceStops(const QString &trainNumber,
                                  const QVector<domain::TrainStop> &stops);
     OperationResult replaceSeats(const QString &trainNumber,
                                  const QVector<domain::SeatInventory> &seats);
+    OperationResult replaceSeatDetails(const QString &trainNumber,
+                                       const QString &seatType,
+                                       const QVector<domain::SeatDetail> &details);
 
 private:
     DataStore *m_dataStore;

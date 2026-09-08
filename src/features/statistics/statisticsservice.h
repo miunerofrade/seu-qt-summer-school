@@ -1,46 +1,9 @@
 #ifndef STATISTICSSERVICE_H
 #define STATISTICSSERVICE_H
 
-#include "domain/entities.h"
-
-#include <QDate>
-#include <QString>
-#include <QVector>
+#include <QtGlobal>
 
 class DataStore;
-
-struct StatisticsFilter
-{
-    QDate from;
-    QDate to;
-    QString trainNumber;
-    QString stationCode;
-    QString seatType;
-};
-
-struct StatisticsRow
-{
-    QString trainNumber;
-    QString route;
-    int soldCount = 0;
-    int refundedCount = 0;
-    qint64 netRevenueCents = 0;
-    double remainingRate = 0.0;
-};
-
-struct DailyStatisticsPoint
-{
-    QDate date;
-    int soldCount = 0;
-    int refundedCount = 0;
-    qint64 netRevenueCents = 0;
-};
-
-struct SeatSharePoint
-{
-    QString seatType;
-    int soldCount = 0;
-};
 
 struct StatisticsSummary
 {
@@ -48,9 +11,6 @@ struct StatisticsSummary
     int refundedCount = 0;
     qint64 netRevenueCents = 0;
     double averageRemainingRate = 0.0;
-    QVector<StatisticsRow> rows;
-    QVector<DailyStatisticsPoint> dailyTrend;
-    QVector<SeatSharePoint> seatShares;
 };
 
 class StatisticsService final
@@ -58,7 +18,7 @@ class StatisticsService final
 public:
     explicit StatisticsService(const DataStore *dataStore);
 
-    StatisticsSummary summarize(const StatisticsFilter &filter) const;
+    StatisticsSummary summarize() const;
 
 private:
     const DataStore *m_dataStore;

@@ -45,8 +45,6 @@ set(PROJECT_SOURCES
     src/widgets/dateedit.h
     src/widgets/dialogstyle.cpp
     src/widgets/dialogstyle.h
-    src/widgets/flowlayout.cpp
-    src/widgets/flowlayout.h
 
     # 功能模块
     src/features/admin/admincontroller.cpp
@@ -95,16 +93,10 @@ set(PROJECT_SOURCES
     src/features/query/trainquerymodel.h
     src/features/settings/settingscontroller.cpp
     src/features/settings/settingscontroller.h
-    src/features/statistics/seatsharechartwidget.cpp
-    src/features/statistics/seatsharechartwidget.h
     src/features/statistics/statisticscontroller.cpp
     src/features/statistics/statisticscontroller.h
-    src/features/statistics/statisticsmodel.cpp
-    src/features/statistics/statisticsmodel.h
     src/features/statistics/statisticsservice.cpp
     src/features/statistics/statisticsservice.h
-    src/features/statistics/trendchartwidget.cpp
-    src/features/statistics/trendchartwidget.h
 
     # 资源
     ${TS_FILES}

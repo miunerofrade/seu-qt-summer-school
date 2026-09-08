@@ -82,6 +82,7 @@ QueryController::QueryController(DataStore *dataStore,
                                  QComboBox *trainFilter,
                                  QComboBox *seatFilter,
                                  QCheckBox *availableOnly,
+                                 QCheckBox *useRailwayData,
                                  QComboBox *sortCombo,
                                  QObject *parent)
     : QObject(parent)
@@ -94,6 +95,7 @@ QueryController::QueryController(DataStore *dataStore,
     , m_trainFilter(trainFilter)
     , m_seatFilter(seatFilter)
     , m_availableOnly(availableOnly)
+    , m_useRailwayData(useRailwayData)
     , m_sortCombo(sortCombo)
     , m_model(new TrainQueryModel(this))
     , m_proxy(new TrainQueryFilterProxyModel(this))
@@ -152,11 +154,13 @@ QueryController::QueryController(DataStore *dataStore,
     m_table->verticalHeader()->setVisible(false);
     report("table");
 
-    m_travelDate->setDate(QDate::currentDate());
+    // 本地演示车次每日重复，默认展示明日可避免验收时因当天已发车而出现空表。
+    m_travelDate->setDate(QDate::currentDate().addDays(1));
     m_officialStations = m_railwayService->cachedStations();
     m_officialStationsReady = !m_officialStations.isEmpty();
-    loadStations(m_officialStations);
-    m_searchButton->setEnabled(m_officialStationsReady);
+    m_useRailwayData->setChecked(false);
+    loadStations({});
+    m_searchButton->setEnabled(true);
     report("station model");
 
     connect(searchButton, &QPushButton::clicked, this, [this]() { executeQuery(); });
@@ -171,43 +175,36 @@ QueryController::QueryController(DataStore *dataStore,
     connect(m_trainFilter, qOverload<int>(&QComboBox::currentIndexChanged), this, [this]() { applyFilters(); });
     connect(m_seatFilter, qOverload<int>(&QComboBox::currentIndexChanged), this, [this]() { applyFilters(); });
     connect(m_availableOnly, &QCheckBox::toggled, this, [this]() { applyFilters(); });
+    connect(m_useRailwayData, &QCheckBox::toggled, this, [this]() { switchDataSource(); });
     connect(m_sortCombo, qOverload<int>(&QComboBox::currentIndexChanged), this, [this]() { applyFilters(); });
     connect(m_dataStore, &DataStore::dataChanged, this, [this]() {
         m_model->setHiddenTrainNumbers(m_dataStore->data().hiddenTrainNumbers);
         loadStations(m_officialStations);
+        if (!m_useRailwayData->isChecked()) {
+            const QString fromCode = selectedStationCode(m_departureStation);
+            const QString toCode = selectedStationCode(m_arrivalStation);
+            if (!fromCode.isEmpty() && !toCode.isEmpty() && fromCode != toCode) {
+                showRows(QueryService(m_dataStore).query(
+                    {fromCode, toCode, m_travelDate->date()}, QDateTime::currentDateTime()));
+            }
+        }
     });
     showCachedTrains();
     report("cached trains");
-    if (!m_officialStationsReady || m_railwayService->stationCatalogNeedsRefresh()) {
-        // 让首帧先完成渲染再初始化 HTTPS；在登录间复用新鲜目录，
-        // 不必每次都启动网络会话。
-        QTimer::singleShot(300, this, [this]() {
-            m_railwayService->refreshStations([this](QVector<RailwayStation> refreshed,
-                                                     const QString &error) {
-                if (error.isEmpty() && !refreshed.isEmpty()) {
-                    if (!m_officialStationsReady)
-                        m_searchButton->setEnabled(true);
-                    m_officialStationsReady = true;
-                    m_officialStations = std::move(refreshed);
-                    loadStations(m_officialStations);
-                } else if (!m_officialStationsReady) {
-                    // 即使在线目录失败，自定义车站仍可使用。
-                    m_searchButton->setEnabled(true);
-                }
-            });
-        });
-    }
     report("station freshness check");
 }
 
 void QueryController::loadStations(const QVector<RailwayStation> &stations)
 {
     QHash<QString, QString> namesByCode;
-    for (const auto &station : stations)
-        namesByCode.insert(station.code.toUpper(), station.name);
-    for (const auto &station : m_dataStore->data().stations)
-        if (station.enabled && !namesByCode.contains(station.code.toUpper()))
+    if (m_useRailwayData->isChecked()) {
+        for (const auto &station : stations)
             namesByCode.insert(station.code.toUpper(), station.name);
+    } else {
+        for (const auto &station : m_dataStore->data().stations)
+            if (station.enabled)
+                namesByCode.insert(station.code.toUpper(), station.name);
+    }
     if (namesByCode == m_stationNamesByCode)
         return;
     m_stationNamesByCode = namesByCode;
@@ -302,19 +299,23 @@ void QueryController::executeQuery()
     }
 
     const QDate date = m_travelDate->date();
-    QVector<TrainQueryRow> localRows = QueryService(m_dataStore).query(
-        {fromCode, toCode, date}, QDateTime::currentDateTime());
-    if (!isOfficialStation(fromCode) || !isOfficialStation(toCode)) {
+    if (!m_useRailwayData->isChecked()) {
+        QVector<TrainQueryRow> localRows = QueryService(m_dataStore).query(
+            {fromCode, toCode, date}, QDateTime::currentDateTime());
         const bool empty = localRows.isEmpty();
         showRows(std::move(localRows));
         if (empty)
-            QMessageBox::information(m_table, tr("查询结果"), tr("该自定义站点暂没有可用的本地直达车次。"));
+            QMessageBox::information(m_table, tr("查询结果"), tr("本地数据中没有尚未发车的直达车次。"));
+        return;
+    }
+    if (!isOfficialStation(fromCode) || !isOfficialStation(toCode)) {
+        QMessageBox::warning(m_table, tr("查询条件错误"), tr("12306 数据源仅支持官方站点。"));
         return;
     }
     m_searchButton->setEnabled(false);
     m_searchButton->setText(tr("查询中…"));
     m_railwayService->query(fromCode, toCode, date,
-                            [this, fromCode, toCode, date, localRows = std::move(localRows)](QVector<TrainQueryRow> rows,
+                            [this, fromCode, toCode, date](QVector<TrainQueryRow> rows,
                                                          const QString &error) mutable {
         m_searchButton->setEnabled(true);
         m_searchButton->setText(tr("查询"));
@@ -322,7 +323,6 @@ void QueryController::executeQuery()
             QVector<TrainQueryRow> cached = m_railwayService->cachedQuery(
                 fromCode, toCode, date, QDateTime::currentDateTime());
             const bool hasCache = !cached.isEmpty();
-            cached.append(localRows);
             showRows(std::move(cached));
             QMessageBox::warning(m_table,
                                  tr("在线查询失败"),
@@ -330,17 +330,6 @@ void QueryController::executeQuery()
                                      ? tr("%1\n\n已显示上次保存的查询结果。").arg(error)
                                      : tr("%1\n\n没有可用的本地缓存。").arg(error));
             return;
-        }
-        for (TrainQueryRow &local : localRows) {
-            const auto duplicate = std::find_if(rows.begin(), rows.end(), [&local](const TrainQueryRow &online) {
-                return online.trainNumber.compare(local.trainNumber, Qt::CaseInsensitive) == 0
-                    && online.departureStationCode == local.departureStationCode
-                    && online.arrivalStationCode == local.arrivalStationCode;
-            });
-            if (duplicate == rows.end())
-                rows.append(std::move(local));
-            else
-                *duplicate = std::move(local);
         }
         const bool empty = rows.isEmpty();
         showRows(std::move(rows));
@@ -352,9 +341,47 @@ void QueryController::executeQuery()
 void QueryController::showCachedTrains()
 {
     const QDateTime now = QDateTime::currentDateTime();
-    QVector<TrainQueryRow> rows = m_railwayService->cachedAvailable(now);
-    rows.append(QueryService(m_dataStore).available(now));
+    QVector<TrainQueryRow> rows = m_useRailwayData->isChecked()
+        ? m_railwayService->cachedAvailable(now)
+        : QueryService(m_dataStore).available(QDateTime(m_travelDate->date(), QTime(0, 0)));
     showRows(std::move(rows));
+}
+
+void QueryController::switchDataSource()
+{
+    m_stationNamesByCode.clear();
+    if (!m_useRailwayData->isChecked()) {
+        m_searchButton->setEnabled(true);
+        loadStations({});
+        showCachedTrains();
+        return;
+    }
+    loadStations(m_officialStations);
+    showCachedTrains();
+    if (!m_officialStationsReady || m_railwayService->stationCatalogNeedsRefresh())
+        refreshOfficialStations();
+}
+
+void QueryController::refreshOfficialStations()
+{
+    if (!m_officialStationsReady)
+        m_searchButton->setEnabled(false);
+    m_railwayService->refreshStations([this](QVector<RailwayStation> refreshed,
+                                             const QString &error) {
+        if (!error.isEmpty() || refreshed.isEmpty()) {
+            m_searchButton->setEnabled(m_officialStationsReady);
+            if (m_useRailwayData->isChecked() && !m_officialStationsReady)
+                QMessageBox::warning(m_table, tr("12306 数据源不可用"), error);
+            return;
+        }
+        m_officialStationsReady = true;
+        m_officialStations = std::move(refreshed);
+        if (m_useRailwayData->isChecked()) {
+            m_stationNamesByCode.clear();
+            loadStations(m_officialStations);
+            m_searchButton->setEnabled(true);
+        }
+    });
 }
 
 void QueryController::showRows(QVector<TrainQueryRow> rows)

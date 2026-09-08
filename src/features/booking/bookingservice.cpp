@@ -20,6 +20,22 @@ int findStop(const QVector<domain::TrainStop> &stops, const QString &stationCode
     }
     return -1;
 }
+
+bool detailsMatchSummary(const domain::SeatInventory &seat)
+{
+    if (seat.details.isEmpty())
+        return false;
+    for (int segment = 0; segment < seat.segments.size(); ++segment) {
+        const quint64 mask = quint64(1) << segment;
+        const int available = static_cast<int>(std::count_if(
+            seat.details.cbegin(), seat.details.cend(), [mask](const domain::SeatDetail &detail) {
+                return (detail.occupiedMask & mask) == 0;
+            }));
+        if (available != seat.segments.at(segment).remainingSeats)
+            return false;
+    }
+    return true;
+}
 }
 
 BookingService::BookingService(DataStore &dataStore)
@@ -123,23 +139,38 @@ OperationResult BookingService::book(const BookingRequest &request, BookingRecei
     domain::SeatInventory &seat = train.seats[seatIndex];
     if (seat.segments.size() < toIndex)
         return OperationResult::failure(QStringLiteral("席别区间配置不完整。"));
+    if (!detailsMatchSummary(seat))
+        domain::rebuildSeatDetails(&seat);
     const int passengerCount = passengerIds.size();
+    const quint64 requestMask = domain::segmentMask(fromIndex, toIndex);
+    if (requestMask == 0)
+        return OperationResult::failure(QStringLiteral("乘车区间超出座位掩码支持范围。"));
     qint64 unitPriceCents = 0;
     for (int segment = fromIndex; segment < toIndex; ++segment) {
         const domain::SegmentInventory &inventory = seat.segments.at(segment);
-        if (inventory.remainingSeats < passengerCount)
-            return OperationResult::failure(QStringLiteral("余票不足，未生成订单。"));
         unitPriceCents += inventory.priceCents;
     }
-    for (int segment = fromIndex; segment < toIndex; ++segment)
-        seat.segments[segment].remainingSeats -= passengerCount;
+    QVector<domain::SeatDetail *> assignedSeats;
+    for (domain::SeatDetail &detail : seat.details) {
+        if ((detail.occupiedMask & requestMask) == 0) {
+            assignedSeats.append(&detail);
+            if (assignedSeats.size() == passengerCount)
+                break;
+        }
+    }
+    if (assignedSeats.size() < passengerCount)
+        return OperationResult::failure(QStringLiteral("没有足够的连续区间空闲座位，未生成订单。"));
+    for (domain::SeatDetail *detail : assignedSeats)
+        detail->occupiedMask |= requestMask;
+    domain::syncRemainingSeats(&seat);
 
     domain::Order order;
     order.ownerUserId = m_dataStore.currentUserId();
     order.id = newId();
     order.createdAt = QDateTime::currentDateTime();
     order.totalAmountCents = unitPriceCents * passengerCount;
-    for (const QString &passengerId : passengerIds) {
+    for (int passengerIndex = 0; passengerIndex < passengerIds.size(); ++passengerIndex) {
+        const QString &passengerId = passengerIds.at(passengerIndex);
         domain::Ticket ticket;
         ticket.id = newId();
         ticket.passengerId = passengerId;
@@ -151,6 +182,7 @@ OperationResult BookingService::book(const BookingRequest &request, BookingRecei
         ticket.status = domain::TicketStatus::Issued;
         ticket.serviceDate = request.serviceDate;
         ticket.railwayTrainId = request.railwayTrainId;
+        ticket.seatId = assignedSeats.at(passengerIndex)->seatId;
         candidate.tickets.push_back(ticket);
         order.ticketIds.push_back(ticket.id);
     }
@@ -162,6 +194,8 @@ OperationResult BookingService::book(const BookingRequest &request, BookingRecei
     if (receipt) {
         receipt->orderId = order.id;
         receipt->ticketIds = order.ticketIds;
+        for (const domain::SeatDetail *detail : assignedSeats)
+            receipt->seatIds.append(detail->seatId);
         receipt->totalAmountCents = order.totalAmountCents;
     }
     return OperationResult::ok();
@@ -230,7 +264,9 @@ OperationResult BookingService::bookDemo(const BookingRequest &request,
                                      ? snapshot.priceCents % coveredSegments : 0;
         segments.append({basePrice + remainder, snapshot.remainingSeats, snapshot.remainingSeats});
     }
-    imported.seats = {{request.seatType, segments}};
+    domain::SeatInventory importedSeat{request.seatType, segments};
+    domain::rebuildSeatDetails(&importedSeat);
+    imported.seats = {importedSeat};
 
     const auto trainIt = std::find_if(candidate.trains.begin(), candidate.trains.end(),
                                       [&request](const domain::Train &train) {

@@ -14,6 +14,7 @@
 #include "features/statistics/statisticsservice.h"
 
 #include <QAction>
+#include <QCheckBox>
 #include <QDateEdit>
 #include <QComboBox>
 #include <QElapsedTimer>
@@ -446,6 +447,11 @@ void AuthTests::startupWithFullStationCatalog()
     const qint64 showMs = timer.restart();
     auto *departure = window.findChild<QComboBox *>("comboDepartureStation");
     auto *arrival = window.findChild<QComboBox *>("comboArrivalStation");
+    auto *useRailway = window.findChild<QCheckBox *>("checkUseRailwayData");
+    QVERIFY(useRailway);
+    QVERIFY(!useRailway->isChecked());
+    QVERIFY(departure->count() < 3000);
+    useRailway->setChecked(true);
     QVERIFY(departure->count() >= 3000);
     QCOMPARE(departure->count(), arrival->count());
     QCOMPARE(departure->model(), arrival->model());
@@ -463,15 +469,18 @@ void AuthTests::startupWithFullStationCatalog()
     auto updated = store.data();
     updated.stations.append({"DEMO", QStringLiteral("南京"), QStringLiteral("南京"), true});
     QVERIFY(store.commit(updated));
-    QCOMPARE(resets.count(), 1);
-    QCOMPARE(departure->count(), originalCount + 1);
+    QCOMPARE(resets.count(), 0);
+    QCOMPARE(departure->count(), originalCount);
+    QVERIFY(departure->findData("DEMO") < 0);
+    useRailway->setChecked(false);
     QVERIFY(departure->findData("DEMO") >= 0);
-    QVERIFY(departure->itemText(departure->findData("DEMO")).contains("DEMO"));
+    QCOMPARE(departure->itemText(departure->findData("DEMO")), QStringLiteral("南京"));
+    const int localCount = departure->count();
     QCOMPARE(arrival->currentData().toString(), arrivalCode);
     updated.stations.last().enabled = false;
     QVERIFY(store.commit(updated));
     QCOMPARE(resets.count(), 2);
-    QCOMPARE(departure->count(), originalCount);
+    QCOMPARE(departure->count(), localCount - 1);
     QCOMPARE(departure->findData("DEMO"), -1);
 }
 

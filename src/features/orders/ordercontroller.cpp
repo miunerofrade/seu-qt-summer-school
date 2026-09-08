@@ -187,7 +187,9 @@ QString OrderController::showOrderDetails(const QString &orderId, bool refundMod
                                 .arg(ticket.trainNumber,
                                      ticket.serviceDate.toString(QStringLiteral("yyyy-MM-dd")),
                                      ticket.departureAt.time().toString(QStringLiteral("HH:mm"))))
-              << detailItem(ticket.seatType)
+              << detailItem(ticket.seatId.isEmpty()
+                                ? ticket.seatType
+                                : tr("%1 · %2").arg(ticket.seatType, ticket.seatId))
               << detailItem(common::formatMoney(ticket.priceCents))
               << detailItem(OrderService::statusText(ticket.status));
         model->appendRow(items);
