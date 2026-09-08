@@ -81,6 +81,7 @@ OperationResult BookingService::book(const BookingRequest &request, BookingRecei
     const QStringList &passengerIds = request.passengerIds;
 
     domain::AppData candidate = m_dataStore.data();
+    domain::organizeSeatAssignments(&candidate);
     const auto stationEnabled = [&candidate](const QString &code) {
         const auto it = std::find_if(candidate.stations.cbegin(), candidate.stations.cend(),
                                      [&code](const domain::Station &station) {
@@ -136,11 +137,13 @@ OperationResult BookingService::book(const BookingRequest &request, BookingRecei
     if (seatIndex < 0)
         return OperationResult::failure(QStringLiteral("席别不存在，请重新查询。"));
 
-    domain::SeatInventory &seat = train.seats[seatIndex];
-    if (seat.segments.size() < toIndex)
+    if (train.seats.at(seatIndex).segments.size() < toIndex)
         return OperationResult::failure(QStringLiteral("席别区间配置不完整。"));
-    if (!detailsMatchSummary(seat))
-        domain::rebuildSeatDetails(&seat);
+    if (!detailsMatchSummary(train.seats.at(seatIndex))) {
+        domain::rebuildSeatDetails(&train.seats[seatIndex]);
+        domain::organizeSeatAssignments(&candidate);
+    }
+    domain::SeatInventory &seat = candidate.trains[trainIndex].seats[seatIndex];
     const int passengerCount = passengerIds.size();
     const quint64 requestMask = domain::segmentMask(fromIndex, toIndex);
     if (requestMask == 0)
@@ -304,6 +307,7 @@ OperationResult BookingService::bookDemo(const BookingRequest &request,
         }
     }
 
+    domain::organizeSeatAssignments(&candidate);
     const OperationResult importedResult = m_dataStore.commit(std::move(candidate));
     // commit 会发出 dataChanged；预订前要根据结果状态重新验证。
     return importedResult ? book(request, receipt) : importedResult;

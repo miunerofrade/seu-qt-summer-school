@@ -9,6 +9,7 @@
 #include <QtTest>
 
 #include <memory>
+#include <utility>
 
 class FailingRepository final : public IDataRepository
 {
@@ -45,6 +46,7 @@ private slots:
     void missingFileCreatesDemoData();
     void moneyFormatting();
     void jsonRoundTripPreservesDomainData();
+    void versionFiveSeatLayoutMigratesToUnifiedCarriages();
     void corruptJsonIsNotOverwritten();
     void unsupportedVersionIsRejected();
     void failedCommitKeepsMemoryUnchanged();
@@ -112,7 +114,13 @@ void PhaseOneTests::jsonRoundTripPreservesDomainData()
     QCOMPARE(loaded.data.trains.size(), source.trains.size());
     QCOMPARE(loaded.data.trains.first().number, QStringLiteral("G101"));
     QCOMPARE(loaded.data.hiddenTrainNumbers, QStringList{QStringLiteral("G205")});
-    QCOMPARE(loaded.data.trains.first().seats.first().segments.at(1).remainingSeats, 35);
+    QCOMPARE(loaded.data.trains.first().seats.first().seatType, QStringLiteral("一等座"));
+    QCOMPARE(loaded.data.trains.first().seats.at(1).seatType, QStringLiteral("二等座"));
+    QCOMPARE(loaded.data.trains.first().seats.first().segments.at(1).remainingSeats, 69);
+    QCOMPARE(loaded.data.trains.first().seats.first().details.first().seatId,
+             QStringLiteral("01车01A"));
+    QCOMPARE(loaded.data.trains.first().seats.at(1).details.first().seatId,
+             QStringLiteral("03车01A"));
     QVERIFY(!loaded.data.trains.first().seats.first().details.isEmpty());
     QFile jsonFile(path);
     QVERIFY(jsonFile.open(QIODevice::ReadOnly));
@@ -121,6 +129,41 @@ void PhaseOneTests::jsonRoundTripPreservesDomainData()
         .value("seats").toArray().first().toObject()
         .value("details").toArray().first().toObject();
     QVERIFY(detail.value("occupiedMask").isDouble());
+}
+
+void PhaseOneTests::versionFiveSeatLayoutMigratesToUnifiedCarriages()
+{
+    QTemporaryDir directory;
+    QVERIFY(directory.isValid());
+    const QString path = directory.filePath(QStringLiteral("app-data.json"));
+    domain::AppData source = domain::createDemoData();
+    source.schemaVersion = 5;
+    domain::Train &train = source.trains.first();
+    std::swap(train.seats[0], train.seats[1]);
+    train.seats[1].details.resize(36);
+    for (domain::SegmentInventory &segment : train.seats[1].segments)
+        segment.totalSeats = 36;
+    for (domain::SeatInventory &seat : train.seats)
+        domain::renumberSeatDetails(&seat);
+    QVERIFY(JsonRepository(path).save(source));
+
+    DataStore store(std::make_unique<JsonRepository>(path));
+    const OperationResult initialized = store.initialize();
+    QVERIFY2(initialized, qPrintable(initialized.error));
+    QCOMPARE(store.data().schemaVersion, domain::CurrentSchemaVersion);
+    QCOMPARE(store.data().trains.first().seats.first().seatType, QStringLiteral("一等座"));
+    QCOMPARE(store.data().trains.first().seats.at(1).seatType, QStringLiteral("二等座"));
+    QCOMPARE(store.data().trains.first().seats.first().details.size(), domain::DefaultSeatCount);
+    QCOMPARE(store.data().trains.first().seats.at(1).details.size(), domain::DefaultSeatCount);
+    QCOMPARE(store.data().trains.first().seats.first().details.first().seatId,
+             QStringLiteral("01车01A"));
+    QCOMPARE(store.data().trains.first().seats.at(1).details.first().seatId,
+             QStringLiteral("03车01A"));
+
+    QFile file(path);
+    QVERIFY(file.open(QIODevice::ReadOnly));
+    QCOMPARE(QJsonDocument::fromJson(file.readAll()).object().value("schemaVersion").toInt(),
+             domain::CurrentSchemaVersion);
 }
 
 void PhaseOneTests::corruptJsonIsNotOverwritten()

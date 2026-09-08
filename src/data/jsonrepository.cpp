@@ -516,13 +516,13 @@ bool appDataFromJson(const QJsonObject &object, AppData *data, QString *error)
     qint64 schemaVersion = 0;
     if (!readInteger(object, "schemaVersion", &schemaVersion, error))
         return false;
-    if (schemaVersion != 4 && schemaVersion != CurrentSchemaVersion) {
+    if (schemaVersion != 4 && schemaVersion != 5 && schemaVersion != CurrentSchemaVersion) {
         *error = QObject::tr("不支持的数据版本：%1，当前版本为 %2。")
                      .arg(schemaVersion)
                      .arg(CurrentSchemaVersion);
         return false;
     }
-    data->schemaVersion = CurrentSchemaVersion;
+    data->schemaVersion = static_cast<int>(schemaVersion);
     QJsonArray users;
     if (!readArray(object, "users", &users, error))
         return false;
@@ -591,31 +591,19 @@ bool appDataFromJson(const QJsonObject &object, AppData *data, QString *error)
     if (!parsed)
         return false;
 
-    // 第 5 版早期数据按每车 20 排编号。按当前每车 14 排规则重排时，
-    // 同步迁移票面 seatId，保持退票仍能定位到同一个座位索引。
-    for (Train &train : data->trains) {
-        for (SeatInventory &seat : train.seats) {
-            QHash<QString, QString> renamedIds;
-            for (int index = 0; index < seat.details.size(); ++index) {
-                const QString oldId = seat.details.at(index).seatId;
-                renamedIds.insert(oldId, seatIdForIndex(seat.seatType, index));
-            }
-            renumberSeatDetails(&seat);
-            for (Ticket &ticket : data->tickets) {
-                const bool trainMatches = ticket.railwayTrainId.isEmpty()
-                    ? train.railwayTrainId.isEmpty() && train.number == ticket.trainNumber
-                        && (!ticket.serviceDate.isValid()
-                            || !train.railwayServiceDate.isValid()
-                            || train.railwayServiceDate == ticket.serviceDate)
-                    : train.railwayTrainId == ticket.railwayTrainId
-                        && train.railwayServiceDate == ticket.serviceDate;
-                if (trainMatches && ticket.seatType == seat.seatType
-                    && renamedIds.contains(ticket.seatId)) {
-                    ticket.seatId = renamedIds.value(ticket.seatId);
-                }
+    if (schemaVersion < 6) {
+        for (Train &train : data->trains) {
+            for (SeatInventory &seat : train.seats) {
+                seat.details.resize(DefaultSeatCount);
+                for (SegmentInventory &segment : seat.segments)
+                    segment.totalSeats = DefaultSeatCount;
+                syncRemainingSeats(&seat);
             }
         }
     }
+
+    // 旧数据曾让每个席别都从 01 车开始编号；加载时统一整理整列车并迁移票面座位号。
+    organizeSeatAssignments(data);
 
     QVector<Train> uniqueTrains;
     for (const Train &train : std::as_const(data->trains)) {

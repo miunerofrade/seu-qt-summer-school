@@ -81,10 +81,12 @@ void PhaseThreeTests::multiSegmentQueryUsesRequestedRange()
     QCOMPARE(rows.size(), 1);
     QCOMPARE(rows.first().trainNumber, QStringLiteral("G205"));
     QCOMPARE(rows.first().seats.size(), 2);
-    QCOMPARE(rows.first().seats.at(0).priceCents, qint64(22200));
-    QCOMPARE(rows.first().seats.at(0).remainingSeats, 58);
-    QCOMPARE(rows.first().seats.at(1).priceCents, qint64(35400));
-    QCOMPARE(rows.first().seats.at(1).remainingSeats, 15);
+    QCOMPARE(rows.first().seats.at(0).seatType, QStringLiteral("一等座"));
+    QCOMPARE(rows.first().seats.at(0).priceCents, qint64(35400));
+    QCOMPARE(rows.first().seats.at(0).remainingSeats, 79);
+    QCOMPARE(rows.first().seats.at(1).seatType, QStringLiteral("二等座"));
+    QCOMPARE(rows.first().seats.at(1).priceCents, qint64(22200));
+    QCOMPARE(rows.first().seats.at(1).remainingSeats, 58);
 }
 
 void PhaseThreeTests::fourStationLongQueryUsesMinimumCoveredInventory()
@@ -153,6 +155,7 @@ void PhaseThreeTests::proxyFiltersAndSortsRows()
     proxy.setTrainNumberFilter({});
     proxy.setSeatTypeFilter({});
     proxy.setAvailableOnly(true);
+    model.selectSeatType({}, true);
     QCOMPARE(proxy.rowCount(), 2);
     proxy.setSortByPrice(true);
     QCOMPARE(proxy.index(0, TrainQueryModel::PriceColumn).data().toString(), QStringLiteral("¥149.00"));

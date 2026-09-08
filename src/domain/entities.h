@@ -10,7 +10,8 @@
 
 namespace domain {
 
-inline constexpr int CurrentSchemaVersion = 5;
+inline constexpr int CurrentSchemaVersion = 6;
+inline constexpr int DefaultSeatCount = 100;
 
 struct User
 {
@@ -136,9 +137,11 @@ struct AppData
 QString ticketStatusKey(TicketStatus status);
 bool ticketStatusFromKey(const QString &key, TicketStatus *status);
 quint64 segmentMask(int fromIndex, int toIndex);
-QString seatIdForIndex(const QString &seatType, int index);
+QString seatIdForIndex(const QString &seatType, int index, int firstCarriage = 1);
 void rebuildSeatDetails(SeatInventory *inventory);
 void renumberSeatDetails(SeatInventory *inventory);
+void organizeTrainSeats(Train *train);
+void organizeSeatAssignments(AppData *data);
 void syncRemainingSeats(SeatInventory *inventory);
 int availableSeatCount(const SeatInventory &inventory, quint64 requestMask);
 AppData createDemoData();

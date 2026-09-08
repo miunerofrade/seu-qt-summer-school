@@ -191,7 +191,16 @@ OperationResult DataStore::loadFromRepository(bool createWhenMissing)
         return OperationResult::failure(loaded.error);
     }
 
-    setReady(loaded.data);
+    domain::AppData readyData = loaded.data;
+    if (readyData.schemaVersion != domain::CurrentSchemaVersion) {
+        readyData.schemaVersion = domain::CurrentSchemaVersion;
+        const OperationResult migrated = m_repository->save(readyData);
+        if (!migrated) {
+            setError(tr("升级本地数据失败：%1").arg(migrated.error));
+            return migrated;
+        }
+    }
+    setReady(readyData);
     m_lastSavedAt = QFileInfo(dataFilePath()).lastModified();
     emit dataChanged();
     emit statusChanged();

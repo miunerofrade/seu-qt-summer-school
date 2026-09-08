@@ -819,7 +819,8 @@ private:
                 stationDisplayName(m_dataStore->data(), train->stops.at(index).stationCode)
                 + QStringLiteral(" → ")
                 + stationDisplayName(m_dataStore->data(), train->stops.at(index + 1).stationCode);
-            appendSegmentRow(seatType, segmentName, {0, 500, 500});
+            appendSegmentRow(seatType, segmentName,
+                             {0, domain::DefaultSeatCount, domain::DefaultSeatCount});
         }
     }
 

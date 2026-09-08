@@ -192,6 +192,7 @@ OperationResult AdminService::addTrain(const domain::Train &train)
     else
         *existing = normalized;
     candidate.hiddenTrainNumbers.removeAll(normalized.number);
+    domain::organizeSeatAssignments(&candidate);
     return m_dataStore->commit(std::move(candidate));
 }
 
@@ -206,6 +207,7 @@ OperationResult AdminService::removeTrain(const QString &number, bool knownFromR
         return OperationResult::failure(QObject::tr("车次 %1 不存在，未写入隐藏名单。").arg(normalized));
     if (!candidate.hiddenTrainNumbers.contains(normalized, Qt::CaseInsensitive))
         candidate.hiddenTrainNumbers.append(normalized);
+    domain::organizeSeatAssignments(&candidate);
     return m_dataStore->commit(std::move(candidate));
 }
 
@@ -370,6 +372,7 @@ OperationResult AdminService::replaceStops(const QString &trainNumber,
         domain::syncRemainingSeats(&remapped);
         train->seats.append(std::move(remapped));
     }
+    domain::organizeSeatAssignments(&candidate);
     return m_dataStore->commit(std::move(candidate));
 }
 
@@ -412,6 +415,7 @@ OperationResult AdminService::replaceSeats(const QString &trainNumber,
     domain::AppData candidate = data;
     const auto train = findTrain(candidate, trainNumber);
     train->seats = std::move(normalizedSeats);
+    domain::organizeSeatAssignments(&candidate);
     return m_dataStore->commit(std::move(candidate));
 }
 

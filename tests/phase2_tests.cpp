@@ -168,21 +168,29 @@ void PhaseTwoTests::scheduleValidationAndSeatReset()
     const auto &train = store->data().trains.first();
     QCOMPARE(train.stops.size(), 2);
     QCOMPARE(train.seats.size(), 2);
-    QCOMPARE(train.seats.first().segments.size(), 1);
-    QCOMPARE(train.seats.first().segments.first().priceCents, qint64(15000));
-    QCOMPARE(train.seats.first().segments.first().remainingSeats, 35);
+    const auto secondClass = std::find_if(train.seats.cbegin(), train.seats.cend(), [](const domain::SeatInventory &seat) {
+        return seat.seatType == QStringLiteral("二等座");
+    });
+    QVERIFY(secondClass != train.seats.cend());
+    QCOMPARE(secondClass->segments.size(), 1);
+    QCOMPARE(secondClass->segments.first().priceCents, qint64(15000));
+    QCOMPARE(secondClass->segments.first().remainingSeats, 35);
 
     QVector<domain::TrainStop> expandedStops{
         {QStringLiteral("NKH"), 0, {}, QTime(8, 0), 0},
         {QStringLiteral("OHH"), 1, QTime(8, 45), QTime(8, 47), 0},
         {QStringLiteral("AOH"), 2, QTime(9, 20), {}, 0}};
     QVERIFY(service.replaceStops(QStringLiteral("G101"), expandedStops));
-    const auto &expandedSeat = store->data().trains.first().seats.first();
-    QCOMPARE(expandedSeat.segments.size(), 2);
-    QCOMPARE(expandedSeat.segments.at(0).priceCents + expandedSeat.segments.at(1).priceCents,
+    const auto &expandedSeats = store->data().trains.first().seats;
+    const auto expandedSeat = std::find_if(expandedSeats.cbegin(), expandedSeats.cend(), [](const domain::SeatInventory &seat) {
+        return seat.seatType == QStringLiteral("二等座");
+    });
+    QVERIFY(expandedSeat != expandedSeats.cend());
+    QCOMPARE(expandedSeat->segments.size(), 2);
+    QCOMPARE(expandedSeat->segments.at(0).priceCents + expandedSeat->segments.at(1).priceCents,
              qint64(15000));
-    QCOMPARE(expandedSeat.segments.at(0).remainingSeats, 35);
-    QCOMPARE(expandedSeat.segments.at(1).remainingSeats, 35);
+    QCOMPARE(expandedSeat->segments.at(0).remainingSeats, 35);
+    QCOMPARE(expandedSeat->segments.at(1).remainingSeats, 35);
 }
 
 void PhaseTwoTests::seatInventoryValidation()
