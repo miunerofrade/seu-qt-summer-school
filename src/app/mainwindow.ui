@@ -806,7 +806,7 @@ QLabel#labelSort {
               <item>
                <widget class="QCheckBox" name="checkUseRailwayData">
                 <property name="text">
-                 <string>使用 12306 数据（外部）</string>
+                 <string>使用 12306 数据</string>
                 </property>
                 <property name="checked"><bool>false</bool></property>
                 <property name="toolTip"><string>不勾选时仅使用本地数据；外部查询结果只读且不参与本地库存分配</string></property>

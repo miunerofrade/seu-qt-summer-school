@@ -95,8 +95,7 @@ bool ticketStatusFromKey(const QString &key, TicketStatus *status)
 
 quint64 segmentMask(int fromIndex, int toIndex)
 {
-    // JSON 以十进制数保存；限制到 53 位可保证 IEEE-754 整数往返无损。
-    if (fromIndex < 0 || toIndex <= fromIndex || toIndex > 53)
+    if (fromIndex < 0 || toIndex <= fromIndex || toIndex > 64)
         return 0;
     quint64 mask = 0;
     for (int segment = fromIndex; segment < toIndex; ++segment)

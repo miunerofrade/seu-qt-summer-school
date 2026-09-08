@@ -127,7 +127,7 @@ void PhaseOneTests::jsonRoundTripPreservesDomainData()
     const QJsonObject detail = root.value("trains").toArray().first().toObject()
         .value("seats").toArray().first().toObject()
         .value("details").toArray().first().toObject();
-    QVERIFY(detail.value("occupiedMask").isDouble());
+    QVERIFY(detail.value("occupiedMask").isString());
 }
 
 void PhaseOneTests::corruptJsonIsNotOverwritten()

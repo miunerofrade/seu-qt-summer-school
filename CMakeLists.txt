@@ -18,89 +18,20 @@ endif()
 find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Widgets Network LinguistTools Svg)
 find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets Network LinguistTools Svg)
 
-set(TS_FILES untitled_zh_CN.ts)
+set(TS_FILES)
+if(EXISTS "${CMAKE_SOURCE_DIR}/untitled_zh_CN.ts")
+    list(APPEND TS_FILES untitled_zh_CN.ts)
+endif()
 
-set(PROJECT_SOURCES
-    # 应用程序
-    src/app/applicationcontroller.cpp
-    src/app/applicationcontroller.h
-    src/app/mainwindow.cpp
-    src/app/mainwindow.h
-    src/app/mainwindow.ui
-    src/main.cpp
+file(GLOB_RECURSE PROJECT_SOURCES CONFIGURE_DEPENDS
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/*.h"
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/*.ui"
+)
 
-    # 共享数据和控件
-    src/common/money.h
-    src/common/result.h
-    src/data/datastore.cpp
-    src/data/datastore.h
-    src/data/idatarepository.h
-    src/data/jsonrepository.cpp
-    src/data/jsonrepository.h
-    src/domain/entities.cpp
-    src/domain/entities.h
-    src/widgets/avatarwidget.h
-    src/widgets/svgiconlabel.h
-    src/widgets/dateedit.cpp
-    src/widgets/dateedit.h
-    src/widgets/dialogstyle.cpp
-    src/widgets/dialogstyle.h
-
-    # 功能模块
-    src/features/admin/admincontroller.cpp
-    src/features/admin/admincontroller.h
-    src/features/admin/adminservice.cpp
-    src/features/admin/adminservice.h
-    src/features/admin/managementdialogs.cpp
-    src/features/admin/managementdialogs.h
-    src/features/auth/logindialog.cpp
-    src/features/auth/logindialog.h
-    src/features/booking/bookingcontroller.cpp
-    src/features/booking/bookingcontroller.h
-    src/features/booking/bookingservice.cpp
-    src/features/booking/bookingservice.h
-    src/features/orders/ordercontroller.cpp
-    src/features/orders/ordercontroller.h
-    src/features/orders/orderdelegates.cpp
-    src/features/orders/orderdelegates.h
-    src/features/orders/orderfilterproxymodel.cpp
-    src/features/orders/orderfilterproxymodel.h
-    src/features/orders/orderservice.cpp
-    src/features/orders/orderservice.h
-    src/features/orders/ordertablemodel.cpp
-    src/features/orders/ordertablemodel.h
-    src/features/orders/refundservice.cpp
-    src/features/orders/refundservice.h
-    src/features/passengers/passengercontroller.cpp
-    src/features/passengers/passengercontroller.h
-    src/features/passengers/passengerfilterproxymodel.cpp
-    src/features/passengers/passengerfilterproxymodel.h
-    src/features/passengers/passengerservice.cpp
-    src/features/passengers/passengerservice.h
-    src/features/passengers/passengertablemodel.cpp
-    src/features/passengers/passengertablemodel.h
-    src/features/query/querycontroller.cpp
-    src/features/query/querycontroller.h
-    src/features/query/queryservice.cpp
-    src/features/query/queryservice.h
-    src/features/query/railwayqueryservice.cpp
-    src/features/query/railwayqueryservice.h
-    src/features/query/seattypecombodelegate.cpp
-    src/features/query/seattypecombodelegate.h
-    src/features/query/trainqueryfilterproxymodel.cpp
-    src/features/query/trainqueryfilterproxymodel.h
-    src/features/query/trainquerymodel.cpp
-    src/features/query/trainquerymodel.h
-    src/features/settings/settingscontroller.cpp
-    src/features/settings/settingscontroller.h
-    src/features/statistics/statisticscontroller.cpp
-    src/features/statistics/statisticscontroller.h
-    src/features/statistics/statisticsservice.cpp
-    src/features/statistics/statisticsservice.h
-
-    # 资源
+list(APPEND PROJECT_SOURCES
     ${TS_FILES}
-    resources.qrc
+    "${CMAKE_CURRENT_SOURCE_DIR}/resources.qrc"
 )
 
 if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
@@ -109,7 +40,9 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
         ${PROJECT_SOURCES}
     )
 
-    qt_create_translation(QM_FILES ${CMAKE_SOURCE_DIR} ${TS_FILES})
+    if(TS_FILES)
+        qt_create_translation(QM_FILES ${CMAKE_SOURCE_DIR} ${TS_FILES})
+    endif()
 else()
     if(ANDROID)
         add_library(untitled SHARED
@@ -121,7 +54,9 @@ else()
         )
     endif()
 
-    qt5_create_translation(QM_FILES ${CMAKE_SOURCE_DIR} ${TS_FILES})
+    if(TS_FILES)
+        qt5_create_translation(QM_FILES ${CMAKE_SOURCE_DIR} ${TS_FILES})
+    endif()
 endif()
 
 target_link_libraries(untitled PRIVATE Qt${QT_VERSION_MAJOR}::Widgets Qt${QT_VERSION_MAJOR}::Network Qt${QT_VERSION_MAJOR}::Svg)
@@ -160,7 +95,10 @@ include(CTest)
 if(BUILD_TESTING)
     find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Test)
     set(AUTH_TEST_SOURCES ${PROJECT_SOURCES})
-    list(REMOVE_ITEM AUTH_TEST_SOURCES src/main.cpp ${TS_FILES})
+    list(REMOVE_ITEM AUTH_TEST_SOURCES
+        "${CMAKE_CURRENT_SOURCE_DIR}/src/main.cpp"
+        ${TS_FILES}
+    )
     add_executable(auth_tests tests/auth_tests.cpp ${AUTH_TEST_SOURCES})
     target_include_directories(auth_tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
     target_link_libraries(auth_tests PRIVATE Qt${QT_VERSION_MAJOR}::Test

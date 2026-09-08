@@ -390,8 +390,8 @@ OperationResult AdminService::replaceSeats(const QString &trainNumber,
 
     QStringList seatTypes;
     const int segmentCount = sourceTrain->stops.size() - 1;
-    if (segmentCount > 53)
-        return OperationResult::failure(QObject::tr("座位掩码最多支持 53 个相邻区间。"));
+    if (segmentCount > 64)
+        return OperationResult::failure(QObject::tr("座位掩码最多支持 64 个相邻区间。"));
     for (const domain::SeatInventory &seat : seats) {
         const QString seatType = seat.seatType.trimmed();
         if (seatType.isEmpty())

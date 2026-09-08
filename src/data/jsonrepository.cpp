@@ -93,7 +93,7 @@ QJsonObject seatToJson(const SeatInventory &seat)
     QJsonArray details;
     for (const SeatDetail &detail : seat.details) {
         details.append(QJsonObject{{QStringLiteral("seatId"), detail.seatId},
-                                   {QStringLiteral("occupiedMask"), static_cast<double>(detail.occupiedMask)}});
+                                   {QStringLiteral("occupiedMask"), QString::number(detail.occupiedMask, 2)}});
     }
     return {{QStringLiteral("seatType"), seat.seatType},
             {QStringLiteral("segments"), segments},
@@ -304,16 +304,25 @@ bool parseSeat(const QJsonValue &value, SeatInventory *seat, QString *error)
         }
         const QJsonObject detailObject = detailValue.toObject();
         SeatDetail detail;
-        qint64 occupiedMask = 0;
+        QString occupiedMaskText;
         if (!readString(detailObject, "seatId", &detail.seatId, error)
-            || !readInteger(detailObject, "occupiedMask", &occupiedMask, error)
-            || detail.seatId.trimmed().isEmpty() || occupiedMask < 0
+            || !readString(detailObject, "occupiedMask", &occupiedMaskText, error)
+            || detail.seatId.trimmed().isEmpty() || occupiedMaskText.isEmpty()
+            || occupiedMaskText.size() > 64
+            || std::any_of(occupiedMaskText.cbegin(), occupiedMaskText.cend(), [](QChar digit) {
+                   return digit != QLatin1Char('0') && digit != QLatin1Char('1');
+               })
             || seatIds.contains(detail.seatId.toCaseFolded())) {
             if (error->isEmpty())
                 *error = QObject::tr("座位编号或占用掩码格式错误。");
             return false;
         }
-        detail.occupiedMask = static_cast<quint64>(occupiedMask);
+        bool ok = false;
+        detail.occupiedMask = occupiedMaskText.toULongLong(&ok, 2);
+        if (!ok) {
+            *error = QObject::tr("座位编号或占用掩码格式错误。");
+            return false;
+        }
         seatIds.insert(detail.seatId.toCaseFolded());
         seat->details.append(detail);
     }
@@ -367,8 +376,8 @@ bool parseTrain(const QJsonValue &value, Train *train, QString *error)
             return false;
         }
     }
-    if (expectedSegments > 53) {
-        *error = QObject::tr("车次 %1 经停区间过多，座位掩码最多支持 53 个区间。").arg(train->number);
+    if (expectedSegments > 64) {
+        *error = QObject::tr("车次 %1 经停区间过多，座位掩码最多支持 64 个区间。").arg(train->number);
         return false;
     }
     for (SeatInventory &seat : train->seats)

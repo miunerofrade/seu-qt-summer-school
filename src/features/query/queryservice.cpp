@@ -88,7 +88,7 @@ bool appendRow(const domain::Train &train,
         if (seat.segments.size() < toIndex)
             continue;
         qint64 priceCents = 0;
-        qint64 requestMask = domain::segmentMask(fromIndex, toIndex);
+        const quint64 requestMask = domain::segmentMask(fromIndex, toIndex);
         int remainingSeats = seat.details.isEmpty()
             ? std::numeric_limits<int>::max()
             : domain::availableSeatCount(seat, requestMask);
