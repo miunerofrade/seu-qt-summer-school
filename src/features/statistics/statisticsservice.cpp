@@ -15,8 +15,7 @@ const domain::Train *findTrain(const domain::AppData &data, const domain::Ticket
                                              && train.railwayServiceDate == ticket.serviceDate;
                                      return train.railwayTrainId.isEmpty()
                                          && train.number == ticket.trainNumber
-                                         && (!ticket.serviceDate.isValid()
-                                             || train.railwayServiceDate == ticket.serviceDate);
+                                         && train.railwayServiceDate == ticket.serviceDate;
                                  });
     if (it != data.trains.cend())
         return &*it;

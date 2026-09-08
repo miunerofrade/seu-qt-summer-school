@@ -202,19 +202,7 @@ void organizeSeatAssignments(AppData *data)
                     && train.railwayServiceDate == ticket.serviceDate;
             } else if (train.railwayTrainId.isEmpty()
                        && train.number.compare(ticket.trainNumber, Qt::CaseInsensitive) == 0) {
-                if (!ticket.serviceDate.isValid()) {
-                    trainMatches = !train.railwayServiceDate.isValid();
-                } else {
-                    const bool hasDatedTrain = std::any_of(
-                        data->trains.cbegin(), data->trains.cend(), [&ticket](const Train &candidate) {
-                            return candidate.railwayTrainId.isEmpty()
-                                && candidate.number.compare(ticket.trainNumber, Qt::CaseInsensitive) == 0
-                                && candidate.railwayServiceDate == ticket.serviceDate;
-                        });
-                    trainMatches = hasDatedTrain
-                        ? train.railwayServiceDate == ticket.serviceDate
-                        : !train.railwayServiceDate.isValid();
-                }
+                trainMatches = train.railwayServiceDate == ticket.serviceDate;
             }
             if (!trainMatches)
                 continue;

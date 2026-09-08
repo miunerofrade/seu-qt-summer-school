@@ -27,7 +27,7 @@ int findTrain(const domain::AppData &data, const domain::Ticket &ticket)
         const domain::Train &train = data.trains.at(i);
         const bool identityMatches = ticket.railwayTrainId.isEmpty()
             ? train.railwayTrainId.isEmpty()
-                && (!ticket.serviceDate.isValid() || train.railwayServiceDate == ticket.serviceDate)
+                && train.railwayServiceDate == ticket.serviceDate
             : train.railwayTrainId == ticket.railwayTrainId
                 && train.railwayServiceDate == ticket.serviceDate;
         if (identityMatches && (!ticket.railwayTrainId.isEmpty() || train.number == ticket.trainNumber)) {
@@ -162,15 +162,8 @@ OperationResult RefundService::refund(const QString &ticketId,
     const quint64 requestMask = domain::segmentMask(fromIndex, toIndex);
     auto detailIt = std::find_if(seatIt->details.begin(), seatIt->details.end(),
                                  [&ticketIt](const domain::SeatDetail &detail) {
-        return !ticketIt->seatId.isEmpty() && detail.seatId == ticketIt->seatId;
+        return detail.seatId == ticketIt->seatId;
     });
-    // 兼容旧版未记录 seatId 的有效票：仅释放一个完整占用该行程的座位。
-    if (detailIt == seatIt->details.end() && ticketIt->seatId.isEmpty()) {
-        detailIt = std::find_if(seatIt->details.begin(), seatIt->details.end(),
-                                [requestMask](const domain::SeatDetail &detail) {
-            return (detail.occupiedMask & requestMask) == requestMask;
-        });
-    }
     if (requestMask == 0 || detailIt == seatIt->details.end()
         || (detailIt->occupiedMask & requestMask) != requestMask)
         return OperationResult::failure(QStringLiteral("座位占用数据异常，无法释放座位。"));

@@ -149,8 +149,7 @@ QJsonObject ticketToJson(const Ticket &ticket)
                        {QStringLiteral("seatType"), ticket.seatType},
                        {QStringLiteral("priceCents"), static_cast<double>(ticket.priceCents)},
                        {QStringLiteral("status"), ticketStatusKey(ticket.status)}};
-    if (ticket.serviceDate.isValid())
-        object.insert(QStringLiteral("serviceDate"), ticket.serviceDate.toString(Qt::ISODate));
+    object.insert(QStringLiteral("serviceDate"), ticket.serviceDate.toString(Qt::ISODate));
     if (!ticket.railwayTrainId.isEmpty())
         object.insert(QStringLiteral("railwayTrainId"), ticket.railwayTrainId);
     if (!ticket.seatId.isEmpty())
@@ -294,33 +293,29 @@ bool parseSeat(const QJsonValue &value, SeatInventory *seat, QString *error)
             return false;
         seat->segments.append(segment);
     }
-    const QJsonValue detailsValue = object.value(QStringLiteral("details"));
-    if (!detailsValue.isUndefined()) {
-        if (!detailsValue.isArray()) {
-            *error = QObject::tr("字段 details 应为数组。");
+    QJsonArray details;
+    if (!readArray(object, "details", &details, error))
+        return false;
+    QSet<QString> seatIds;
+    for (const QJsonValue &detailValue : details) {
+        if (!detailValue.isObject()) {
+            *error = QObject::tr("座位明细记录格式错误。");
             return false;
         }
-        QSet<QString> seatIds;
-        for (const QJsonValue &detailValue : detailsValue.toArray()) {
-            if (!detailValue.isObject()) {
-                *error = QObject::tr("座位明细记录格式错误。");
-                return false;
-            }
-            const QJsonObject detailObject = detailValue.toObject();
-            SeatDetail detail;
-            qint64 occupiedMask = 0;
-            if (!readString(detailObject, "seatId", &detail.seatId, error)
-                || !readInteger(detailObject, "occupiedMask", &occupiedMask, error)
-                || detail.seatId.trimmed().isEmpty() || occupiedMask < 0
-                || seatIds.contains(detail.seatId.toCaseFolded())) {
-                if (error->isEmpty())
-                    *error = QObject::tr("座位编号或占用掩码格式错误。");
-                return false;
-            }
-            detail.occupiedMask = static_cast<quint64>(occupiedMask);
-            seatIds.insert(detail.seatId.toCaseFolded());
-            seat->details.append(detail);
+        const QJsonObject detailObject = detailValue.toObject();
+        SeatDetail detail;
+        qint64 occupiedMask = 0;
+        if (!readString(detailObject, "seatId", &detail.seatId, error)
+            || !readInteger(detailObject, "occupiedMask", &occupiedMask, error)
+            || detail.seatId.trimmed().isEmpty() || occupiedMask < 0
+            || seatIds.contains(detail.seatId.toCaseFolded())) {
+            if (error->isEmpty())
+                *error = QObject::tr("座位编号或占用掩码格式错误。");
+            return false;
         }
+        detail.occupiedMask = static_cast<quint64>(occupiedMask);
+        seatIds.insert(detail.seatId.toCaseFolded());
+        seat->details.append(detail);
     }
     return true;
 }
@@ -376,12 +371,8 @@ bool parseTrain(const QJsonValue &value, Train *train, QString *error)
         *error = QObject::tr("车次 %1 经停区间过多，座位掩码最多支持 53 个区间。").arg(train->number);
         return false;
     }
-    for (SeatInventory &seat : train->seats) {
-        if (seat.details.isEmpty())
-            rebuildSeatDetails(&seat);
-        else
-            syncRemainingSeats(&seat);
-    }
+    for (SeatInventory &seat : train->seats)
+        syncRemainingSeats(&seat);
     return true;
 }
 
@@ -454,18 +445,13 @@ bool parseTicket(const QJsonValue &value, Ticket *ticket, QString *error)
         *error = QObject::tr("车票金额或状态格式错误。");
         return false;
     }
-    // 第一至第四阶段生成的旧数据没有 serviceDate；保留兼容性，业务层会按唯一车次回退查找。
-    const QJsonValue serviceDate = object.value(QStringLiteral("serviceDate"));
-    if (!serviceDate.isUndefined()) {
-        if (!serviceDate.isString()) {
-            *error = QObject::tr("字段 serviceDate 应为文本。");
-            return false;
-        }
-        ticket->serviceDate = QDate::fromString(serviceDate.toString(), Qt::ISODate);
-        if (!ticket->serviceDate.isValid()) {
-            *error = QObject::tr("车票运行日期格式错误。");
-            return false;
-        }
+    QString serviceDate;
+    if (!readString(object, "serviceDate", &serviceDate, error))
+        return false;
+    ticket->serviceDate = QDate::fromString(serviceDate, Qt::ISODate);
+    if (!ticket->serviceDate.isValid()) {
+        *error = QObject::tr("车票运行日期格式错误。");
+        return false;
     }
     ticket->railwayTrainId = object.value(QStringLiteral("railwayTrainId")).toString();
     ticket->seatId = object.value(QStringLiteral("seatId")).toString();
@@ -516,7 +502,7 @@ bool appDataFromJson(const QJsonObject &object, AppData *data, QString *error)
     qint64 schemaVersion = 0;
     if (!readInteger(object, "schemaVersion", &schemaVersion, error))
         return false;
-    if (schemaVersion != 4 && schemaVersion != 5 && schemaVersion != CurrentSchemaVersion) {
+    if (schemaVersion != CurrentSchemaVersion) {
         *error = QObject::tr("不支持的数据版本：%1，当前版本为 %2。")
                      .arg(schemaVersion)
                      .arg(CurrentSchemaVersion);
@@ -590,20 +576,6 @@ bool appDataFromJson(const QJsonObject &object, AppData *data, QString *error)
         && parseList(refunds, &data->refunds, parseRefund, error);
     if (!parsed)
         return false;
-
-    if (schemaVersion < 6) {
-        for (Train &train : data->trains) {
-            for (SeatInventory &seat : train.seats) {
-                seat.details.resize(DefaultSeatCount);
-                for (SegmentInventory &segment : seat.segments)
-                    segment.totalSeats = DefaultSeatCount;
-                syncRemainingSeats(&seat);
-            }
-        }
-    }
-
-    // 旧数据曾让每个席别都从 01 车开始编号；加载时统一整理整列车并迁移票面座位号。
-    organizeSeatAssignments(data);
 
     QVector<Train> uniqueTrains;
     for (const Train &train : std::as_const(data->trains)) {

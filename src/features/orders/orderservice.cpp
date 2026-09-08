@@ -13,7 +13,7 @@ const domain::Train *findTrain(const domain::AppData &data, const domain::Ticket
     const auto matches = [&ticket](const domain::Train &train) {
         const bool identityMatches = ticket.railwayTrainId.isEmpty()
             ? train.railwayTrainId.isEmpty()
-                && (!ticket.serviceDate.isValid() || train.railwayServiceDate == ticket.serviceDate)
+                && train.railwayServiceDate == ticket.serviceDate
             : train.railwayTrainId == ticket.railwayTrainId
                 && train.railwayServiceDate == ticket.serviceDate;
         return identityMatches && (!ticket.railwayTrainId.isEmpty() || train.number == ticket.trainNumber);

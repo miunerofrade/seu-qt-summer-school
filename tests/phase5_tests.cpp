@@ -61,7 +61,6 @@ private slots:
     void departedAndRepeatedTicketsCannotBeRefunded();
     void completedTicketStatusRefreshesAtArrival();
     void saveFailureRollsBackRefundAndInventory();
-    void legacyTicketWithoutServiceDateRemainsReadable();
 };
 
 void PhaseFiveTests::refundRateBoundariesAndRounding()
@@ -171,27 +170,6 @@ void PhaseFiveTests::saveFailureRollsBackRefundAndInventory()
     QCOMPARE(store.data().tickets.first().status, domain::TicketStatus::Issued);
     QCOMPARE(store.data().refunds.size(), 0);
     QCOMPARE(store.data().trains[0].seats[0].segments[0].remainingSeats, remainingBefore);
-}
-
-void PhaseFiveTests::legacyTicketWithoutServiceDateRemainsReadable()
-{
-    QTemporaryDir directory;
-    auto store = initializedStore(directory.filePath(QStringLiteral("app.json")),
-                                  QDate::currentDate().addDays(10));
-    QVERIFY(store);
-    domain::AppData candidate = store->data();
-    candidate.tickets.append({QStringLiteral("legacy-ticket"),
-                              candidate.passengers.first().id,
-                              QStringLiteral("G101"),
-                              QStringLiteral("NKH"),
-                              QStringLiteral("AOH"),
-                              QStringLiteral("二等座"),
-                              15000,
-                              domain::TicketStatus::Issued});
-    QVERIFY(store->commit(candidate));
-    QVERIFY(store->reload());
-    QCOMPARE(store->data().tickets.first().id, QStringLiteral("legacy-ticket"));
-    QVERIFY(!store->data().tickets.first().serviceDate.isValid());
 }
 
 QTEST_GUILESS_MAIN(PhaseFiveTests)

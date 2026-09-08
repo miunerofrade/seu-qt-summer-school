@@ -57,7 +57,6 @@ class AuthTests final : public QObject
 private slots:
     void registrationPersistenceAndFailure();
     void currentDataAndBackup();
-    void oldVersionIsRejectedWithoutOverwrite();
     void ownersAndSharedInventory();
     void loginFormAndAnimation();
     void lastLoginPrefill();
@@ -119,28 +118,6 @@ void AuthTests::currentDataAndBackup()
     QCOMPARE(store.data().users.size(), 2);
     QVERIFY(store.login("Alice", "password"));
     QVERIFY(OrderService(&store).summaries().isEmpty());
-}
-
-void AuthTests::oldVersionIsRejectedWithoutOverwrite()
-{
-    QTemporaryDir dir;
-    const QString path = dir.filePath("app.json");
-    QVERIFY(JsonRepository(path).save(domain::createDemoData()));
-    QFile file(path);
-    QVERIFY(file.open(QIODevice::ReadOnly));
-    auto json = QJsonDocument::fromJson(file.readAll()).object();
-    file.close();
-    json.insert("schemaVersion", 3);
-    json.remove("users");
-    const QByteArray legacy = QJsonDocument(json).toJson();
-    QVERIFY(file.open(QIODevice::WriteOnly | QIODevice::Truncate));
-    QCOMPARE(file.write(legacy), legacy.size());
-    file.close();
-    DataStore store(std::make_unique<JsonRepository>(path));
-    QVERIFY(!store.initialize());
-    QVERIFY(!store.isWritable());
-    QVERIFY(file.open(QIODevice::ReadOnly));
-    QCOMPARE(file.readAll(), legacy);
 }
 
 void AuthTests::ownersAndSharedInventory()
