@@ -98,8 +98,10 @@ void PhaseFiveTests::refundRestoresEverySegmentAndPersistsRecord()
     const QDate serviceDate = QDate::currentDate().addDays(10);
     auto store = initializedStore(directory.filePath(QStringLiteral("app.json")), serviceDate);
     QVERIFY(store);
-    const int firstBefore = store->data().trains[0].seats[0].segments[0].remainingSeats;
-    const int secondBefore = store->data().trains[0].seats[0].segments[1].remainingSeats;
+    const int firstBefore = domain::availableSeatCount(
+        store->data().trains[0].seats[0], serviceDate, quint64(1));
+    const int secondBefore = domain::availableSeatCount(
+        store->data().trains[0].seats[0], serviceDate, quint64(2));
     const QString ticketId = bookOne(store.get(), serviceDate);
     QVERIFY(!ticketId.isEmpty());
 
@@ -110,8 +112,10 @@ void PhaseFiveTests::refundRestoresEverySegmentAndPersistsRecord()
     QCOMPARE(receipt.ratePercent, 0);
     QCOMPARE(store->data().tickets.first().status, domain::TicketStatus::Refunded);
     QCOMPARE(store->data().refunds.size(), 1);
-    QCOMPARE(store->data().trains[0].seats[0].segments[0].remainingSeats, firstBefore);
-    QCOMPARE(store->data().trains[0].seats[0].segments[1].remainingSeats, secondBefore);
+    QCOMPARE(domain::availableSeatCount(store->data().trains[0].seats[0],
+                                        serviceDate, quint64(1)), firstBefore);
+    QCOMPARE(domain::availableSeatCount(store->data().trains[0].seats[0],
+                                        serviceDate, quint64(2)), secondBefore);
     QVERIFY(store->reload());
     QCOMPARE(store->data().tickets.first().status, domain::TicketStatus::Refunded);
     QCOMPARE(store->data().refunds.first().ticketId, ticketId);
@@ -164,12 +168,14 @@ void PhaseFiveTests::saveFailureRollsBackRefundAndInventory()
     DataStore store(std::make_unique<FailingRepository>(initial));
     QVERIFY(store.initialize());
     QVERIFY(store.login(QStringLiteral("admin"), QStringLiteral("admin")));
-    const int remainingBefore = store.data().trains[0].seats[0].segments[0].remainingSeats;
+    const int remainingBefore = domain::availableSeatCount(
+        store.data().trains[0].seats[0], serviceDate, quint64(1));
     QVERIFY(!RefundService(&store).refund(ticketId,
                                           QDateTime(serviceDate.addDays(-9), QTime(8, 0))));
     QCOMPARE(store.data().tickets.first().status, domain::TicketStatus::Issued);
     QCOMPARE(store.data().refunds.size(), 0);
-    QCOMPARE(store.data().trains[0].seats[0].segments[0].remainingSeats, remainingBefore);
+    QCOMPARE(domain::availableSeatCount(store.data().trains[0].seats[0],
+                                        serviceDate, quint64(1)), remainingBefore);
 }
 
 QTEST_GUILESS_MAIN(PhaseFiveTests)

@@ -4,10 +4,18 @@
 #include <QUuid>
 
 #include <algorithm>
+#include <limits>
 
 namespace domain {
 
 namespace {
+struct DemoSegment
+{
+    qint64 priceCents;
+    int totalSeats;
+    int availableSeats;
+};
+
 QString seatPositions(const QString &seatType)
 {
     if (seatType.contains(QStringLiteral("商务")))
@@ -57,10 +65,24 @@ TrainStop stop(const QString &stationCode,
 }
 
 SeatInventory seat(const QString &name,
-                   std::initializer_list<SegmentInventory> segments)
+                   std::initializer_list<DemoSegment> segments)
 {
-    SeatInventory inventory{name, QVector<SegmentInventory>(segments)};
+    SeatInventory inventory;
+    inventory.seatType = name;
+    for (const DemoSegment &segment : segments)
+        inventory.segments.append({segment.priceCents, segment.totalSeats});
     rebuildSeatDetails(&inventory);
+    const QDate today = QDate::currentDate();
+    for (int index = 0; index < inventory.details.size(); ++index) {
+        quint64 mask = 0;
+        int segmentIndex = 0;
+        for (const DemoSegment &segment : segments) {
+            if (index >= segment.availableSeats)
+                mask |= quint64(1) << segmentIndex;
+            ++segmentIndex;
+        }
+        setOccupiedMaskForDate(&inventory.details[index], today, mask);
+    }
     return inventory;
 }
 } // 命名空间
@@ -130,12 +152,7 @@ void rebuildSeatDetails(SeatInventory *inventory)
     inventory->details.clear();
     inventory->details.reserve(seatCount);
     for (int index = 0; index < seatCount; ++index) {
-        SeatDetail detail{seatIdForIndex(inventory->seatType, index), 0};
-        for (int segmentIndex = 0; segmentIndex < inventory->segments.size(); ++segmentIndex) {
-            const SegmentInventory &segment = inventory->segments.at(segmentIndex);
-            if (index >= segment.remainingSeats)
-                detail.occupiedMask |= (quint64(1) << segmentIndex);
-        }
+        SeatDetail detail{seatIdForIndex(inventory->seatType, index), {}};
         inventory->details.append(std::move(detail));
     }
 }
@@ -201,7 +218,8 @@ void organizeSeatAssignments(AppData *data)
                     && train.railwayServiceDate == ticket.serviceDate;
             } else if (train.railwayTrainId.isEmpty()
                        && train.number.compare(ticket.trainNumber, Qt::CaseInsensitive) == 0) {
-                trainMatches = train.railwayServiceDate == ticket.serviceDate;
+                trainMatches = !train.railwayServiceDate.isValid()
+                    || train.railwayServiceDate == ticket.serviceDate;
             }
             if (!trainMatches)
                 continue;
@@ -213,27 +231,47 @@ void organizeSeatAssignments(AppData *data)
     }
 }
 
-void syncRemainingSeats(SeatInventory *inventory)
+quint64 occupiedMaskForDate(const SeatDetail &detail, const QDate &serviceDate)
 {
-    if (!inventory)
-        return;
-    for (int segmentIndex = 0; segmentIndex < inventory->segments.size(); ++segmentIndex) {
-        const quint64 mask = quint64(1) << segmentIndex;
-        int available = 0;
-        for (const SeatDetail &detail : std::as_const(inventory->details))
-            available += (detail.occupiedMask & mask) == 0;
-        inventory->segments[segmentIndex].remainingSeats = available;
-    }
+    if (!serviceDate.isValid())
+        return 0;
+    return detail.occupiedMasks.value(serviceDate.toString(Qt::ISODate), 0);
 }
 
-int availableSeatCount(const SeatInventory &inventory, quint64 requestMask)
+void setOccupiedMaskForDate(SeatDetail *detail, const QDate &serviceDate, quint64 mask)
 {
-    if (requestMask == 0)
+    if (!detail || !serviceDate.isValid())
+        return;
+    const QString key = serviceDate.toString(Qt::ISODate);
+    if (mask == 0)
+        detail->occupiedMasks.remove(key);
+    else
+        detail->occupiedMasks.insert(key, mask);
+}
+
+int availableSeatCount(const SeatInventory &inventory,
+                       const QDate &serviceDate,
+                       quint64 requestMask)
+{
+    if (!serviceDate.isValid() || requestMask == 0)
         return 0;
-    return static_cast<int>(std::count_if(inventory.details.cbegin(), inventory.details.cend(),
-                                          [requestMask](const SeatDetail &detail) {
-        return (detail.occupiedMask & requestMask) == 0;
-    }));
+    int capacity = inventory.details.isEmpty()
+        ? std::numeric_limits<int>::max()
+        : static_cast<int>(inventory.details.size());
+    for (int segment = 0; segment < inventory.segments.size(); ++segment) {
+        if ((requestMask & (quint64(1) << segment)) != 0)
+            capacity = std::min(capacity, inventory.segments.at(segment).totalSeats);
+    }
+    if (capacity == std::numeric_limits<int>::max())
+        return 0;
+    if (inventory.details.isEmpty())
+        return capacity;
+    int available = 0;
+    for (int index = 0; index < capacity; ++index) {
+        if ((occupiedMaskForDate(inventory.details.at(index), serviceDate) & requestMask) == 0)
+            ++available;
+    }
+    return available;
 }
 
 AppData createDemoData()

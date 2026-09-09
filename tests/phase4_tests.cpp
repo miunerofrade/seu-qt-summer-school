@@ -75,7 +75,7 @@ void PhaseFourTests::successfulBookingCreatesOrderTicketsAndDeductsSegments()
     const auto occurrenceForToday = [&]() {
         return std::find_if(store->data().trains.cbegin(), store->data().trains.cend(), [](const domain::Train &train) {
             return train.number == QStringLiteral("G101")
-                && train.railwayServiceDate == QDate::currentDate();
+                && !train.railwayServiceDate.isValid();
         });
     };
     auto occurrence = occurrenceForToday();
@@ -84,7 +84,8 @@ void PhaseFourTests::successfulBookingCreatesOrderTicketsAndDeductsSegments()
         const auto seat = std::find_if(train.seats.cbegin(), train.seats.cend(), [](const domain::SeatInventory &item) {
             return item.seatType == QStringLiteral("二等座");
         });
-        return seat == train.seats.cend() ? -1 : seat->segments.at(segment).remainingSeats;
+        return seat == train.seats.cend() ? -1
+            : domain::availableSeatCount(*seat, QDate::currentDate(), quint64(1) << segment);
     };
     QCOMPARE(remainingSecondClass(*occurrence, 0), 39);
     QCOMPARE(remainingSecondClass(*occurrence, 1), 34);
@@ -105,8 +106,9 @@ void PhaseFourTests::insufficientSeatsLeavesEverythingUnchanged()
     const QString firstPassenger = candidate.passengers.first().id;
     domain::Passenger second{QStringLiteral("second"), QStringLiteral("第二位"), QStringLiteral("身份证"), QStringLiteral("320101199001011235")};
     candidate.passengers.push_back(second);
-    candidate.trains[0].seats[1].segments[0].remainingSeats = 1;
-    candidate.trains[0].seats[1].segments[1].remainingSeats = 1;
+    for (int index = 1; index < candidate.trains[0].seats[1].details.size(); ++index)
+        domain::setOccupiedMaskForDate(&candidate.trains[0].seats[1].details[index],
+                                       QDate::currentDate(), domain::segmentMask(0, 2));
     QVERIFY(store->commit(candidate));
 
     const OperationResult result = BookingService(*store).book(
@@ -115,8 +117,10 @@ void PhaseFourTests::insufficientSeatsLeavesEverythingUnchanged()
     QVERIFY(!result);
     QCOMPARE(store->data().orders.size(), 0);
     QCOMPARE(store->data().tickets.size(), 0);
-    QCOMPARE(store->data().trains[0].seats[1].segments[0].remainingSeats, 1);
-    QCOMPARE(store->data().trains[0].seats[1].segments[1].remainingSeats, 1);
+    QCOMPARE(domain::availableSeatCount(store->data().trains[0].seats[1],
+                                        QDate::currentDate(), quint64(1)), 1);
+    QCOMPARE(domain::availableSeatCount(store->data().trains[0].seats[1],
+                                        QDate::currentDate(), quint64(2)), 1);
 }
 
 void PhaseFourTests::duplicatePassengersAreRejected()
@@ -140,14 +144,16 @@ void PhaseFourTests::saveFailureRollsBackMemoryState()
     DataStore store(std::make_unique<FailingRepository>(initial));
     QVERIFY(store.initialize());
     QVERIFY(store.login(QStringLiteral("admin"), QStringLiteral("admin")));
-    const int remainingBefore = store.data().trains.first().seats.first().segments.first().remainingSeats;
+    const int remainingBefore = domain::availableSeatCount(
+        store.data().trains.first().seats.first(), QDate::currentDate(), quint64(1));
     const OperationResult result = BookingService(store).book(
         {QStringLiteral("G101"), QDate::currentDate(), QStringLiteral("NKH"), QStringLiteral("AOH"),
          QStringLiteral("二等座"), {passengerId}});
     QVERIFY(!result);
     QCOMPARE(store.data().orders.size(), 0);
     QCOMPARE(store.data().tickets.size(), 0);
-    QCOMPARE(store.data().trains.first().seats.first().segments.first().remainingSeats, remainingBefore);
+    QCOMPARE(domain::availableSeatCount(store.data().trains.first().seats.first(),
+                                        QDate::currentDate(), quint64(1)), remainingBefore);
 }
 
 void PhaseFourTests::demoBookingImportsOnlineTrainAndCreatesOrder()
@@ -178,7 +184,7 @@ void PhaseFourTests::demoBookingImportsOnlineTrainAndCreatesOrder()
     QCOMPARE(train->stops.size(), 2);
     QCOMPARE(train->stops.first().stationCode, QStringLiteral("NKH"));
     QCOMPARE(train->stops.last().stationCode, QStringLiteral("AOH"));
-    QCOMPARE(train->seats.first().segments.first().remainingSeats, 19);
+    QCOMPARE(domain::availableSeatCount(train->seats.first(), date, quint64(1)), 19);
     QVERIFY(store->reload());
     QCOMPARE(store->data().tickets.last().trainNumber, QStringLiteral("G999"));
 }
@@ -198,7 +204,7 @@ void PhaseFourTests::fourStationSegmentPurchasesBlockLongRoute()
                    {QStringLiteral("S2"), 1, QTime(8, 20), QTime(8, 22)},
                    {QStringLiteral("S3"), 2, QTime(8, 40), QTime(8, 42)},
                    {QStringLiteral("S4"), 3, QTime(9, 0), {}}};
-    train.seats = {{QStringLiteral("二等座"), {{100, 1, 1}, {100, 1, 1}, {100, 1, 1}}}};
+    train.seats = {{QStringLiteral("二等座"), {{100, 1}, {100, 1}, {100, 1}}}};
     candidate.trains.append(train);
     QVERIFY(store->commit(candidate));
     const QString p1 = store->data().passengers.at(0).id;
@@ -211,10 +217,15 @@ void PhaseFourTests::fourStationSegmentPurchasesBlockLongRoute()
          QStringLiteral("二等座"), {p2}}));
     QCOMPARE(store->data().tickets.at(0).seatId, QStringLiteral("01车01A"));
     QCOMPARE(store->data().tickets.at(1).seatId, QStringLiteral("01车01A"));
-    QCOMPARE(store->data().trains.last().seats.first().details.first().occupiedMask, quint64(5));
-    QCOMPARE(store->data().trains.last().seats.first().segments.at(0).remainingSeats, 0);
-    QCOMPARE(store->data().trains.last().seats.first().segments.at(1).remainingSeats, 1);
-    QCOMPARE(store->data().trains.last().seats.first().segments.at(2).remainingSeats, 0);
+    QCOMPARE(domain::occupiedMaskForDate(
+                 store->data().trains.last().seats.first().details.first(),
+                 QDate::currentDate()), quint64(5));
+    QCOMPARE(domain::availableSeatCount(store->data().trains.last().seats.first(),
+                                        QDate::currentDate(), quint64(1)), 0);
+    QCOMPARE(domain::availableSeatCount(store->data().trains.last().seats.first(),
+                                        QDate::currentDate(), quint64(2)), 1);
+    QCOMPARE(domain::availableSeatCount(store->data().trains.last().seats.first(),
+                                        QDate::currentDate(), quint64(4)), 0);
     QVERIFY(!BookingService(*store).book(
         {QStringLiteral("T4"), QDate::currentDate(), QStringLiteral("S1"), QStringLiteral("S4"),
          QStringLiteral("二等座"), {store->data().passengers.at(2).id}}));
@@ -248,9 +259,9 @@ void PhaseFourTests::railwayIdentitySharesSegmentsAcrossDisplayNumberChange()
         return train.railwayTrainId == serviceId && train.railwayServiceDate == date;
     });
     QVERIFY(service != store->data().trains.cend());
-    QCOMPARE(service->seats.first().segments.at(0).remainingSeats, 0);
-    QCOMPARE(service->seats.first().segments.at(1).remainingSeats, 1);
-    QCOMPARE(service->seats.first().segments.at(2).remainingSeats, 0);
+    QCOMPARE(domain::availableSeatCount(service->seats.first(), date, quint64(1)), 0);
+    QCOMPARE(domain::availableSeatCount(service->seats.first(), date, quint64(2)), 1);
+    QCOMPARE(domain::availableSeatCount(service->seats.first(), date, quint64(4)), 0);
     QCOMPARE(store->data().tickets.last().trainNumber, QStringLiteral("G101"));
     QVERIFY(!BookingService(*store).book(
         {QStringLiteral("G100"), date, QStringLiteral("S1"), QStringLiteral("S4"),
@@ -267,24 +278,38 @@ void PhaseFourTests::recurringCustomTrainHasIndependentDailyInventory()
     QVERIFY(BookingService(*store).book(
         {QStringLiteral("G101"), firstDate, QStringLiteral("NKH"), QStringLiteral("AOH"),
          QStringLiteral("二等座"), {store->data().passengers.at(0).id}}));
+    const auto definitionAfterFirstBooking = std::find_if(
+        store->data().trains.cbegin(), store->data().trains.cend(), [](const domain::Train &train) {
+            return train.number == QStringLiteral("G101") && !train.railwayServiceDate.isValid();
+        });
+    QVERIFY(definitionAfterFirstBooking != store->data().trains.cend());
+    const auto secondClassAfterFirstBooking = std::find_if(
+        definitionAfterFirstBooking->seats.cbegin(), definitionAfterFirstBooking->seats.cend(),
+        [](const domain::SeatInventory &seat) {
+            return seat.seatType == QStringLiteral("二等座");
+        });
+    QVERIFY(secondClassAfterFirstBooking != definitionAfterFirstBooking->seats.cend());
+    QCOMPARE(domain::availableSeatCount(*secondClassAfterFirstBooking, secondDate,
+                                        domain::segmentMask(0, 2)), 100);
     QVERIFY(BookingService(*store).book(
         {QStringLiteral("G101"), secondDate, QStringLiteral("NKH"), QStringLiteral("AOH"),
          QStringLiteral("二等座"), {store->data().passengers.at(1).id}}));
+    QVERIFY(store->reload());
     const auto remainingOn = [&](const QDate &date) {
         const auto occurrence = std::find_if(store->data().trains.cbegin(), store->data().trains.cend(),
-                                             [&date](const domain::Train &train) {
-            return train.number == QStringLiteral("G101") && train.railwayServiceDate == date;
+                                             [](const domain::Train &train) {
+            return train.number == QStringLiteral("G101") && !train.railwayServiceDate.isValid();
         });
         if (occurrence == store->data().trains.cend())
             return -1;
         const auto seat = std::find_if(occurrence->seats.cbegin(), occurrence->seats.cend(), [](const domain::SeatInventory &item) {
             return item.seatType == QStringLiteral("二等座");
         });
-        return seat == occurrence->seats.cend() ? -1 : seat->segments.first().remainingSeats;
+        return seat == occurrence->seats.cend() ? -1
+            : domain::availableSeatCount(*seat, date, domain::segmentMask(0, 2));
     };
-    QCOMPARE(remainingOn(firstDate), 39);
-    QCOMPARE(remainingOn(secondDate), 39);
-    QCOMPARE(store->data().trains.first().seats.at(1).segments.first().remainingSeats, 40);
+    QCOMPARE(remainingOn(firstDate), 99);
+    QCOMPARE(remainingOn(secondDate), 99);
 }
 
 void PhaseFourTests::bothBookingPathsRejectInvalidPassengersBeforeSaving()

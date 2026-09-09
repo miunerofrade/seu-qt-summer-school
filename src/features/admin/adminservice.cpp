@@ -353,23 +353,27 @@ OperationResult AdminService::replaceStops(const QString &trainNumber,
                 for (const int oldSegment : sources)
                     totalSeats = std::max(totalSeats, oldSeat.segments.at(oldSegment).totalSeats);
             }
-            remapped.segments.append({priceCents, totalSeats, totalSeats});
+            remapped.segments.append({priceCents, totalSeats});
         }
         for (int detailIndex = 0; detailIndex < remapped.details.size(); ++detailIndex) {
-            const quint64 oldMask = oldSeat.details.at(detailIndex).occupiedMask;
-            quint64 newMask = 0;
-            for (int newSegment = 0; newSegment < newSegmentCount; ++newSegment) {
-                const bool occupied = std::any_of(oldSources.at(newSegment).cbegin(),
-                                                  oldSources.at(newSegment).cend(),
-                                                  [oldMask](int oldSegment) {
-                    return (oldMask & (quint64(1) << oldSegment)) != 0;
-                });
-                if (occupied)
-                    newMask |= quint64(1) << newSegment;
+            remapped.details[detailIndex].occupiedMasks.clear();
+            const auto &oldMasks = oldSeat.details.at(detailIndex).occupiedMasks;
+            for (auto maskIt = oldMasks.cbegin(); maskIt != oldMasks.cend(); ++maskIt) {
+                const quint64 oldMask = maskIt.value();
+                quint64 newMask = 0;
+                for (int newSegment = 0; newSegment < newSegmentCount; ++newSegment) {
+                    const bool occupied = std::any_of(oldSources.at(newSegment).cbegin(),
+                                                      oldSources.at(newSegment).cend(),
+                                                      [oldMask](int oldSegment) {
+                        return (oldMask & (quint64(1) << oldSegment)) != 0;
+                    });
+                    if (occupied)
+                        newMask |= quint64(1) << newSegment;
+                }
+                if (newMask != 0)
+                    remapped.details[detailIndex].occupiedMasks.insert(maskIt.key(), newMask);
             }
-            remapped.details[detailIndex].occupiedMask = newMask;
         }
-        domain::syncRemainingSeats(&remapped);
         train->seats.append(std::move(remapped));
     }
     domain::organizeSeatAssignments(&candidate);
@@ -402,10 +406,8 @@ OperationResult AdminService::replaceSeats(const QString &trainNumber,
         if (seat.segments.size() != segmentCount)
             return OperationResult::failure(QObject::tr("席别 %1 的区间数量不正确。").arg(seatType));
         for (const domain::SegmentInventory &segment : seat.segments) {
-            if (segment.priceCents < 0 || segment.totalSeats < 0 || segment.remainingSeats < 0)
+            if (segment.priceCents < 0 || segment.totalSeats < 0)
                 return OperationResult::failure(QObject::tr("票价和票额不能为负数。"));
-            if (segment.remainingSeats > segment.totalSeats)
-                return OperationResult::failure(QObject::tr("余票不能大于总票额。"));
         }
     }
 
@@ -422,8 +424,11 @@ OperationResult AdminService::replaceSeats(const QString &trainNumber,
 OperationResult AdminService::replaceSeatDetails(
     const QString &trainNumber,
     const QString &seatType,
-    const QVector<domain::SeatDetail> &details)
+    const QVector<domain::SeatDetail> &details,
+    const QDate &serviceDate)
 {
+    if (!serviceDate.isValid())
+        return OperationResult::failure(QObject::tr("请选择有效的乘车日期。"));
     domain::AppData candidate = m_dataStore->data();
     const auto train = findTrain(candidate, trainNumber);
     if (train == candidate.trains.end())
@@ -445,16 +450,16 @@ OperationResult AdminService::replaceSeatDetails(
         const QString id = detail.seatId.trimmed();
         if (id.isEmpty() || ids.contains(id.toCaseFolded()))
             return OperationResult::failure(QObject::tr("具体席位编号不能为空或重复。"));
-        if ((detail.occupiedMask & ~validMask) != 0)
-            return OperationResult::failure(QObject::tr("席位 %1 的掩码包含无效区间位。").arg(id));
+        for (auto it = detail.occupiedMasks.cbegin(); it != detail.occupiedMasks.cend(); ++it) {
+            const QDate date = QDate::fromString(it.key(), Qt::ISODate);
+            if (!date.isValid() || date.toString(Qt::ISODate) != it.key()
+                || it.value() == 0 || (it.value() & ~validMask) != 0) {
+                return OperationResult::failure(
+                    QObject::tr("席位 %1 的日期或掩码无效。").arg(id));
+            }
+        }
         ids.insert(id.toCaseFolded());
     }
     seat->details = details;
-    domain::syncRemainingSeats(&*seat);
-    for (const domain::SegmentInventory &segment : std::as_const(seat->segments)) {
-        if (segment.remainingSeats > segment.totalSeats)
-            return OperationResult::failure(
-                QObject::tr("具体席位状态产生的余票不能大于该区间总票额。"));
-    }
     return m_dataStore->commit(std::move(candidate));
 }

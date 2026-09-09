@@ -105,7 +105,7 @@ void PhaseThreeTests::fourStationLongQueryUsesMinimumCoveredInventory()
                    {QStringLiteral("S2"), 1, QTime(8, 20), QTime(8, 22)},
                    {QStringLiteral("S3"), 2, QTime(8, 40), QTime(8, 42)},
                    {QStringLiteral("S4"), 3, QTime(9, 0), {}}};
-    train.seats = {{QStringLiteral("二等座"), {{100, 10, 7}, {100, 10, 4}, {100, 10, 9}}}};
+    train.seats = {{QStringLiteral("二等座"), {{100, 10}, {100, 10}, {100, 10}}}};
     candidate.trains.append(train);
     QVERIFY(store->commit(candidate));
 
@@ -113,7 +113,7 @@ void PhaseThreeTests::fourStationLongQueryUsesMinimumCoveredInventory()
         {QStringLiteral("S1"), QStringLiteral("S4"), QDate::currentDate()});
     QCOMPARE(rows.size(), 1);
     QCOMPARE(rows.first().seats.size(), 1);
-    QCOMPARE(rows.first().seats.first().remainingSeats, 4);
+    QCOMPARE(rows.first().seats.first().remainingSeats, 10);
     QCOMPARE(rows.first().seats.first().priceCents, qint64(300));
 }
 
@@ -371,7 +371,7 @@ void PhaseThreeTests::recurringCustomRouteHandlesCrossDay()
     train.number = QStringLiteral("L900");
     train.stops = {{QStringLiteral("CUS"), 0, {}, QTime(23, 30), 0},
                    {QStringLiteral("AOH"), 1, QTime(0, 30), {}, 1}};
-    train.seats = {{QStringLiteral("硬座"), {{5000, 20, 20}}}};
+    train.seats = {{QStringLiteral("硬座"), {{5000, 20}}}};
     candidate.trains.append(train);
     QVERIFY(store->commit(candidate));
 

@@ -48,6 +48,7 @@ private slots:
     void jsonRoundTripPreservesDomainData();
     void corruptJsonIsNotOverwritten();
     void unsupportedVersionIsRejected();
+    void legacySeatMaskSchemaIsRejected();
     void failedCommitKeepsMemoryUnchanged();
     void backupRestoresDataAndKeepsSafetySnapshot();
 };
@@ -102,6 +103,9 @@ void PhaseOneTests::jsonRoundTripPreservesDomainData()
     const QString path = directory.filePath(QStringLiteral("app-data.json"));
     domain::AppData source = domain::createDemoData();
     source.hiddenTrainNumbers.append(QStringLiteral("G205"));
+    const QDate futureDate = QDate::currentDate().addDays(1);
+    domain::setOccupiedMaskForDate(
+        &source.trains.first().seats.first().details.first(), futureDate, quint64(3));
 
     JsonRepository repository(path);
     const OperationResult saved = repository.save(source);
@@ -115,19 +119,27 @@ void PhaseOneTests::jsonRoundTripPreservesDomainData()
     QCOMPARE(loaded.data.hiddenTrainNumbers, QStringList{QStringLiteral("G205")});
     QCOMPARE(loaded.data.trains.first().seats.first().seatType, QStringLiteral("一等座"));
     QCOMPARE(loaded.data.trains.first().seats.at(1).seatType, QStringLiteral("二等座"));
-    QCOMPARE(loaded.data.trains.first().seats.first().segments.at(1).remainingSeats, 69);
+    QCOMPARE(domain::availableSeatCount(loaded.data.trains.first().seats.first(),
+                                        QDate::currentDate(), quint64(2)), 69);
     QCOMPARE(loaded.data.trains.first().seats.first().details.first().seatId,
              QStringLiteral("01车01A"));
     QCOMPARE(loaded.data.trains.first().seats.at(1).details.first().seatId,
              QStringLiteral("03车01A"));
     QVERIFY(!loaded.data.trains.first().seats.first().details.isEmpty());
+    QCOMPARE(domain::occupiedMaskForDate(
+                 loaded.data.trains.first().seats.first().details.first(), futureDate),
+             quint64(3));
     QFile jsonFile(path);
     QVERIFY(jsonFile.open(QIODevice::ReadOnly));
     const QJsonObject root = QJsonDocument::fromJson(jsonFile.readAll()).object();
     const QJsonObject detail = root.value("trains").toArray().first().toObject()
         .value("seats").toArray().first().toObject()
         .value("details").toArray().first().toObject();
-    QVERIFY(detail.value("occupiedMask").isString());
+    QVERIFY(detail.value("occupiedMasks").isObject());
+    const QJsonObject segment = root.value("trains").toArray().first().toObject()
+        .value("seats").toArray().first().toObject()
+        .value("segments").toArray().first().toObject();
+    QVERIFY(!segment.contains("remainingSeats"));
 }
 
 void PhaseOneTests::corruptJsonIsNotOverwritten()
@@ -165,6 +177,40 @@ void PhaseOneTests::unsupportedVersionIsRejected()
     QVERIFY(!loaded.success);
     QVERIFY(!loaded.fileMissing);
     QVERIFY(loaded.error.contains(QStringLiteral("不支持的数据版本")));
+}
+
+void PhaseOneTests::legacySeatMaskSchemaIsRejected()
+{
+    QTemporaryDir directory;
+    const QString path = directory.filePath(QStringLiteral("app-data.json"));
+    JsonRepository repository(path);
+    QVERIFY(repository.save(domain::createDemoData()));
+
+    QFile file(path);
+    QVERIFY(file.open(QIODevice::ReadOnly));
+    QJsonObject root = QJsonDocument::fromJson(file.readAll()).object();
+    file.close();
+    QJsonArray trains = root.value("trains").toArray();
+    QJsonObject train = trains.first().toObject();
+    QJsonArray seats = train.value("seats").toArray();
+    QJsonObject seat = seats.first().toObject();
+    QJsonArray details = seat.value("details").toArray();
+    QJsonObject detail = details.first().toObject();
+    detail.remove("occupiedMasks");
+    detail.insert("occupiedMask", QStringLiteral("0"));
+    details[0] = detail;
+    seat.insert("details", details);
+    seats[0] = seat;
+    train.insert("seats", seats);
+    trains[0] = train;
+    root.insert("trains", trains);
+    QVERIFY(file.open(QIODevice::WriteOnly | QIODevice::Truncate));
+    QVERIFY(file.write(QJsonDocument(root).toJson()) > 0);
+    file.close();
+
+    const LoadResult loaded = repository.load();
+    QVERIFY(!loaded.success);
+    QVERIFY(loaded.error.contains(QStringLiteral("占用掩码")));
 }
 
 void PhaseOneTests::failedCommitKeepsMemoryUnchanged()

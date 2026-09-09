@@ -45,10 +45,13 @@ StatisticsSummary StatisticsService::summarize() const
     int remainingTotal = 0;
     int capacityTotal = 0;
     for (const domain::Train &train : data.trains) {
+        const QDate serviceDate = train.railwayServiceDate.isValid()
+            ? train.railwayServiceDate : QDate::currentDate();
         for (const domain::SeatInventory &seat : train.seats) {
-            for (const domain::SegmentInventory &segment : seat.segments) {
-                remainingTotal += segment.remainingSeats;
-                capacityTotal += segment.totalSeats;
+            for (int index = 0; index < seat.segments.size(); ++index) {
+                remainingTotal += domain::availableSeatCount(
+                    seat, serviceDate, quint64(1) << index);
+                capacityTotal += seat.segments.at(index).totalSeats;
             }
         }
     }

@@ -155,13 +155,14 @@ void AuthTests::ownersAndSharedInventory()
     QVERIFY(BookingService(store).book(requestFor(bobPassenger), &bobOrder));
     QCOMPARE(OrderService(&store).summaries().size(), 1);
     for (const auto &train : store.data().trains) {
-        if (train.number == "G101" && train.railwayServiceDate == requestFor(bobPassenger).serviceDate) {
+        if (train.number == "G101" && !train.railwayServiceDate.isValid()) {
             const auto seat = std::find_if(train.seats.cbegin(), train.seats.cend(), [](const domain::SeatInventory &item) {
                 return item.seatType == QStringLiteral("二等座");
             });
             QVERIFY(seat != train.seats.cend());
-            QCOMPARE(seat->segments[0].remainingSeats, 38);
-            QCOMPARE(seat->segments[1].remainingSeats, 33);
+            const QDate serviceDate = requestFor(bobPassenger).serviceDate;
+            QCOMPARE(domain::availableSeatCount(*seat, serviceDate, quint64(1)), 98);
+            QCOMPARE(domain::availableSeatCount(*seat, serviceDate, quint64(2)), 98);
         }
     }
     QVERIFY(store.login("admin", "admin"));

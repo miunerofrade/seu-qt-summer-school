@@ -5,7 +5,6 @@
 #include <QHash>
 
 #include <algorithm>
-#include <limits>
 
 namespace {
 int absoluteMinutes(const QTime &time, int dayOffset)
@@ -89,23 +88,19 @@ bool appendRow(const domain::Train &train,
             continue;
         qint64 priceCents = 0;
         const quint64 requestMask = domain::segmentMask(fromIndex, toIndex);
-        int remainingSeats = seat.details.isEmpty()
-            ? std::numeric_limits<int>::max()
-            : domain::availableSeatCount(seat, requestMask);
+        const int remainingSeats = domain::availableSeatCount(seat, serviceDate, requestMask);
         bool valid = true;
         for (int segment = fromIndex; segment < toIndex; ++segment) {
             const domain::SegmentInventory &inventory = seat.segments.at(segment);
-            if (inventory.priceCents < 0 || inventory.remainingSeats < 0) {
+            if (inventory.priceCents < 0 || inventory.totalSeats < 0) {
                 valid = false;
                 break;
             }
             priceCents += inventory.priceCents;
-            if (seat.details.isEmpty())
-                remainingSeats = std::min(remainingSeats, inventory.remainingSeats);
         }
         if (valid) {
             row.seats.append({seat.seatType,
-                              remainingSeats == std::numeric_limits<int>::max() ? 0 : remainingSeats,
+                              remainingSeats,
                               priceCents});
         }
     }

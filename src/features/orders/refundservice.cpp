@@ -164,11 +164,13 @@ OperationResult RefundService::refund(const QString &ticketId,
                                  [&ticketIt](const domain::SeatDetail &detail) {
         return detail.seatId == ticketIt->seatId;
     });
+    const quint64 occupied = detailIt == seatIt->details.end()
+        ? 0 : domain::occupiedMaskForDate(*detailIt, ticketIt->serviceDate);
     if (requestMask == 0 || detailIt == seatIt->details.end()
-        || (detailIt->occupiedMask & requestMask) != requestMask)
+        || (occupied & requestMask) != requestMask)
         return OperationResult::failure(QStringLiteral("座位占用数据异常，无法释放座位。"));
-    detailIt->occupiedMask &= ~requestMask;
-    domain::syncRemainingSeats(&*seatIt);
+    domain::setOccupiedMaskForDate(&*detailIt, ticketIt->serviceDate,
+                                   occupied & ~requestMask);
 
     ticketIt->status = domain::TicketStatus::Refunded;
     domain::RefundRecord record;

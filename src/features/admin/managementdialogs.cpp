@@ -9,6 +9,7 @@
 #include <QComboBox>
 #include <QDialog>
 #include <QDialogButtonBox>
+#include <QDateEdit>
 #include <QDoubleSpinBox>
 #include <QFormLayout>
 #include <QHBoxLayout>
@@ -775,14 +776,13 @@ private:
         m_model->appendRow({seatItem,
                             segmentItem,
                             new QStandardItem(QString::number(segment.priceCents / 100.0, 'f', 2)),
-                            new QStandardItem(QString::number(segment.totalSeats)),
-                            new QStandardItem(QString::number(segment.remainingSeats))});
+                            new QStandardItem(QString::number(segment.totalSeats))});
     }
 
     void refreshRows()
     {
         m_model->clear();
-        m_model->setHorizontalHeaderLabels({tr("席别"), tr("区间"), tr("票价（元）"), tr("总票额"), tr("余票")});
+        m_model->setHorizontalHeaderLabels({tr("席别"), tr("区间"), tr("票价（元）"), tr("总票额")});
         const domain::Train *train = trainByNumber(m_dataStore->data(), currentTrainNumber());
         if (!train)
             return;
@@ -820,7 +820,7 @@ private:
                 + QStringLiteral(" → ")
                 + stationDisplayName(m_dataStore->data(), train->stops.at(index + 1).stationCode);
             appendSegmentRow(seatType, segmentName,
-                             {0, domain::DefaultSeatCount, domain::DefaultSeatCount});
+                             {0, domain::DefaultSeatCount});
         }
     }
 
@@ -859,6 +859,14 @@ private:
         dialog.setWindowTitle(tr("%1 · %2 · 具体席位").arg(currentTrainNumber(), seat->seatType));
         dialog.resize(760, 580);
         auto *layout = new QVBoxLayout(&dialog);
+        auto *dateEdit = new QDateEdit(QDate::currentDate(), &dialog);
+        dateEdit->setCalendarPopup(true);
+        dateEdit->setDisplayFormat(QStringLiteral("yyyy-MM-dd"));
+        auto *dateRow = new QHBoxLayout;
+        dateRow->addWidget(new QLabel(tr("乘车日期"), &dialog));
+        dateRow->addWidget(dateEdit);
+        dateRow->addStretch();
+        layout->addLayout(dateRow);
         auto *table = new QTableView(&dialog);
         auto *model = new QStandardItemModel(0, 3, table);
         model->setHorizontalHeaderLabels({tr("席位号"), tr("区间占用（二进制，可编辑）"),
@@ -879,15 +887,22 @@ private:
             }
             return segments.isEmpty() ? QObject::tr("空闲") : segments.join(QStringLiteral("、"));
         };
-        for (const domain::SeatDetail &detail : seat->details) {
-            auto *id = new QStandardItem(detail.seatId);
-            id->setEditable(false);
-            auto *binary = new QStandardItem(QString::number(detail.occupiedMask, 2)
-                                                 .rightJustified(maskWidth, QLatin1Char('0')));
-            auto *occupied = new QStandardItem(occupiedText(detail.occupiedMask));
-            occupied->setEditable(false);
-            model->appendRow({id, binary, occupied});
-        }
+        const auto populateDetails = [model, seat, dateEdit, maskWidth, occupiedText]() {
+            model->removeRows(0, model->rowCount());
+            for (const domain::SeatDetail &detail : seat->details) {
+                const quint64 mask = domain::occupiedMaskForDate(detail, dateEdit->date());
+                auto *id = new QStandardItem(detail.seatId);
+                id->setEditable(false);
+                auto *binary = new QStandardItem(QString::number(mask, 2)
+                                                     .rightJustified(maskWidth, QLatin1Char('0')));
+                auto *occupied = new QStandardItem(occupiedText(mask));
+                occupied->setEditable(false);
+                model->appendRow({id, binary, occupied});
+            }
+        };
+        populateDetails();
+        connect(dateEdit, &QDateEdit::dateChanged, &dialog,
+                [populateDetails](const QDate &) { populateDetails(); });
         configureTable(table);
         table->setModel(model);
         table->setEditTriggers(QAbstractItemView::SelectedClicked
@@ -914,9 +929,8 @@ private:
         buttons->button(QDialogButtonBox::Save)->setText(tr("保存席位状态"));
         buttons->button(QDialogButtonBox::Close)->setText(tr("关闭"));
         layout->addWidget(buttons);
-        connect(buttons->button(QDialogButtonBox::Save), &QPushButton::clicked, &dialog, [&, model]() {
-            QVector<domain::SeatDetail> details;
-            details.reserve(model->rowCount());
+        connect(buttons->button(QDialogButtonBox::Save), &QPushButton::clicked, &dialog, [&, model, dateEdit]() {
+            QVector<domain::SeatDetail> details = seat->details;
             const quint64 validMask = domain::segmentMask(0, seat->segments.size());
             for (int row = 0; row < model->rowCount(); ++row) {
                 bool ok = false;
@@ -931,10 +945,12 @@ private:
                                          tr("第 %1 行不是有效的二进制区间掩码。").arg(row + 1));
                     return;
                 }
-                details.append({model->item(row, 0)->text(), mask});
+                details[row].seatId = model->item(row, 0)->text();
+                domain::setOccupiedMaskForDate(&details[row], dateEdit->date(), mask);
             }
             if (reportResult(&dialog,
-                             m_service.replaceSeatDetails(currentTrainNumber(), seatType, details),
+                             m_service.replaceSeatDetails(currentTrainNumber(), seatType, details,
+                                                          dateEdit->date()),
                              tr("具体席位占用状态已保存。"))) {
                 dialog.accept();
                 refreshRows();
@@ -962,17 +978,15 @@ private:
             }
             bool priceOk = false;
             bool totalOk = false;
-            bool remainingOk = false;
             const double price = m_model->item(row, 2)->text().toDouble(&priceOk);
             const int total = m_model->item(row, 3)->text().toInt(&totalOk);
-            const int remaining = m_model->item(row, 4)->text().toInt(&remainingOk);
-            if (!priceOk || !totalOk || !remainingOk || price < 0) {
+            if (!priceOk || !totalOk || price < 0) {
                 QMessageBox::warning(this, tr("格式错误"), tr("第 %1 行的票价或票额格式无效。").arg(row + 1));
                 return;
             }
-            seat->segments.append({qRound64(price * 100.0), total, remaining});
+            seat->segments.append({qRound64(price * 100.0), total});
         }
-        if (reportResult(this, m_service.replaceSeats(currentTrainNumber(), seats), tr("席别、票价和余票已保存。")))
+        if (reportResult(this, m_service.replaceSeats(currentTrainNumber(), seats), tr("席别、票价和总票额已保存。")))
             refreshRows();
     }
 

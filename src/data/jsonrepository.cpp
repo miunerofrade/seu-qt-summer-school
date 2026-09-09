@@ -81,8 +81,7 @@ QJsonObject stopToJson(const TrainStop &stop)
 QJsonObject segmentToJson(const SegmentInventory &segment)
 {
     return {{QStringLiteral("priceCents"), static_cast<double>(segment.priceCents)},
-            {QStringLiteral("totalSeats"), segment.totalSeats},
-            {QStringLiteral("remainingSeats"), segment.remainingSeats}};
+            {QStringLiteral("totalSeats"), segment.totalSeats}};
 }
 
 QJsonObject seatToJson(const SeatInventory &seat)
@@ -92,8 +91,11 @@ QJsonObject seatToJson(const SeatInventory &seat)
         segments.append(segmentToJson(segment));
     QJsonArray details;
     for (const SeatDetail &detail : seat.details) {
+        QJsonObject occupiedMasks;
+        for (auto it = detail.occupiedMasks.cbegin(); it != detail.occupiedMasks.cend(); ++it)
+            occupiedMasks.insert(it.key(), QString::number(it.value(), 2));
         details.append(QJsonObject{{QStringLiteral("seatId"), detail.seatId},
-                                   {QStringLiteral("occupiedMask"), QString::number(detail.occupiedMask, 2)}});
+                                   {QStringLiteral("occupiedMasks"), occupiedMasks}});
     }
     return {{QStringLiteral("seatType"), seat.seatType},
             {QStringLiteral("segments"), segments},
@@ -258,17 +260,13 @@ bool parseSegment(const QJsonValue &value, SegmentInventory *segment, QString *e
         return false;
     }
     qint64 totalSeats = 0;
-    qint64 remainingSeats = 0;
     const QJsonObject object = value.toObject();
     if (!readInteger(object, "priceCents", &segment->priceCents, error)
-        || !readInteger(object, "totalSeats", &totalSeats, error)
-        || !readInteger(object, "remainingSeats", &remainingSeats, error)) {
+        || !readInteger(object, "totalSeats", &totalSeats, error)) {
         return false;
     }
     segment->totalSeats = static_cast<int>(totalSeats);
-    segment->remainingSeats = static_cast<int>(remainingSeats);
-    if (segment->priceCents < 0 || segment->totalSeats < 0 || segment->remainingSeats < 0
-        || segment->remainingSeats > segment->totalSeats) {
+    if (segment->priceCents < 0 || segment->totalSeats < 0) {
         *error = QObject::tr("区间票价或票额超出有效范围。");
         return false;
     }
@@ -304,24 +302,31 @@ bool parseSeat(const QJsonValue &value, SeatInventory *seat, QString *error)
         }
         const QJsonObject detailObject = detailValue.toObject();
         SeatDetail detail;
-        QString occupiedMaskText;
+        const QJsonValue occupiedMasksValue = detailObject.value(QStringLiteral("occupiedMasks"));
         if (!readString(detailObject, "seatId", &detail.seatId, error)
-            || !readString(detailObject, "occupiedMask", &occupiedMaskText, error)
-            || detail.seatId.trimmed().isEmpty() || occupiedMaskText.isEmpty()
-            || occupiedMaskText.size() > 64
-            || std::any_of(occupiedMaskText.cbegin(), occupiedMaskText.cend(), [](QChar digit) {
-                   return digit != QLatin1Char('0') && digit != QLatin1Char('1');
-               })
+            || !occupiedMasksValue.isObject() || detail.seatId.trimmed().isEmpty()
             || seatIds.contains(detail.seatId.toCaseFolded())) {
             if (error->isEmpty())
                 *error = QObject::tr("座位编号或占用掩码格式错误。");
             return false;
         }
-        bool ok = false;
-        detail.occupiedMask = occupiedMaskText.toULongLong(&ok, 2);
-        if (!ok) {
-            *error = QObject::tr("座位编号或占用掩码格式错误。");
-            return false;
+        const QJsonObject occupiedMasks = occupiedMasksValue.toObject();
+        for (auto it = occupiedMasks.constBegin(); it != occupiedMasks.constEnd(); ++it) {
+            const QDate date = QDate::fromString(it.key(), Qt::ISODate);
+            const QString maskText = it.value().toString();
+            const bool canonicalDate = date.isValid() && date.toString(Qt::ISODate) == it.key();
+            const bool validBinary = it.value().isString() && !maskText.isEmpty()
+                && maskText.size() <= 64
+                && std::all_of(maskText.cbegin(), maskText.cend(), [](QChar digit) {
+                    return digit == QLatin1Char('0') || digit == QLatin1Char('1');
+                });
+            bool ok = false;
+            const quint64 mask = validBinary ? maskText.toULongLong(&ok, 2) : 0;
+            if (!canonicalDate || !validBinary || !ok || mask == 0) {
+                *error = QObject::tr("座位日期或占用掩码格式错误。");
+                return false;
+            }
+            detail.occupiedMasks.insert(it.key(), mask);
         }
         seatIds.insert(detail.seatId.toCaseFolded());
         seat->details.append(detail);
@@ -375,13 +380,29 @@ bool parseTrain(const QJsonValue &value, Train *train, QString *error)
                          .arg(train->number);
             return false;
         }
+        int expectedSeats = 0;
+        for (const SegmentInventory &segment : seat.segments)
+            expectedSeats = std::max(expectedSeats, segment.totalSeats);
+        if (seat.details.size() != expectedSeats) {
+            *error = QObject::tr("车次 %1 的具体席位数量与总票额不匹配。").arg(train->number);
+            return false;
+        }
     }
     if (expectedSegments > 64) {
         *error = QObject::tr("车次 %1 经停区间过多，座位掩码最多支持 64 个区间。").arg(train->number);
         return false;
     }
-    for (SeatInventory &seat : train->seats)
-        syncRemainingSeats(&seat);
+    const quint64 validMask = segmentMask(0, expectedSegments);
+    for (const SeatInventory &seat : train->seats) {
+        for (const SeatDetail &detail : seat.details) {
+            for (const quint64 mask : detail.occupiedMasks) {
+                if ((mask & ~validMask) != 0) {
+                    *error = QObject::tr("车次 %1 的座位掩码包含无效区间位。").arg(train->number);
+                    return false;
+                }
+            }
+        }
+    }
     return true;
 }
 

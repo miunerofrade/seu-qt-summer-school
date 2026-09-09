@@ -27,7 +27,8 @@ public:
                                  const QVector<domain::SeatInventory> &seats);
     OperationResult replaceSeatDetails(const QString &trainNumber,
                                        const QString &seatType,
-                                       const QVector<domain::SeatDetail> &details);
+                                       const QVector<domain::SeatDetail> &details,
+                                       const QDate &serviceDate = QDate::currentDate());
 
 private:
     DataStore *m_dataStore;

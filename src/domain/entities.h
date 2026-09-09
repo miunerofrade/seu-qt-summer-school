@@ -3,6 +3,7 @@
 
 #include <QDate>
 #include <QDateTime>
+#include <QMap>
 #include <QString>
 #include <QStringList>
 #include <QTime>
@@ -10,7 +11,7 @@
 
 namespace domain {
 
-inline constexpr int CurrentSchemaVersion = 6;
+inline constexpr int CurrentSchemaVersion = 7;
 inline constexpr int DefaultSeatCount = 100;
 
 struct User
@@ -49,20 +50,19 @@ struct SegmentInventory
 {
     qint64 priceCents = 0;
     int totalSeats = 0;
-    int remainingSeats = 0;
 };
 
 struct SeatDetail
 {
     QString seatId;
-    quint64 occupiedMask = 0;
+    QMap<QString, quint64> occupiedMasks;
 };
 
 struct SeatInventory
 {
     QString seatType;
     QVector<SegmentInventory> segments;
-    // 座位级库存是真实分配依据；segments.remainingSeats 仅作为查询展示缓存。
+    // 座位级、按乘车日期隔离的 occupiedMasks 是唯一库存事实。
     QVector<SeatDetail> details;
 };
 
@@ -142,8 +142,11 @@ void rebuildSeatDetails(SeatInventory *inventory);
 void renumberSeatDetails(SeatInventory *inventory);
 void organizeTrainSeats(Train *train);
 void organizeSeatAssignments(AppData *data);
-void syncRemainingSeats(SeatInventory *inventory);
-int availableSeatCount(const SeatInventory &inventory, quint64 requestMask);
+quint64 occupiedMaskForDate(const SeatDetail &detail, const QDate &serviceDate);
+void setOccupiedMaskForDate(SeatDetail *detail, const QDate &serviceDate, quint64 mask);
+int availableSeatCount(const SeatInventory &inventory,
+                       const QDate &serviceDate,
+                       quint64 requestMask);
 AppData createDemoData();
 
 } // 命名空间 domain

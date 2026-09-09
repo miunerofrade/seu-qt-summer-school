@@ -5,6 +5,7 @@
 #include <QUuid>
 
 #include <algorithm>
+#include <utility>
 
 namespace {
 QString newId()
@@ -21,21 +22,6 @@ int findStop(const QVector<domain::TrainStop> &stops, const QString &stationCode
     return -1;
 }
 
-bool detailsMatchSummary(const domain::SeatInventory &seat)
-{
-    if (seat.details.isEmpty())
-        return false;
-    for (int segment = 0; segment < seat.segments.size(); ++segment) {
-        const quint64 mask = quint64(1) << segment;
-        const int available = static_cast<int>(std::count_if(
-            seat.details.cbegin(), seat.details.cend(), [mask](const domain::SeatDetail &detail) {
-                return (detail.occupiedMask & mask) == 0;
-            }));
-        if (available != seat.segments.at(segment).remainingSeats)
-            return false;
-    }
-    return true;
-}
 }
 
 BookingService::BookingService(DataStore &dataStore)
@@ -111,12 +97,8 @@ OperationResult BookingService::book(const BookingRequest &request, BookingRecei
             return train.railwayTrainId.isEmpty() && !train.railwayServiceDate.isValid()
                 && train.number == request.trainNumber;
         });
-        if (definition != candidate.trains.cend()) {
-            domain::Train occurrence = *definition;
-            occurrence.railwayServiceDate = request.serviceDate;
-            candidate.trains.append(std::move(occurrence));
-            trainIndex = candidate.trains.size() - 1;
-        }
+        if (definition != candidate.trains.cend())
+            trainIndex = static_cast<int>(std::distance(candidate.trains.cbegin(), definition));
     }
     if (trainIndex < 0)
         return OperationResult::failure(QStringLiteral("车次不存在或日期已变化，请重新查询。"));
@@ -139,7 +121,7 @@ OperationResult BookingService::book(const BookingRequest &request, BookingRecei
 
     if (train.seats.at(seatIndex).segments.size() < toIndex)
         return OperationResult::failure(QStringLiteral("席别区间配置不完整。"));
-    if (!detailsMatchSummary(train.seats.at(seatIndex))) {
+    if (train.seats.at(seatIndex).details.isEmpty()) {
         domain::rebuildSeatDetails(&train.seats[seatIndex]);
         domain::organizeSeatAssignments(&candidate);
     }
@@ -154,8 +136,12 @@ OperationResult BookingService::book(const BookingRequest &request, BookingRecei
         unitPriceCents += inventory.priceCents;
     }
     QVector<domain::SeatDetail *> assignedSeats;
-    for (domain::SeatDetail &detail : seat.details) {
-        if ((detail.occupiedMask & requestMask) == 0) {
+    int assignableSeats = seat.details.size();
+    for (int segment = fromIndex; segment < toIndex; ++segment)
+        assignableSeats = std::min(assignableSeats, seat.segments.at(segment).totalSeats);
+    for (int detailIndex = 0; detailIndex < assignableSeats; ++detailIndex) {
+        domain::SeatDetail &detail = seat.details[detailIndex];
+        if ((domain::occupiedMaskForDate(detail, request.serviceDate) & requestMask) == 0) {
             assignedSeats.append(&detail);
             if (assignedSeats.size() == passengerCount)
                 break;
@@ -163,9 +149,10 @@ OperationResult BookingService::book(const BookingRequest &request, BookingRecei
     }
     if (assignedSeats.size() < passengerCount)
         return OperationResult::failure(QStringLiteral("没有足够的连续区间空闲座位，未生成订单。"));
-    for (domain::SeatDetail *detail : assignedSeats)
-        detail->occupiedMask |= requestMask;
-    domain::syncRemainingSeats(&seat);
+    for (domain::SeatDetail *detail : assignedSeats) {
+        const quint64 occupied = domain::occupiedMaskForDate(*detail, request.serviceDate);
+        domain::setOccupiedMaskForDate(detail, request.serviceDate, occupied | requestMask);
+    }
 
     domain::Order order;
     order.ownerUserId = m_dataStore.currentUserId();
@@ -265,7 +252,7 @@ OperationResult BookingService::bookDemo(const BookingRequest &request,
         const qint64 basePrice = covered ? snapshot.priceCents / coveredSegments : 0;
         const qint64 remainder = covered && index == importedTo - 1
                                      ? snapshot.priceCents % coveredSegments : 0;
-        segments.append({basePrice + remainder, snapshot.remainingSeats, snapshot.remainingSeats});
+        segments.append({basePrice + remainder, snapshot.remainingSeats});
     }
     domain::SeatInventory importedSeat{request.seatType, segments};
     domain::rebuildSeatDetails(&importedSeat);
@@ -301,8 +288,14 @@ OperationResult BookingService::bookDemo(const BookingRequest &request,
                 seat->segments[index].priceCents = segments.at(index).priceCents;
                 seat->segments[index].totalSeats = std::max(seat->segments.at(index).totalSeats,
                                                              snapshot.remainingSeats);
-                seat->segments[index].remainingSeats = std::min(seat->segments.at(index).remainingSeats,
-                                                                 snapshot.remainingSeats);
+            }
+            int requiredSeats = 0;
+            for (const domain::SegmentInventory &segment : std::as_const(seat->segments))
+                requiredSeats = std::max(requiredSeats, segment.totalSeats);
+            while (seat->details.size() < requiredSeats) {
+                seat->details.append({domain::seatIdForIndex(
+                                          seat->seatType,
+                                          static_cast<int>(seat->details.size())), {}});
             }
         }
     }
