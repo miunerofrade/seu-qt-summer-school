@@ -106,7 +106,7 @@ void BookingController::bookSelected()
     confirmButton->setEnabled(false);
     layout->addWidget(buttons);
 
-    auto *disclaimer = new QLabel(tr("当前使用本地演示数据；座位按乘车区间掩码分配。"), &dialog);
+    auto *disclaimer = new QLabel(tr("当前使用演示数据。"), &dialog);
     disclaimer->setWordWrap(true);
     disclaimer->setAlignment(Qt::AlignCenter);
     disclaimer->setStyleSheet(QStringLiteral("color: #8E8E93; font-size: 12px; padding: 6px 0 2px 0;"));

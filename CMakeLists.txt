@@ -9,7 +9,8 @@ set(CMAKE_AUTORCC ON)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-set(QT_SYNC_DATA_DIR "${CMAKE_SOURCE_DIR}/data" CACHE PATH "Directory for runtime JSON data")
+set(QT_SYNC_DATA_DIR "data" CACHE STRING
+    "Runtime JSON data directory (relative paths are resolved from the executable directory)")
 
 if(WIN32 AND NOT CMAKE_PREFIX_PATH AND EXISTS "D:/Qt/Qt/6.11.2/mingw_64")
     set(CMAKE_PREFIX_PATH "D:/Qt/Qt/6.11.2/mingw_64" CACHE PATH "Qt installation prefix")

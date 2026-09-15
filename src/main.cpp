@@ -1,6 +1,7 @@
 #include "app/applicationcontroller.h"
 
 #include <QApplication>
+#include <QCoreApplication>
 #include <QFont>
 #include <QFontDatabase>
 #include <QLocale>
@@ -26,8 +27,12 @@ int main(int argc, char *argv[])
             break;
         }
     }
+    QString dataDirectory = QStringLiteral(QT_SYNC_DATA_DIR);
+    if (QDir::isRelativePath(dataDirectory)) {
+        dataDirectory = QDir(QCoreApplication::applicationDirPath()).filePath(dataDirectory);
+    }
     ApplicationController controller(
-        QDir(QStringLiteral(QT_SYNC_DATA_DIR)).filePath(QStringLiteral("app-data.json")));
+        QDir(dataDirectory).filePath(QStringLiteral("app-data.json")));
     controller.start();
     return QApplication::exec();
 }
