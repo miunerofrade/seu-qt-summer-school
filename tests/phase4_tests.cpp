@@ -49,6 +49,7 @@ private slots:
     void saveFailureRollsBackMemoryState();
     void demoBookingImportsOnlineTrainAndCreatesOrder();
     void fourStationSegmentPurchasesBlockLongRoute();
+    void conflictingPassengerJourneysAreRejectedButHistoryIsPreserved();
     void railwayIdentitySharesSegmentsAcrossDisplayNumberChange();
     void recurringCustomTrainHasIndependentDailyInventory();
     void bothBookingPathsRejectInvalidPassengersBeforeSaving();
@@ -230,6 +231,54 @@ void PhaseFourTests::fourStationSegmentPurchasesBlockLongRoute()
         {QStringLiteral("T4"), QDate::currentDate(), QStringLiteral("S1"), QStringLiteral("S4"),
          QStringLiteral("二等座"), {store->data().passengers.at(2).id}}));
     QCOMPARE(store->data().orders.size(), 2);
+}
+
+void PhaseFourTests::conflictingPassengerJourneysAreRejectedButHistoryIsPreserved()
+{
+    QTemporaryDir directory;
+    auto store = initializedStore(directory.filePath(QStringLiteral("app.json")));
+    QVERIFY(store);
+    const QDate date = QDate::currentDate().addDays(10);
+    const QString passengerId = store->data().passengers.first().id;
+
+    QVERIFY(BookingService(*store).book(
+        {QStringLiteral("G101"), date, QStringLiteral("NKH"), QStringLiteral("OHH"),
+         QStringLiteral("二等座"), {passengerId}}));
+    const QString oldTicketId = store->data().tickets.first().id;
+    const int ordersBeforeConflict = store->data().orders.size();
+    const int ticketsBeforeConflict = store->data().tickets.size();
+
+    const OperationResult conflict = BookingService(*store).book(
+        {QStringLiteral("G101"), date, QStringLiteral("NKH"), QStringLiteral("AOH"),
+         QStringLiteral("二等座"), {passengerId}});
+    QVERIFY(!conflict);
+    QVERIFY(conflict.error.contains(QStringLiteral("冲突")));
+    QCOMPARE(store->data().orders.size(), ordersBeforeConflict);
+    QCOMPARE(store->data().tickets.size(), ticketsBeforeConflict);
+    QCOMPARE(store->data().tickets.first().id, oldTicketId);
+    QCOMPARE(store->data().tickets.first().status, domain::TicketStatus::Issued);
+
+    // 不重叠的另一段行程可以正常出票。
+    QVERIFY(BookingService(*store).book(
+        {QStringLiteral("G205"), date, QStringLiteral("NKH"), QStringLiteral("AOH"),
+         QStringLiteral("二等座"), {passengerId}}));
+    QCOMPARE(store->data().orders.size(), ordersBeforeConflict + 1);
+
+    // 已完成的历史车票保留，但不应阻止后续出票。
+    auto completedData = store->data();
+    auto oldTicket = std::find_if(completedData.tickets.begin(), completedData.tickets.end(),
+                                  [&oldTicketId](const domain::Ticket &ticket) {
+        return ticket.id == oldTicketId;
+    });
+    QVERIFY(oldTicket != completedData.tickets.end());
+    oldTicket->status = domain::TicketStatus::Completed;
+    QVERIFY(store->commit(completedData));
+
+    QVERIFY(BookingService(*store).book(
+        {QStringLiteral("G101"), date, QStringLiteral("NKH"), QStringLiteral("AOH"),
+         QStringLiteral("二等座"), {passengerId}}));
+    QCOMPARE(store->data().tickets.first().id, oldTicketId);
+    QCOMPARE(store->data().tickets.first().status, domain::TicketStatus::Completed);
 }
 
 void PhaseFourTests::railwayIdentitySharesSegmentsAcrossDisplayNumberChange()

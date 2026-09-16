@@ -22,6 +22,84 @@ int findStop(const QVector<domain::TrainStop> &stops, const QString &stationCode
     return -1;
 }
 
+const domain::Train *findTrainForTicket(const domain::AppData &data,
+                                        const domain::Ticket &ticket)
+{
+    const auto matches = [&ticket](const domain::Train &train) {
+        const bool identityMatches = ticket.railwayTrainId.isEmpty()
+            ? train.railwayTrainId.isEmpty() && train.railwayServiceDate == ticket.serviceDate
+            : train.railwayTrainId == ticket.railwayTrainId
+                && train.railwayServiceDate == ticket.serviceDate;
+        return identityMatches
+            && (!ticket.railwayTrainId.isEmpty() || train.number == ticket.trainNumber);
+    };
+    const auto it = std::find_if(data.trains.cbegin(), data.trains.cend(), matches);
+    if (it != data.trains.cend())
+        return &*it;
+    if (ticket.railwayTrainId.isEmpty()) {
+        const auto definition = std::find_if(data.trains.cbegin(), data.trains.cend(),
+                                             [&ticket](const domain::Train &train) {
+            return train.railwayTrainId.isEmpty() && !train.railwayServiceDate.isValid()
+                && train.number == ticket.trainNumber;
+        });
+        return definition == data.trains.cend() ? nullptr : &*definition;
+    }
+    return nullptr;
+}
+
+QDateTime stopDateTime(const domain::Train &train,
+                       const domain::TrainStop &stop,
+                       const QDate &serviceDate,
+                       bool departure)
+{
+    QTime time = departure ? stop.departureTime : stop.arrivalTime;
+    if (!time.isValid())
+        time = departure ? stop.arrivalTime : stop.departureTime;
+    return time.isValid() ? QDateTime(serviceDate.addDays(stop.dayOffset), time)
+                          : QDateTime();
+}
+
+OperationResult validateNoConflictingJourney(const domain::AppData &data,
+                                              const BookingRequest &request,
+                                              const domain::Train &train,
+                                              int fromIndex,
+                                              int toIndex)
+{
+    const QDateTime departure = stopDateTime(train, train.stops.at(fromIndex),
+                                              request.serviceDate, true);
+    const QDateTime arrival = stopDateTime(train, train.stops.at(toIndex),
+                                           request.serviceDate, false);
+    if (!departure.isValid() || !arrival.isValid() || departure >= arrival)
+        return OperationResult::ok();
+
+    for (const QString &passengerId : request.passengerIds) {
+        for (const domain::Ticket &ticket : data.tickets) {
+            if (ticket.passengerId != passengerId
+                || ticket.status != domain::TicketStatus::Issued
+                || ticket.serviceDate != request.serviceDate) {
+                continue;
+            }
+            const domain::Train *existingTrain = findTrainForTicket(data, ticket);
+            if (!existingTrain)
+                continue;
+            const int existingFrom = findStop(existingTrain->stops, ticket.fromStationCode);
+            const int existingTo = findStop(existingTrain->stops, ticket.toStationCode);
+            if (existingFrom < 0 || existingTo <= existingFrom)
+                continue;
+            const QDateTime existingDeparture = stopDateTime(
+                *existingTrain, existingTrain->stops.at(existingFrom), ticket.serviceDate, true);
+            const QDateTime existingArrival = stopDateTime(
+                *existingTrain, existingTrain->stops.at(existingTo), ticket.serviceDate, false);
+            if (existingDeparture.isValid() && existingArrival.isValid()
+                && existingDeparture < arrival && departure < existingArrival) {
+                return OperationResult::failure(
+                    QStringLiteral("该乘车人已有未退行程与当前行程冲突，不能重复出票。"));
+            }
+        }
+    }
+    return OperationResult::ok();
+}
+
 }
 
 BookingService::BookingService(DataStore &dataStore)
@@ -108,6 +186,11 @@ OperationResult BookingService::book(const BookingRequest &request, BookingRecei
     const int toIndex = findStop(train.stops, request.arrivalStationCode);
     if (fromIndex < 0 || toIndex <= fromIndex)
         return OperationResult::failure(QStringLiteral("车次不支持该直达区间。"));
+
+    const OperationResult journeyResult = validateNoConflictingJourney(
+        candidate, request, train, fromIndex, toIndex);
+    if (!journeyResult)
+        return journeyResult;
 
     int seatIndex = -1;
     for (int i = 0; i < train.seats.size(); ++i) {
@@ -244,6 +327,10 @@ OperationResult BookingService::bookDemo(const BookingRequest &request,
     const int importedTo = findStop(imported.stops, request.arrivalStationCode);
     if (importedFrom < 0 || importedTo <= importedFrom)
         return OperationResult::failure(QStringLiteral("12306 经停站信息不包含所选购票区间。"));
+    const OperationResult journeyResult = validateNoConflictingJourney(
+        candidate, request, imported, importedFrom, importedTo);
+    if (!journeyResult)
+        return journeyResult;
     QVector<domain::SegmentInventory> segments;
     segments.reserve(imported.stops.size() - 1);
     const int coveredSegments = importedTo - importedFrom;
