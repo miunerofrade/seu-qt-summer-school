@@ -413,7 +413,8 @@ void AuthTests::startupWithFullStationCatalog()
     QTemporaryDir dir;
     const QDir source(QFileInfo(QString::fromUtf8(__FILE__)).dir().filePath("../data"));
     QVERIFY(QFile::copy(source.filePath("railway-stations.json"), dir.filePath("railway-stations.json")));
-    if (qEnvironmentVariableIsSet("QT_SYNC_PROFILE_STARTUP"))
+    if (qEnvironmentVariableIsSet("QT_SYNC_PROFILE_STARTUP")
+        && QFile::exists(source.filePath("railway-cache.json")))
         QVERIFY(QFile::copy(source.filePath("railway-cache.json"), dir.filePath("railway-cache.json")));
     DataStore store(std::make_unique<JsonRepository>(dir.filePath("app.json")));
     QVERIFY(store.initialize());

@@ -96,3 +96,10 @@ CMakeUserPresets.json
 .qt/
 
 
+
+# Local accounts, passenger/order data, backups and remembered credentials
+/data/app-data*.json
+/data/login-preferences.json
+/data/railway-cache.json
+# Private coursework submission logs
+*AI 对话记录.json
